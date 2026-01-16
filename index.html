@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅遊費用分算 - 雲端極簡版</title>
+    <title>旅遊費用分算 - 雲端版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -29,7 +29,7 @@
             font-style: normal !important;
         }
 
-        input, select, button, textarea {
+        input, select, button {
             font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif !important;
         }
 
@@ -49,21 +49,13 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* 簡單的淡入動畫 */
         .scale-up-center {
             animation: scale-up-center 0.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
         }
         @keyframes scale-up-center {
-            0% { transform: scale(0.95); opacity: 0; }
+            0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
-        }
-        
-        /* 隱藏滾動條但保持功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
         }
     </style>
 </head>
@@ -82,21 +74,27 @@
             measurementId: "G-T6NKH0R274"
         };
 
+        // 初始化 Firebase
         if (!firebase.apps.length) {
             try {
                 firebase.initializeApp(firebaseConfig);
-                if (firebase.analytics) firebase.analytics();
+                if (firebase.analytics) {
+                    firebase.analytics();
+                }
             } catch (e) {
-                console.warn("Firebase 初始化失敗", e);
+                console.error("Firebase 初始化失敗", e);
+                // alert 改用 console 提示，避免 block
+                console.warn("Firebase 初始化失敗，請檢查網路連線或 Console 錯誤訊息。");
             }
         }
+        // 取得 Firestore 資料庫實例
         const db = firebase.firestore();
         // --- Firebase 設定結束 ---
 
         const { useState, useEffect, useMemo } = React;
         
-        const Icon = ({ name, className = "w-5 h-5", ...props }) => {
-            return <i data-lucide={name} className={className} {...props}></i>;
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            return <i data-lucide={name} className={className}></i>;
         };
 
         const CURRENCIES = [
@@ -113,7 +111,7 @@
             { code: 'THB', name: '泰銖', symbol: 'THB' },
         ];
 
-        // --- 登入頁面 ---
+        // --- 登入頁面組件 ---
         const LoginScreen = ({ onJoin }) => {
             const [tripId, setTripId] = useState('');
             
@@ -129,7 +127,12 @@
                         <input 
                             type="text" 
                             value={tripId} 
-                            onChange={e => setTripId(e.target.value)} 
+                            onChange={e => setTripId(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && tripId) {
+                                    onJoin(tripId);
+                                }
+                            }}
                             placeholder="例如：Tokyo2026" 
                             className="w-full px-4 py-4 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-center text-lg font-black uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
                         />
@@ -145,8 +148,9 @@
             );
         };
 
-        // --- 主程式 ---
+        // --- 主程式組件 ---
         function App() {
+            // 狀態管理
             const [tripId, setTripId] = useState(localStorage.getItem('my_trip_id') || null);
             const [loading, setLoading] = useState(false);
             
@@ -158,17 +162,17 @@
             const [newMemberName, setNewMemberName] = useState('');
             const [loadingRates, setLoadingRates] = useState(false);
             const [showClearConfirm, setShowClearConfirm] = useState(false);
-            const [deleteTargetId, setDeleteTargetId] = useState(null);
-            const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+            const [deleteTargetId, setDeleteTargetId] = useState(null); // 刪除確認用 ID
+            const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // 新增：登出確認用
             const [toast, setToast] = useState(null);
             const [form, setForm] = useState({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
-            
-            // 新增：控制哪個支出的詳細資訊被展開
-            const [expandedExpenseId, setExpandedExpenseId] = useState(null);
 
+            // 1. 初始化與監聽 Firebase 資料
             useEffect(() => {
                 if (!tripId) return;
+
                 setLoading(true);
+                // 訂閱 Firestore 變更 (Real-time listener)
                 const unsubscribe = db.collection('trips').doc(tripId).onSnapshot((doc) => {
                     setLoading(false);
                     if (doc.exists) {
@@ -176,27 +180,37 @@
                         setMembers(data.members || []);
                         setExpenses(data.expenses || []);
                     } else {
+                        // 如果該群組是新的，初始化它
                         db.collection('trips').doc(tripId).set({
-                            members: [], expenses: [], createdAt: new Date()
+                            members: [],
+                            expenses: [],
+                            createdAt: new Date()
                         });
                     }
                 }, (error) => {
                     console.error("Firebase Sync Error:", error);
                     setLoading(false);
-                    showToast("同步失敗：請檢查網路或權限");
+                    showToast("同步失敗：請檢查 Firebase 規則設定 (Test Mode)");
                 });
 
+                // 記住登入狀態
                 localStorage.setItem('my_trip_id', tripId);
                 fetchRates();
+
                 return () => unsubscribe();
             }, [tripId]);
 
+            // Icon 初始化
             useEffect(() => {
                 if (window.lucide) window.lucide.createIcons();
             });
 
             // --- 功能函數 ---
-            const handleLogout = () => setShowLogoutConfirm(true);
+
+            const handleLogout = () => {
+                setShowLogoutConfirm(true); // 改為呼叫自定義視窗
+            };
+
             const confirmLogout = () => {
                 localStorage.removeItem('my_trip_id');
                 setTripId(null);
@@ -226,14 +240,17 @@
                         setRates(newRates);
                     }
                 } catch (error) {
+                    console.error("匯率更新失敗", error);
                     showToast("匯率更新失敗，使用快取");
                 } finally {
                     setLoadingRates(false);
                 }
             };
 
+            // Firebase: 更新成員
             const updateMembersInCloud = (newMembers) => {
-                db.collection('trips').doc(tripId).update({ members: newMembers }).catch(err => showToast("更新失敗"));
+                db.collection('trips').doc(tripId).update({ members: newMembers })
+                    .catch(err => showToast("更新成員失敗"));
             };
 
             const addMember = () => {
@@ -247,13 +264,18 @@
 
             const removeMember = (name) => {
                 const newMembers = members.filter(m => m !== name);
+                
+                // 清理相關表單選擇
                 if (form.payer === name) setForm({ ...form, payer: '' });
                 setForm(prev => ({ ...prev, participants: prev.participants.filter(p => p !== name) }));
+
                 updateMembersInCloud(newMembers);
             };
 
+            // Firebase: 更新支出
             const updateExpensesInCloud = (newExpenses) => {
-                db.collection('trips').doc(tripId).update({ expenses: newExpenses }).catch(err => showToast("更新失敗"));
+                db.collection('trips').doc(tripId).update({ expenses: newExpenses })
+                    .catch(err => showToast("更新支出失敗"));
             };
 
             const submitExpense = () => {
@@ -271,14 +293,14 @@
                     id: Date.now(),
                     item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
                     payer, splits,
-                    timestamp: new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
                 };
 
-                const newExpenses = [newExpense, ...expenses]; // 新的在最上面
+                const newExpenses = [...expenses, newExpense];
                 updateExpensesInCloud(newExpenses);
                 
                 setForm({ ...form, item: '', amount: '', participants: [] });
-                showToast("支出已記錄");
+                showToast("支出已儲存至雲端");
             };
 
             const confirmDeleteExpense = () => {
@@ -286,13 +308,18 @@
                     const newExpenses = expenses.filter(e => e.id !== deleteTargetId);
                     updateExpensesInCloud(newExpenses);
                     setDeleteTargetId(null);
-                    showToast("已刪除");
+                    showToast("已刪除該筆支出");
                 }
             };
 
             const clearAllData = () => {
-                db.collection('trips').doc(tripId).update({ members: [], expenses: [] })
-                    .then(() => { setShowClearConfirm(false); showToast("紀錄已清除"); });
+                db.collection('trips').doc(tripId).update({
+                    members: [],
+                    expenses: []
+                }).then(() => {
+                    setShowClearConfirm(false);
+                    showToast("雲端紀錄已全數清除");
+                });
             };
 
             const toggleParticipant = (name) => {
@@ -302,12 +329,9 @@
                 });
             };
 
-            const toggleExpenseDetail = (id) => {
-                setExpandedExpenseId(expandedExpenseId === id ? null : id);
-            };
-
             const formatNum = (num) => new Intl.NumberFormat('en-US').format(Math.round(num));
 
+            // --- 結算邏輯 ---
             const settlement = useMemo(() => {
                 const balances = {}; 
                 let totalTWD = 0;
@@ -315,7 +339,9 @@
 
                 const currencyCounts = {};
                 expenses.forEach(e => {
-                    if (e.currency !== 'TWD') currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
+                    if (e.currency !== 'TWD') {
+                        currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
+                    }
                 });
                 const primaryCode = Object.keys(currencyCounts).reduce((a, b) => currencyCounts[a] > currencyCounts[b] ? a : b, null);
                 const primaryRate = primaryCode ? (rates[primaryCode] || 1) : 1;
@@ -323,9 +349,15 @@
                 expenses.forEach(exp => {
                     const amountTWD = exp.amount * exp.rate;
                     totalTWD += amountTWD;
-                    if (balances[exp.payer] !== undefined) balances[exp.payer] += amountTWD;
+                    
+                    if (balances[exp.payer] !== undefined) {
+                        balances[exp.payer] += amountTWD;
+                    }
+                    
                     Object.entries(exp.splits).forEach(([name, splitAmt]) => { 
-                        if (balances[name] !== undefined) balances[name] -= (splitAmt * exp.rate); 
+                        if (balances[name] !== undefined) {
+                            balances[name] -= (splitAmt * exp.rate); 
+                        }
                     });
                 });
 
@@ -342,203 +374,280 @@
                 while (dIdx < td.length && cIdx < tc.length) {
                     const amt = Math.min(td[dIdx].amount, tc[cIdx].amount);
                     if (amt > 0) transactions.push({ from: td[dIdx].name, to: tc[cIdx].name, amount: amt });
+                    
                     td[dIdx].amount -= amt; 
                     tc[cIdx].amount -= amt;
+                    
                     if (td[dIdx].amount <= 0.1) dIdx++;
                     if (tc[cIdx].amount <= 0.1) cIdx++;
                 }
+
                 return { totalTWD, transactions, primaryCode, primaryRate };
             }, [expenses, members, rates]);
 
             const copyToClipboard = () => {
-                let text = `【${tripId} 費用結算】\n`;
-                if (settlement.transactions.length === 0) text += `帳目已結清。\n`;
+                let text = `【${tripId} 費用結算清單】\n`;
+                
+                let hasPrepaid = false;
+                members.forEach(m => {
+                    const paidItems = expenses.filter(e => e.payer === m);
+                    if (paidItems.length > 0) {
+                        hasPrepaid = true;
+                        text += `\n${m} 預付：`;
+                        const itemsStr = paidItems.map(e => {
+                            const sym = CURRENCIES.find(c => c.code === e.currency)?.symbol || '$';
+                            return `${e.item} ${sym}${formatNum(e.amount)}`;
+                        }).join(' + ');
+                        
+                        const totalPrepaidTWD = paidItems.reduce((sum, e) => sum + (e.amount * e.rate), 0);
+                        text += `${itemsStr} = 總共預付 `;
+
+                        if (settlement.primaryCode && settlement.primaryCode !== 'TWD') {
+                            const approxForeign = totalPrepaidTWD / settlement.primaryRate;
+                            const sym = CURRENCIES.find(c => c.code === settlement.primaryCode).symbol;
+                            text += `約 ${sym} ${formatNum(approxForeign)} (TWD ${formatNum(totalPrepaidTWD)})`;
+                        } else {
+                            text += `TWD ${formatNum(totalPrepaidTWD)}`;
+                        }
+                    }
+                });
+                
+                if (hasPrepaid) text += `\n`;
+
+                text += `━━━━━━━━━━━━━━━\n\n`;
+
+                members.forEach(member => {
+                    const involved = expenses.filter(e => e.splits[member] !== undefined);
+                    if (involved.length > 0) {
+                        text += `［${member}］\n`;
+                        involved.forEach(e => {
+                            const splitAmt = e.splits[member];
+                            const twd = Math.round(splitAmt * e.rate);
+                            const sym = CURRENCIES.find(c => c.code === e.currency)?.symbol || '$';
+                            text += ` - ${e.item}：${sym} ${formatNum(splitAmt)}${e.currency === 'TWD' ? '' : ` (TWD ${formatNum(twd)})`}\n`;
+                        });
+                        text += `\n`;
+                    }
+                });
+                text += `━━━━━━━━━━━━━━━\n【最終收付】(建議以台幣結算)\n`;
+                if (settlement.transactions.length === 0) text += `目前的帳目已結清。\n`;
                 else {
                     settlement.transactions.forEach(t => {
-                        text += `${t.from} 給 ${t.to}：TWD ${formatNum(t.amount)}\n`;
+                        text += `◆ ${t.from} → ${t.to}：`;
+                        if (settlement.primaryCode && settlement.primaryCode !== 'TWD') {
+                            const foreignAmt = Math.round(t.amount / settlement.primaryRate);
+                            const sym = CURRENCIES.find(c => c.code === settlement.primaryCode).symbol;
+                            text += `約 ${sym} ${formatNum(foreignAmt)} (TWD ${formatNum(t.amount)})`;
+                        } else {
+                            text += `TWD ${formatNum(t.amount)}`;
+                        }
+                        text += `\n`;
                     });
                 }
                 const el = document.createElement('textarea');
                 el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-                showToast("已複製結算文字");
+                showToast("已複製詳細清單至剪貼簿");
             };
 
-            if (!tripId) return <LoginScreen onJoin={(id) => setTripId(id)} />;
-            if (loading && members.length === 0) return <div className="min-h-screen flex items-center justify-center bg-[#f9f7f2] flex-col gap-4"><div className="loader"></div></div>;
+            // 如果沒有 tripId，顯示登入畫面
+            if (!tripId) {
+                return <LoginScreen onJoin={(id) => setTripId(id)} />;
+            }
+
+            // 如果正在載入資料
+            if (loading && members.length === 0) {
+                 return (
+                    <div className="min-h-screen flex items-center justify-center bg-[#f9f7f2] flex-col gap-4">
+                        <div className="loader"></div>
+                        <p className="text-[#5c6b53] tracking-widest text-xs uppercase">Syncing with Cloud...</p>
+                    </div>
+                 );
+            }
 
             return (
                 <div className="min-h-screen pb-20 font-bold">
                     {/* Header */}
-                    <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] px-6 py-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+                    <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] p-6 sticky top-0 z-40 flex justify-between items-center shadow-sm">
                         <div>
-                            <h1 className="text-xl flex items-center gap-2 text-[#5c6b53] font-black">
-                                <Icon name="cloud-lightning" className="w-5 h-5" /> {tripId}
+                            <h1 className="text-xl sm:text-2xl flex items-center gap-2 text-[#5c6b53] font-bold">
+                                <Icon name="cloud-lightning" className="w-6 h-6" /> {tripId}
                             </h1>
+                            <p className="text-[10px] text-[#a8a297] mt-1 tracking-[0.3em] uppercase">Cloud Sync Active</p>
                         </div>
                         <div className="flex gap-2">
                              <button onClick={fetchRates} className={`p-2 rounded-full text-[#a8a297] hover:text-[#5c6b53] transition-colors ${loadingRates ? 'animate-spin' : ''}`}>
                                 <Icon name="refresh-cw" className="w-5 h-5" />
                             </button>
-                            <button onClick={handleLogout} className="p-2 rounded-full text-[#a8a297] hover:text-red-500 transition-colors">
+                            <button onClick={handleLogout} className="p-2 rounded-full text-[#a8a297] hover:text-red-500 transition-colors" title="登出/切換群組">
                                 <Icon name="log-out" className="w-5 h-5" />
                             </button>
                         </div>
                     </header>
 
-                    <main className="max-w-xl mx-auto p-4 space-y-8">
+                    <main className="max-w-xl mx-auto p-4 space-y-10">
                         {/* 1. 同行夥伴 */}
-                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-5 shadow-sm">
-                            <h2 className="text-sm font-black mb-3 flex items-center gap-2 text-[#8d775f] uppercase tracking-wider">
-                                <Icon name="users" className="w-4 h-4"/> 夥伴名單
+                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 sm:p-6 shadow-sm flex flex-col">
+                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#8d775f]">
+                                <Icon name="users" /> 同行夥伴
                             </h2>
-                            <div className="flex gap-2 mb-4">
-                                <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addMember()} placeholder="輸入名字..." className="flex-1 min-w-0 px-4 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-sm" />
-                                <button onClick={addMember} className="bg-[#5c6b53] text-white px-4 rounded-xl shadow-md active:scale-95 transition-transform"><Icon name="plus" className="w-5 h-5"/></button>
+                            <div className="flex gap-2 mb-6">
+                                <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addMember()} placeholder="輸入夥伴姓名..." className="flex-1 min-w-0 px-4 py-3 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
+                                <button onClick={addMember} className="bg-[#5c6b53] text-white px-5 rounded-xl shadow-md active:scale-95 transition-transform"><Icon name="user-plus" /></button>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                {members.length === 0 ? <p className="text-xs text-[#a8a297] italic pl-1">請先加入旅伴...</p> : members.map(m => (
-                                    <span key={m} className="bg-[#f3f0e9] text-[#5c6b53] px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-black border border-[#e5e1d8]">
-                                        {m} <button onClick={() => removeMember(m)} className="text-[#a8a297] hover:text-red-500"><Icon name="x" className="w-3 h-3" /></button>
+                            <div className="flex flex-wrap gap-2.5">
+                                {members.length === 0 ? (
+                                    <p className="text-sm text-[#a8a297] italic opacity-70">點擊上方按鈕加入旅伴...</p>
+                                ) : members.map(m => (
+                                    <span key={m} className="bg-[#f3f0e9] text-[#5c6b53] px-4 py-2.5 rounded-lg flex items-center gap-3 text-sm font-black shadow-sm border border-[#e5e1d8]/50">
+                                        {m} <button onClick={() => removeMember(m)} className="text-[#a8a297] hover:text-red-500"><Icon name="x" className="w-4 h-4" /></button>
                                     </span>
                                 ))}
                             </div>
                         </section>
 
                         {/* 2. 紀錄支出 */}
-                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-6 shadow-sm space-y-5">
-                            <h2 className="text-sm font-black flex items-center gap-2 text-[#8d775f] uppercase tracking-wider"><Icon name="pen-line" className="w-4 h-4"/> 新增支出</h2>
+                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-6 shadow-sm space-y-6">
+                            <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" /> 紀錄一筆支出</h2>
                             
-                            <div className="space-y-3">
-                                <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="消費項目 (如：晚餐)" className="w-full px-4 py-3 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
+                            <div className="space-y-4">
+                                <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐、交通費、門票..." className="w-full px-4 py-3 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
                                 
                                 <div className="flex gap-3">
-                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[35%] px-3 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-sm outline-none appearance-none font-bold">
-                                        {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[40%] px-3 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-base outline-none appearance-none">
+                                        {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                                     </select>
                                     <div className="relative flex-1">
-                                        <span className="absolute left-3 top-3 text-[#a8a297] text-sm">{CURRENCIES.find(c => c.code === form.currency)?.symbol}</span>
-                                        <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="0" className="w-full pl-10 pr-4 py-3 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-lg font-black outline-none text-right" />
+                                        <span className="absolute left-4 top-3 text-[#a8a297] text-base leading-6">{CURRENCIES.find(c => c.code === form.currency)?.symbol}</span>
+                                        <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="0" className="w-full pl-14 pr-4 py-3 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-xl font-black outline-none text-right" />
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-[#a8a297] font-black uppercase tracking-widest pl-1">付款人</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {members.map(m => <button key={m} onClick={() => setForm({...form, payer: m})} className={`px-3 py-2 rounded-lg border text-xs font-black transition-all ${form.payer === m ? 'bg-[#5c6b53] border-[#5c6b53] text-white shadow-md' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                                <div className="bg-[#fdfaf5] p-4 rounded-xl border border-[#e5e1d8]/60 space-y-2">
+                                    <div className="flex justify-between items-center text-sm text-[#a8a297]">
+                                        <span>即時匯率基準</span>
+                                        <span className="font-mono text-xs">1 {form.currency} ≈ {rates[form.currency] || '1.0000'} TWD</span>
+                                    </div>
+                                    {form.amount && form.currency !== 'TWD' && (
+                                        <div className="flex justify-between items-center text-base pt-2 border-t border-[#e5e1d8]/40">
+                                            <span className="text-[#5c6b53] font-black uppercase text-xs">台幣估算</span>
+                                            <span className="font-black text-[#5c6b53]">TWD {formatNum(parseFloat(form.amount) * (rates[form.currency] || 1))}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center pl-1">
-                                    <label className="text-[10px] text-[#a8a297] font-black uppercase tracking-widest">分攤人</label>
-                                    <button onClick={() => setForm({...form, participants: [...members]})} className="text-[10px] text-[#5c6b53] font-black hover:underline">全選</button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {members.map(m => <button key={m} onClick={() => toggleParticipant(m)} className={`px-3 py-2 rounded-lg border text-xs font-black transition-all ${form.participants.includes(m) ? 'bg-[#f3f0e9] border-[#5c6b53] text-[#5c6b53]' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                            <div className="space-y-3">
+                                <label className="text-sm text-[#a8a297] font-black uppercase tracking-[0.2em] px-1">由誰預付</label>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {members.map(m => <button key={m} onClick={() => setForm({...form, payer: m})} className={`px-4 py-2.5 rounded-xl border text-sm font-black transition-all ${form.payer === m ? 'bg-[#5c6b53] border-[#5c6b53] text-white shadow-md scale-105' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
                                 </div>
                             </div>
 
-                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3.5 rounded-xl text-base shadow-lg font-black disabled:opacity-30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                <Icon name="save" className="w-4 h-4" /> 儲存紀錄
-                            </button>
+                            <div className="space-y-3">
+                                <label className="text-sm text-[#a8a297] font-black uppercase tracking-[0.2em] px-1">誰要分攤</label>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {members.map(m => <button key={m} onClick={() => toggleParticipant(m)} className={`px-4 py-2.5 rounded-xl border text-sm font-black transition-all ${form.participants.includes(m) ? 'bg-[#f3f0e9] border-[#5c6b53] text-[#5c6b53] shadow-sm' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                                    <button onClick={() => setForm({...form, participants: [...members]})} className="text-sm text-[#5c6b53] font-black border-b-2 border-[#5c6b53]/30 px-2 transition-all hover:border-[#5c6b53]">全部選取</button>
+                                </div>
+                            </div>
+
+                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-4 rounded-2xl text-lg shadow-lg tracking-[0.4em] font-black disabled:opacity-30 active:scale-[0.98] transition-all">記錄並同步</button>
                         </section>
 
                         {/* 累計看板 */}
-                        <section className="bg-[#5c6b53] rounded-2xl p-6 border border-[#e5e1d8] text-center shadow-lg text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="trending-up" className="w-24 h-24" /></div>
-                            <h3 className="text-[10px] text-white/70 font-black tracking-[0.2em] uppercase mb-1">Total Expenses</h3>
-                            <div className="text-4xl font-black">
-                                <span className="text-lg opacity-60 mr-1">TWD</span>
-                                {formatNum(settlement.totalTWD)}
+                        <section className="bg-[#5c6b53] rounded-3xl p-8 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-2 relative shadow-xl text-white">
+                            <h3 className="text-xs text-white/60 font-black tracking-[0.3em] uppercase mb-2">Total Trip Expenditure</h3>
+                            
+                            <div className="text-5xl font-black flex items-center justify-center gap-3">
+                                <span className="text-base opacity-50 tracking-normal">
+                                    {settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                        ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol 
+                                        : 'TWD'}
+                                </span> 
+                                {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                    ? settlement.totalTWD / settlement.primaryRate 
+                                    : settlement.totalTWD)}
                             </div>
-                            <div className="mt-4 inline-flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full text-xs text-white/80">
-                                <Icon name="list" className="w-3 h-3" /> 共 {expenses.length} 筆明細
+                            
+                            {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
+                                <div className="text-white/80 text-lg font-bold bg-white/10 px-4 py-1.5 rounded-xl mt-2 border border-white/20">
+                                    ≈ TWD {formatNum(settlement.totalTWD)}
+                                </div>
+                            )}
+
+                            <div className="bg-white/20 border border-white/30 px-6 py-2 rounded-full flex items-center gap-3 text-sm font-black mt-4">
+                                <Icon name="list" className="w-4 h-4" /> 共 {expenses.length} 筆明細
                             </div>
                         </section>
 
-                        {/* 3. 支出明細 (優化版) */}
-                        <section className="space-y-4">
-                            <div className="flex justify-between items-end px-1">
-                                <h2 className="text-sm font-black flex items-center gap-2 text-[#8d775f] uppercase tracking-wider"><Icon name="list-checks" className="w-4 h-4"/> 支出明細</h2>
-                                <button onClick={() => setShowClearConfirm(true)} className="text-[10px] font-black text-[#a8a297] hover:text-red-500 transition-colors flex items-center gap-1">
-                                    <Icon name="trash-2" className="w-3 h-3" /> 清空
+                        {/* 3. 支出明細 */}
+                        <section className="space-y-6">
+                            <div className="flex justify-between items-center px-2">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="scroll-text" /> 支出明細</h2>
+                                <button onClick={() => setShowClearConfirm(true)} className="flex items-center gap-1.5 text-xs font-black text-[#a8a297] hover:text-red-500 transition-colors">
+                                    <Icon name="trash-2" className="w-4 h-4" /> 清除雲端紀錄
                                 </button>
                             </div>
-                            
-                            <div className="space-y-3">
+                            <div className="bg-white rounded-3xl border border-[#e5e1d8] p-6 space-y-12 shadow-sm min-h-[120px]">
                                 {expenses.length === 0 ? (
-                                    <div className="py-10 text-center text-[#a8a297] text-sm opacity-60 bg-white rounded-2xl border border-[#e5e1d8] border-dashed">暫無支出紀錄</div>
-                                ) : expenses.map((exp) => {
-                                    const isExpanded = expandedExpenseId === exp.id;
-                                    const symbol = CURRENCIES.find(c => c.code === exp.currency)?.symbol || '$';
-                                    
+                                    <div className="py-12 text-center text-[#a8a297] opacity-60">目前尚無紀錄</div>
+                                ) : expenses.map((exp, idx) => {
                                     return (
-                                        <div key={exp.id} className={`bg-white rounded-xl border border-[#e5e1d8] shadow-sm transition-all duration-200 overflow-hidden ${isExpanded ? 'ring-2 ring-[#5c6b53]/20' : ''}`}>
-                                            {/* 卡片標題區 (點擊展開) */}
-                                            <div onClick={() => toggleExpenseDetail(exp.id)} className="p-4 cursor-pointer hover:bg-[#fdfaf5] transition-colors">
-                                                <div className="flex justify-between items-start gap-3">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-base font-black text-[#4a4a4a] leading-tight">{exp.item}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-xs text-[#a8a297]">
-                                                            <span className="bg-[#f3f0e9] text-[#5c6b53] px-1.5 py-0.5 rounded text-[10px]">{exp.payer} 付款</span>
-                                                            <span>•</span>
-                                                            <span>{exp.timestamp.split(' ')[0]}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-lg font-black text-[#5c6b53] leading-none">
-                                                            <span className="text-xs mr-0.5 text-[#5c6b53]/60">{symbol}</span>{formatNum(exp.amount)}
-                                                        </div>
+                                        <div key={exp.id} className="relative pl-8 border-l-4 border-[#5c6b53]/20 pb-4">
+                                            <div className="absolute left-[-10px] top-1.5 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 flex-wrap">
+                                                        <span className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
+                                                        <span className="text-[10px] text-[#a8a297] tracking-widest bg-[#fdfaf5] px-2 py-0.5 rounded border border-[#e5e1d8]">{exp.timestamp}</span>
                                                         {exp.currency !== 'TWD' && (
-                                                            <div className="text-[10px] text-[#a8a297] mt-1">≈ TWD {formatNum(exp.amount * exp.rate)}</div>
+                                                            <span className="text-[10px] text-[#5c6b53] tracking-widest bg-[#fdfaf5] px-2 py-0.5 rounded border border-[#e5e1d8]">
+                                                                匯率: {exp.rate}
+                                                            </span>
                                                         )}
                                                     </div>
-                                                </div>
-                                                
-                                                {/* 展開指示器 (可選) */}
-                                                <div className="flex justify-center mt-2">
-                                                    <Icon name={isExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-[#e5e1d8]" />
-                                                </div>
-                                            </div>
-
-                                            {/* 展開後的詳細內容區 */}
-                                            {isExpanded && (
-                                                <div className="bg-[#fdfaf5] border-t border-[#e5e1d8] p-4 animate-scale-up-center origin-top">
-                                                    <div className="mb-4">
-                                                        <h4 className="text-[10px] text-[#a8a297] uppercase tracking-widest mb-2 font-black">費用分攤詳情</h4>
-                                                        <div className="bg-white rounded-lg border border-[#e5e1d8] divide-y divide-[#f3f0e9]">
-                                                            {Object.entries(exp.splits).map(([name, amt]) => (
-                                                                <div key={name} className="flex justify-between items-center px-3 py-2.5">
-                                                                    <span className="text-sm text-[#4a4a4a] font-bold">{name}</span>
-                                                                    <div className="text-right">
-                                                                        <div className="text-sm font-black text-[#5c6b53]">
-                                                                            {symbol} {formatNum(amt)}
-                                                                        </div>
-                                                                        {exp.currency !== 'TWD' && (
-                                                                            <div className="text-[10px] text-[#a8a297]">≈ {formatNum(amt * exp.rate)}</div>
-                                                                        )}
+                                                    <div className="text-base text-[#7a746a] mt-3 font-bold leading-relaxed">
+                                                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                                                            <span><span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了</span>
+                                                            <div className="flex items-baseline gap-2 flex-wrap">
+                                                                <span className="text-[#5c6b53] text-lg sm:text-xl font-black">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(exp.amount)}</span>
+                                                                {exp.currency !== 'TWD' && (
+                                                                    <div className="flex flex-col gap-1 mt-1 sm:mt-0 sm:ml-2">
+                                                                        <span className="text-xs text-[#5c6b53]/80 font-bold bg-[#5c6b53]/10 px-2 py-0.5 rounded-md whitespace-nowrap w-fit">
+                                                                            ≈ TWD {formatNum(exp.amount * exp.rate)}
+                                                                        </span>
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    
-                                                    <div className="flex justify-between items-center pt-2 border-t border-[#e5e1d8]/50">
-                                                        <div className="text-[10px] text-[#a8a297]">
-                                                            記錄時間: {exp.timestamp}
-                                                        </div>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); setDeleteTargetId(exp.id); }} 
-                                                            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 font-black px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                                                        >
-                                                            <Icon name="trash" className="w-3 h-3" /> 刪除此筆
-                                                        </button>
                                                     </div>
                                                 </div>
-                                            )}
+                                                <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1"><Icon name="trash" className="w-5 h-5" /></button>
+                                            </div>
+                                            
+                                            {/* 分攤明細：修改為單欄列表式，移除頭像 */}
+                                            <div className="flex flex-col gap-2 mt-6">
+                                                {Object.entries(exp.splits).map(([name, amt]) => (
+                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-3 rounded-2xl border border-[#e5e1d8]/60 text-sm shadow-sm hover:border-[#5c6b53]/30 transition-colors flex items-center justify-between group">
+                                                         {/* Left: Name only */}
+                                                        <div className="text-[#5c6b53] font-black text-sm">
+                                                            {name}
+                                                        </div>
+
+                                                        {/* Right: Amount */}
+                                                        <div className="text-right">
+                                                            <div className="text-[#5c6b53] font-black text-base sm:text-lg leading-tight">
+                                                                {CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(amt)}
+                                                            </div>
+                                                            {exp.currency !== 'TWD' && (
+                                                                <div className="text-[11px] text-[#8d775f] font-black mt-0.5 opacity-90">
+                                                                    ≈ TWD {formatNum(amt * exp.rate)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -546,74 +655,91 @@
                         </section>
 
                         {/* 4. 結算統計 */}
-                        <section className="pb-8">
-                            <div className="flex justify-between items-center px-1 mb-4">
-                                <h2 className="text-sm font-black flex items-center gap-2 text-[#8d775f] uppercase tracking-wider"><Icon name="check-circle-2" className="w-4 h-4"/> 最終結算</h2>
-                                <button onClick={copyToClipboard} className="text-xs font-black text-white bg-[#5c6b53] px-4 py-2 rounded-full hover:bg-[#4a5843] shadow-md active:scale-95 transition-all flex items-center gap-1">
-                                    <Icon name="copy" className="w-3 h-3" /> 複製文字
-                                </button>
+                        <section className="space-y-6">
+                            <div className="flex justify-between items-center px-2">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="check-circle-2" /> 最終結算結餘</h2>
+                                <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs font-black text-white bg-[#5c6b53] px-5 py-3 rounded-full hover:bg-[#4a5843] shadow-lg active:scale-95 transition-all"><Icon name="copy" className="w-4 h-4" /> 複製結算清單</button>
                             </div>
-                            
-                            <div className="space-y-3">
-                                {settlement.transactions.length === 0 ? (
-                                    <div className="bg-white rounded-2xl p-8 text-center border border-[#e5e1d8] shadow-sm">
-                                        <div className="text-[#a8a297] text-sm">所有帳目均已結清 🎉</div>
-                                    </div>
-                                ) : settlement.transactions.map((t, i) => (
-                                    <div key={i} className="bg-white p-4 rounded-xl border border-[#e5e1d8] shadow-sm flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-[#f3f0e9] text-[#4a4a4a] px-3 py-1 rounded-lg text-sm font-black">{t.from}</div>
-                                            <Icon name="arrow-right" className="text-[#a8a297] w-4 h-4" />
-                                            <div className="bg-[#f3f0e9] text-[#4a4a4a] px-3 py-1 rounded-lg text-sm font-black">{t.to}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-lg font-black text-[#5c6b53]">
-                                                <span className="text-xs mr-1 text-[#5c6b53]/60">
-                                                    {settlement.primaryCode && settlement.primaryCode !== 'TWD' ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol : 'TWD'}
-                                                </span>
-                                                {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' ? t.amount / settlement.primaryRate : t.amount)}
+                            <div className="bg-white rounded-[2rem] border border-[#e5e1d8] overflow-hidden shadow-md">
+                                <div className="bg-[#fdfaf5] p-6 border-b border-[#e5e1d8] flex justify-between items-center">
+                                    <h4 className="text-lg text-[#5c6b53] font-black tracking-[0.2em]">Final Settlement</h4>
+                                    <span className="text-[10px] text-[#a8a297] font-black opacity-60 tracking-widest">{new Date().toLocaleDateString()}</span>
+                                </div>
+                                <div className="p-4 sm:p-6 space-y-6">
+                                    {settlement.transactions.map((t, i) => (
+                                        <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 bg-[#fdfaf5] rounded-[2rem] border border-[#e5e1d8]/50 gap-4 sm:gap-6">
+                                            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-5 w-full sm:w-auto">
+                                                <div className="flex flex-col items-center w-full sm:w-auto">
+                                                    <span className="text-xs text-[#a8a297] uppercase mb-1 sm:mb-2 font-black tracking-widest">應付者</span>
+                                                    <div className="text-base font-black text-[#4a4a4a] bg-white px-4 py-2 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl border border-[#e5e1d8] w-full sm:min-w-[100px] text-center shadow-sm break-all">{t.from}</div>
+                                                </div>
+                                                
+                                                <Icon name="arrow-right" className="text-[#5c6b53] mt-2 sm:mt-6 animate-pulse rotate-90 sm:rotate-0" />
+                                                
+                                                <div className="flex flex-col items-center w-full sm:w-auto">
+                                                    <span className="text-xs text-[#a8a297] uppercase mb-1 sm:mb-2 font-black tracking-widest">應收者</span>
+                                                    <div className="text-base font-black text-[#4a4a4a] bg-white px-4 py-2 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl border border-[#e5e1d8] w-full sm:min-w-[100px] text-center shadow-sm break-all">{t.to}</div>
+                                                </div>
                                             </div>
-                                            {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
-                                                <div className="text-[10px] text-[#a8a297]">≈ TWD {formatNum(t.amount)}</div>
-                                            )}
+
+                                            <div className="text-center sm:text-right w-full sm:w-auto border-t sm:border-t-0 border-[#e5e1d8]/50 pt-3 sm:pt-0 mt-2 sm:mt-0 flex flex-col justify-center sm:items-end">
+                                                <div className="text-2xl font-black text-[#5c6b53] whitespace-nowrap">
+                                                    <span className="text-sm font-bold opacity-60 mr-1">
+                                                         {settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                                            ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol 
+                                                            : 'TWD'}
+                                                    </span> 
+                                                    {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                                        ? t.amount / settlement.primaryRate 
+                                                        : t.amount)}
+                                                </div>
+                                                {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
+                                                    <div className="text-sm text-[#8d775f] font-black mt-1 opacity-80 bg-[#e5e1d8]/40 px-3 py-1 rounded-lg inline-block sm:block">
+                                                        ≈ TWD {formatNum(t.amount)}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                    {settlement.transactions.length === 0 && (
+                                        <div className="text-center py-16 text-[#a8a297] font-black border-4 border-dashed border-[#f3f0e9] rounded-[2.5rem]">所有帳目均已結清</div>
+                                    )}
+                                </div>
+                                <div className="bg-[#fdfaf5] py-5 text-center text-[10px] text-[#a8a297] tracking-[0.3em] font-black opacity-60 uppercase border-t border-[#e5e1d8]/40">Happy Travel • Fair Sharing</div>
                             </div>
                         </section>
                     </main>
 
-                    {/* Toast */}
+                    {/* Toast 訊息 */}
                     {toast && (
-                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-6 py-3 rounded-xl shadow-2xl z-[150] font-black text-xs tracking-widest animate-bounce whitespace-nowrap">
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-8 py-4 rounded-2xl shadow-2xl z-[150] font-black text-sm tracking-widest animate-bounce">
                             {toast}
                         </div>
                     )}
 
-                    {/* 刪除確認視窗 */}
+                    {/* 單筆刪除確認視窗 */}
                     {deleteTargetId && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2rem] p-6 max-w-xs w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
-                                <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3"><Icon name="trash-2" /></div>
-                                <h3 className="text-lg font-black text-[#4a4a4a] mb-2">確定刪除？</h3>
-                                <p className="text-[#a8a297] text-xs mb-6">此動作無法復原。</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setDeleteTargetId(null)} className="flex-1 py-3 text-[#a8a297] text-sm font-black bg-gray-100 rounded-xl hover:bg-gray-200">取消</button>
-                                    <button onClick={confirmDeleteExpense} className="flex-1 py-3 bg-red-500 text-white text-sm font-black rounded-xl shadow-md active:scale-95">刪除</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-[3rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
+                                <h3 className="text-xl font-black text-red-500 mb-4">刪除此筆支出？</h3>
+                                <p className="text-[#7a746a] text-sm mb-8 leading-relaxed font-black">此動作無法復原。</p>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={confirmDeleteExpense} className="w-full py-4 bg-red-500 text-white text-base font-black rounded-2xl tracking-[0.2em] uppercase shadow-lg active:scale-95 transition-all">確認刪除</button>
+                                    <button onClick={() => setDeleteTargetId(null)} className="w-full py-3 text-[#a8a297] text-sm font-black uppercase hover:text-[#4a4a4a]">取消</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 登出確認 */}
+                    {/* 登出確認視窗 */}
                     {showLogoutConfirm && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2rem] p-6 max-w-xs w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
-                                <h3 className="text-lg font-black text-[#5c6b53] mb-2">登出群組？</h3>
-                                <p className="text-[#a8a297] text-xs mb-6">下次輸入代碼即可回來。</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3 text-[#a8a297] text-sm font-black bg-gray-100 rounded-xl">取消</button>
-                                    <button onClick={confirmLogout} className="flex-1 py-3 bg-[#5c6b53] text-white text-sm font-black rounded-xl shadow-md">登出</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-[3rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
+                                <h3 className="text-xl font-black text-[#5c6b53] mb-4">確定要登出嗎？</h3>
+                                <p className="text-[#7a746a] text-sm mb-8 leading-relaxed font-black">不用擔心，您的資料仍會保留在雲端，下次輸入代碼即可回來。</p>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={confirmLogout} className="w-full py-4 bg-[#5c6b53] text-white text-base font-black rounded-2xl tracking-[0.2em] uppercase shadow-lg active:scale-95 transition-all">確認登出</button>
+                                    <button onClick={() => setShowLogoutConfirm(false)} className="w-full py-3 text-[#a8a297] text-sm font-black uppercase hover:text-[#4a4a4a]">取消</button>
                                 </div>
                             </div>
                         </div>
@@ -621,13 +747,13 @@
 
                     {/* 清除全部確認 */}
                     {showClearConfirm && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2rem] p-6 max-w-xs w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
-                                <h3 className="text-lg font-black text-red-500 mb-2">⚠️ 危險操作</h3>
-                                <p className="text-[#a8a297] text-xs mb-6">這會永久刪除雲端上的所有紀錄。</p>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowClearConfirm(false)} className="flex-1 py-3 text-[#a8a297] text-sm font-black bg-gray-100 rounded-xl">取消</button>
-                                    <button onClick={clearAllData} className="flex-1 py-3 bg-red-500 text-white text-sm font-black rounded-xl shadow-md">全部刪除</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
+                                <h3 className="text-2xl font-black text-red-500 mb-6">全部清除？</h3>
+                                <p className="text-[#7a746a] text-base mb-12 leading-relaxed font-black">警告：這會刪除「雲端資料庫」中的所有內容，其他夥伴的紀錄也會同步消失。</p>
+                                <div className="flex flex-col gap-4">
+                                    <button onClick={clearAllData} className="w-full py-5 bg-red-500 text-white text-base font-black rounded-2xl tracking-[0.4em] uppercase shadow-lg active:scale-95 transition-all">確認從雲端移除</button>
+                                    <button onClick={() => setShowClearConfirm(false)} className="w-full py-4 text-[#a8a297] text-sm font-black uppercase hover:text-[#4a4a4a]">取消</button>
                                 </div>
                             </div>
                         </div>
