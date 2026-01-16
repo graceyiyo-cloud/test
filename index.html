@@ -24,6 +24,13 @@
             font-weight: 700 !important;
         }
 
+        /* 手機版整體字體放大 20% */
+        @media (max-width: 640px) {
+            html {
+                font-size: 120%; /* 基準 16px * 1.2 = 19.2px */
+            }
+        }
+
         *, *::before, *::after {
             font-weight: 700 !important;
             font-style: normal !important;
@@ -467,7 +474,7 @@
             return (
                 <div className="min-h-screen pb-20 font-bold">
                     {/* Header */}
-                    <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] p-6 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+                    <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] p-3 sm:p-6 sticky top-0 z-40 flex justify-between items-center shadow-sm">
                         <div>
                             <h1 className="text-xl sm:text-2xl flex items-center gap-2 text-[#5c6b53] font-bold">
                                 <Icon name="cloud-lightning" className="w-6 h-6" /> {tripId}
