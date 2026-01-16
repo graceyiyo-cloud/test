@@ -1,4 +1,4 @@
-<!-- 版本：電腦版分攤明細列表化 (Desktop Split List View) -->
+<!-- 版本：電腦版分攤明細優化 (Desktop Split: Name Left, Amount Right) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -468,12 +468,12 @@
                                                 <button onClick={() => setExpenseToDelete(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1"><Icon name="trash" className="w-4 h-4" /></button>
                                             </div>
                                             
-                                            {/* 分攤明細區塊 - 修改為電腦版與手機版一致的直式列表 */}
-                                            <div className="grid grid-cols-1 gap-2 mt-3">
+                                            {/* 分攤明細區塊 - 手機版: 直行列式 / 電腦版: Grid 方塊 (內容皆為 左名右錢) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3">
                                                 {Object.entries(exp.splits).map(([name, amt]) => (
-                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-2 rounded-xl border border-[#e5e1d8]/60 flex items-center justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
+                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-2 sm:p-4 rounded-xl border border-[#e5e1d8]/60 flex items-center justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
                                                         {/* 左側: 人名 */}
-                                                        <div className="text-[#a8a297] font-black text-sm uppercase tracking-wider">
+                                                        <div className="text-[#a8a297] font-black text-sm sm:text-xs uppercase tracking-wider">
                                                             {name}
                                                         </div>
                                                         
