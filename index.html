@@ -1,4 +1,4 @@
-<!-- 版本：緊湊版 (Compact & Responsive Layout) - 資料保留 v1 -->
+<!-- 版本：緊湊版面 & 手機直式優化 (Compact Layout & Mobile List View) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -20,9 +20,9 @@
             background-color: #f9f7f2;
             color: #4a4a4a;
             -webkit-font-smoothing: antialiased;
-            letter-spacing: 0.02em; /* 稍微縮小字距 */
+            letter-spacing: 0.03em;
             font-weight: 700 !important;
-            line-height: 1.4; /* 整體行高調窄 */
+            line-height: 1.3; /* 全局行高調窄 */
         }
 
         *, *::before, *::after {
@@ -37,7 +37,7 @@
         input:focus, select:focus {
             outline: none;
             border-color: #5c6b53 !important;
-            box-shadow: 0 0 0 3px rgba(92, 107, 83, 0.08);
+            box-shadow: 0 0 0 4px rgba(92, 107, 83, 0.08);
         }
 
         ::placeholder {
@@ -45,29 +45,38 @@
             opacity: 0.5;
         }
 
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e5e1d8;
+            border-radius: 10px;
+        }
+        
         /* Modal Animation */
         @keyframes scaleUp {
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
         .scale-up-center {
-            animation: scaleUp 0.15s ease-out forwards;
+            animation: scaleUp 0.2s ease-out forwards;
         }
     </style>
 </head>
-<body>
+<body class="leading-tight"> <!-- 加入 leading-tight 使整體行高更緊湊 -->
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         
-        const Icon = ({ name, className = "w-4 h-4" }) => {
+        const Icon = ({ name, className = "w-5 h-5" }) => {
             return <i data-lucide={name} className={className}></i>;
         };
 
-        // 重要：保持此 ID 不變以確保資料不流失
-        const APP_ID = 'travel-expense-splitter-v1'; 
-        
+        const APP_ID = 'travel-expense-splitter-v1'; // 保持此 ID 不變，資料就不會消失
         const CURRENCIES = [
             { code: 'TWD', name: '台幣', symbol: 'TWD' },
             { code: 'USD', name: '美金', symbol: 'USD' },
@@ -109,7 +118,7 @@
             useEffect(() => {
                 localStorage.setItem(APP_ID, JSON.stringify({ members, expenses }));
                 if (window.lucide) window.lucide.createIcons();
-            }, [members, expenses, rates, showClearConfirm, expenseToDelete]);
+            }, [members, expenses, rates, showClearConfirm, expenseToDelete]); // 監聽狀態更新圖標
 
             const showToast = (msg) => {
                 setToast(msg);
@@ -174,7 +183,7 @@
                     id: Date.now(),
                     item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
                     payer, splits,
-                    timestamp: new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
                 };
                 setExpenses([...expenses, newExpense]);
                 setForm({ ...form, item: '', amount: '', participants: [] });
@@ -189,6 +198,7 @@
                 }
             };
 
+            // 修正結算邏輯：全部轉 TWD 計算，並偵測主要外幣
             const settlement = useMemo(() => {
                 const balances = {}; 
                 let totalTWD = 0;
@@ -303,44 +313,46 @@
             };
 
             return (
-                <div className="min-h-screen pb-16 font-bold leading-tight">
-                    {/* Header */}
-                    <header className="bg-white/95 backdrop-blur-md border-b border-[#e5e1d8] px-4 py-3 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+                <div className="min-h-screen pb-20 font-bold">
+                    {/* Header - Padding 減小 (p-6 -> p-3) */}
+                    <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] p-3 sticky top-0 z-40 flex justify-between items-center shadow-sm">
                         <div>
-                            <h1 className="text-xl flex items-center gap-2 text-[#5c6b53] font-black tracking-tight">
-                                <Icon name="map" className="w-5 h-5" /> 旅遊費用分算
+                            <h1 className="text-xl sm:text-2xl flex items-center gap-2 text-[#5c6b53] font-bold">
+                                <Icon name="map" className="w-5 h-5 sm:w-6 sm:h-6" /> 旅遊費用分算紀錄
                             </h1>
+                            <p className="text-[10px] text-[#a8a297] mt-0.5 tracking-[0.3em] uppercase">Travel Ledger Pro</p>
                         </div>
-                        <button onClick={fetchRates} className={`p-1.5 rounded-full text-[#a8a297] hover:text-[#5c6b53] transition-colors ${loadingRates ? 'animate-spin' : ''}`}>
-                            <Icon name="refresh-cw" className="w-4 h-4" />
+                        <button onClick={fetchRates} className={`p-2 rounded-full text-[#a8a297] hover:text-[#5c6b53] transition-colors ${loadingRates ? 'animate-spin' : ''}`}>
+                            <Icon name="refresh-cw" className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                     </header>
 
-                    <main className="max-w-xl mx-auto p-3 space-y-6">
-                        {/* 使用提示 */}
-                        <div className="bg-[#fdfaf5] border border-[#e5e1d8] p-3 rounded-xl shadow-sm flex items-start gap-3">
+                    {/* Main Container - space-y 減小 (10 -> 6) */}
+                    <main className="max-w-xl mx-auto p-4 space-y-6">
+                        {/* 使用提示 - 更新文字 */}
+                        <div className="bg-[#fdfaf5] border border-[#e5e1d8] p-4 rounded-2xl shadow-sm flex items-start gap-3">
                             <div className="bg-[#5c6b53]/10 p-1.5 rounded-full text-[#5c6b53] mt-0.5 shrink-0">
                                 <Icon name="info" className="w-4 h-4" />
                             </div>
-                            <p className="text-xs text-[#7a746a] leading-snug">
+                            <p className="text-sm text-[#7a746a] leading-tight">
                                 用手機或是電腦開此網頁，紀錄會暫存紀錄在你使用的工具裡，網頁關起來重新打開已記錄的資料不會消失。
                             </p>
                         </div>
 
                         {/* 1. 同行夥伴 */}
-                        <section className="bg-white rounded-xl border border-[#e5e1d8] p-4 shadow-sm flex flex-col">
-                            <h2 className="text-base font-bold mb-3 flex items-center gap-2 text-[#8d775f]">
-                                <Icon name="users" /> 同行夥伴
+                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 sm:p-5 shadow-sm flex flex-col">
+                            <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-[#8d775f]">
+                                <Icon name="users" className="w-5 h-5"/> 同行夥伴
                             </h2>
                             <div className="flex gap-2 mb-4">
-                                <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addMember()} placeholder="輸入夥伴姓名" className="flex-1 min-w-0 px-3 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-lg outline-none text-sm" />
-                                <button onClick={addMember} className="bg-[#5c6b53] text-white px-4 py-2 rounded-lg shadow-sm active:scale-95 transition-transform"><Icon name="user-plus" className="w-4 h-4" /></button>
+                                <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addMember()} placeholder="輸入夥伴姓名..." className="flex-1 min-w-0 px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
+                                <button onClick={addMember} className="bg-[#5c6b53] text-white px-4 rounded-xl shadow-md active:scale-95 transition-transform"><Icon name="user-plus" className="w-5 h-5" /></button>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {members.length === 0 ? (
-                                    <p className="text-xs text-[#a8a297] italic opacity-70">尚未添加</p>
+                                    <p className="text-sm text-[#a8a297] italic opacity-70">點擊上方按鈕添加旅伴...</p>
                                 ) : members.map(m => (
-                                    <span key={m} className="bg-[#f3f0e9] text-[#5c6b53] px-3 py-1.5 rounded-md flex items-center gap-2 text-xs font-black shadow-sm border border-[#e5e1d8]/50">
+                                    <span key={m} className="bg-[#f3f0e9] text-[#5c6b53] px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-black shadow-sm border border-[#e5e1d8]/50">
                                         {m} <button onClick={() => removeMember(m)} className="text-[#a8a297] hover:text-red-500"><Icon name="x" className="w-3 h-3" /></button>
                                     </span>
                                 ))}
@@ -348,57 +360,67 @@
                         </section>
 
                         {/* 2. 紀錄支出 */}
-                        <section className="bg-white rounded-xl border border-[#e5e1d8] p-4 shadow-sm space-y-4">
-                            <h2 className="text-base font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" /> 紀錄支出</h2>
+                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-5 shadow-sm space-y-5">
+                            <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" className="w-5 h-5"/> 紀錄一筆支出</h2>
                             
                             <div className="space-y-3">
-                                <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="項目 (如: 晚餐)" className="w-full px-3 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-lg outline-none text-sm" />
+                                <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐、交通費、門票..." className="w-full px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
                                 
                                 <div className="flex gap-2">
-                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[35%] px-2 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-lg text-sm outline-none appearance-none">
+                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[35%] px-2 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-base outline-none appearance-none">
                                         {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                                     </select>
                                     <div className="relative flex-1">
-                                        <span className="absolute left-3 top-2.5 text-[#a8a297] text-sm">{CURRENCIES.find(c => c.code === form.currency).symbol}</span>
-                                        <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="0" className="w-full pl-12 pr-3 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-lg text-lg font-black outline-none text-right tracking-tight" />
+                                        <span className="absolute left-3 top-2.5 text-[#a8a297] text-base leading-6">{CURRENCIES.find(c => c.code === form.currency).symbol}</span>
+                                        <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="0" className="w-full pl-10 pr-3 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-xl font-black outline-none text-right" />
                                     </div>
                                 </div>
-                                {form.amount && form.currency !== 'TWD' && (
-                                    <div className="text-right text-xs text-[#5c6b53] font-bold">
-                                        ≈ TWD {formatNum(parseFloat(form.amount) * (rates[form.currency] || 1))}
+
+                                <div className="bg-[#fdfaf5] p-3 rounded-xl border border-[#e5e1d8]/60 space-y-1">
+                                    <div className="flex justify-between items-center text-xs text-[#a8a297]">
+                                        <span>即時匯率基準</span>
+                                        <span className="font-mono">1 {form.currency} ≈ {rates[form.currency] || '1.0000'} TWD</span>
                                     </div>
-                                )}
+                                    {form.amount && form.currency !== 'TWD' && (
+                                        <div className="flex justify-between items-center text-sm pt-1 border-t border-[#e5e1d8]/40">
+                                            <span className="text-[#5c6b53] font-black uppercase text-xs">台幣估算</span>
+                                            <span className="font-black text-[#5c6b53]">TWD {formatNum(parseFloat(form.amount) * (rates[form.currency] || 1))}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs text-[#a8a297] font-black uppercase tracking-wider px-1">由誰預付</label>
+                                <label className="text-xs text-[#a8a297] font-black uppercase tracking-[0.2em] px-1">由誰預付</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {members.map(m => <button key={m} onClick={() => setForm({...form, payer: m})} className={`px-3 py-1.5 rounded-lg border text-xs font-black transition-all ${form.payer === m ? 'bg-[#5c6b53] border-[#5c6b53] text-white shadow-md' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                                    {members.map(m => <button key={m} onClick={() => setForm({...form, payer: m})} className={`px-3 py-2 rounded-xl border text-sm font-black transition-all ${form.payer === m ? 'bg-[#5c6b53] border-[#5c6b53] text-white shadow-md scale-105' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <div className="flex justify-between items-center px-1">
-                                    <label className="text-xs text-[#a8a297] font-black uppercase tracking-wider">誰要分攤</label>
-                                    <button onClick={() => setForm({...form, participants: [...members]})} className="text-xs text-[#5c6b53] font-black hover:underline">全選</button>
-                                </div>
+                                <label className="text-xs text-[#a8a297] font-black uppercase tracking-[0.2em] px-1">誰要分攤</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {members.map(m => <button key={m} onClick={() => toggleParticipant(m)} className={`px-3 py-1.5 rounded-lg border text-xs font-black transition-all ${form.participants.includes(m) ? 'bg-[#f3f0e9] border-[#5c6b53] text-[#5c6b53] shadow-sm' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                                    {members.map(m => <button key={m} onClick={() => toggleParticipant(m)} className={`px-3 py-2 rounded-xl border text-sm font-black transition-all ${form.participants.includes(m) ? 'bg-[#f3f0e9] border-[#5c6b53] text-[#5c6b53] shadow-sm' : 'bg-white border-[#e5e1d8] text-[#7a746a]'}`}>{m}</button>)}
+                                    <button onClick={() => setForm({...form, participants: [...members]})} className="text-xs text-[#5c6b53] font-black border-b border-[#5c6b53]/30 px-1 transition-all hover:border-[#5c6b53]">全部選取</button>
                                 </div>
                             </div>
 
-                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3 rounded-xl text-base shadow-md tracking-widest font-black disabled:opacity-30 active:scale-[0.98] transition-all mt-2">記錄</button>
+                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3.5 rounded-2xl text-lg shadow-lg tracking-[0.4em] font-black disabled:opacity-30 active:scale-[0.98] transition-all">記錄這筆支出</button>
                         </section>
 
                         {/* 累計看板 */}
-                        <section className="bg-[#5c6b53] rounded-xl p-5 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-1 relative shadow-lg text-white">
-                            <h3 className="text-[10px] text-white/60 font-black tracking-widest uppercase mb-1">Total Trip Expenditure</h3>
+                        <section className="bg-[#5c6b53] rounded-3xl p-6 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-1 relative shadow-xl text-white">
+                            <h3 className="text-[10px] text-white/60 font-black tracking-[0.3em] uppercase mb-1">Total Trip Expenditure</h3>
                             
                             <div className="text-4xl font-black flex items-center justify-center gap-2">
                                 <span className="text-sm opacity-50 tracking-normal">
-                                    {settlement.primaryCode && settlement.primaryCode !== 'TWD' ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol : 'TWD'}
+                                    {settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                        ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol 
+                                        : 'TWD'}
                                 </span> 
-                                {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' ? settlement.totalTWD / settlement.primaryRate : settlement.totalTWD)}
+                                {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                    ? settlement.totalTWD / settlement.primaryRate 
+                                    : settlement.totalTWD)}
                             </div>
                             
                             {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
@@ -408,69 +430,66 @@
                             )}
 
                             <div className="bg-white/20 border border-white/30 px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-black mt-3">
-                                <Icon name="list" className="w-3 h-3" /> {expenses.length} 筆
+                                <Icon name="list" className="w-3 h-3" /> 共 {expenses.length} 筆明細
                             </div>
                         </section>
 
                         {/* 3. 支出明細 */}
                         <section className="space-y-4">
-                            <div className="flex justify-between items-center px-1">
-                                <h2 className="text-base font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="scroll-text" /> 支出明細</h2>
+                            <div className="flex justify-between items-center px-2">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="scroll-text" className="w-5 h-5"/> 支出明細</h2>
                                 <button onClick={() => setShowClearConfirm(true)} className="flex items-center gap-1 text-xs font-black text-[#a8a297] hover:text-red-500 transition-colors">
-                                    <Icon name="trash-2" className="w-3 h-3" /> 清除
+                                    <Icon name="trash-2" className="w-3 h-3" /> 全部清除
                                 </button>
                             </div>
-                            <div className="bg-white rounded-2xl border border-[#e5e1d8] p-4 space-y-8 shadow-sm min-h-[100px]">
+                            <div className="bg-white rounded-3xl border border-[#e5e1d8] p-4 sm:p-6 space-y-8 shadow-sm min-h-[100px]">
                                 {expenses.length === 0 ? (
                                     <div className="py-8 text-center text-[#a8a297] opacity-60 text-sm">目前尚無紀錄</div>
                                 ) : expenses.map((exp, idx) => {
                                     return (
-                                        // 關鍵修改：手機版 flex-col (直式)，電腦版 sm:flex-row (橫式)
-                                        <div key={exp.id} className="relative pl-5 border-l-2 border-[#5c6b53]/20 pb-2 flex flex-col sm:flex-row sm:items-start gap-4">
-                                            <div className="absolute left-[-5px] top-1.5 bg-[#5c6b53] rounded-full w-2.5 h-2.5 border-2 border-white shadow-sm" />
-                                            
-                                            {/* 左側：付款資訊 */}
-                                            <div className="flex-1 w-full sm:w-[35%] shrink-0">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-base font-black text-[#4a4a4a] truncate">{idx + 1}. {exp.item}</span>
-                                                    <button onClick={() => setExpenseToDelete(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1 sm:hidden"><Icon name="trash" className="w-4 h-4" /></button>
-                                                </div>
-                                                <div className="text-[10px] text-[#a8a297] tracking-wider mb-2">{exp.timestamp}</div>
-                                                
-                                                <div className="text-sm text-[#7a746a] font-bold leading-tight bg-[#fdfaf5] p-3 rounded-lg border border-[#e5e1d8]/50">
-                                                    <div className="flex items-baseline gap-2 flex-wrap">
-                                                        <span className="text-[#5c6b53] font-black">{exp.payer}</span>
-                                                        <span className="text-xs">預付</span>
-                                                        <span className="text-[#5c6b53] text-lg font-black ml-auto">{CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(exp.amount)}</span>
+                                        <div key={exp.id} className="relative pl-6 border-l-4 border-[#5c6b53]/20 pb-2">
+                                            <div className="absolute left-[-10px] top-1 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
+                                            <div className="flex justify-between items-start gap-2 mb-3">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-lg font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
+                                                        <span className="text-[10px] text-[#a8a297] tracking-widest bg-[#fdfaf5] px-1.5 py-0.5 rounded border border-[#e5e1d8]">{exp.timestamp}</span>
+                                                        {exp.currency !== 'TWD' && (
+                                                            <span className="text-[10px] text-[#5c6b53] font-mono tracking-widest bg-[#fdfaf5] px-1.5 py-0.5 rounded border border-[#e5e1d8]">
+                                                                匯率: {exp.rate}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    {exp.currency !== 'TWD' && (
-                                                        <div className="text-[10px] text-right text-[#5c6b53]/80 mt-1">≈ TWD {formatNum(exp.amount * exp.rate)}</div>
-                                                    )}
+                                                    <div className="text-sm text-[#7a746a] mt-1 font-bold leading-tight">
+                                                        <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付 <span className="text-[#5c6b53] font-black">{CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(exp.amount)}</span>
+                                                        {exp.currency !== 'TWD' && <span className="text-xs opacity-70 ml-1">(≈ TWD {formatNum(exp.amount * exp.rate)})</span>}
+                                                    </div>
                                                 </div>
-                                                {/* 電腦版刪除按鈕 */}
-                                                <button onClick={() => setExpenseToDelete(exp.id)} className="hidden sm:inline-flex items-center gap-1 text-[10px] text-[#a8a297] hover:text-red-500 mt-2"><Icon name="trash" className="w-3 h-3" /> 刪除此筆</button>
+                                                <button onClick={() => setExpenseToDelete(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1"><Icon name="trash" className="w-4 h-4" /></button>
                                             </div>
-
-                                            {/* 右側：分攤資訊 (Grid) */}
-                                            <div className="w-full sm:w-[65%]">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {Object.entries(exp.splits).map(([name, amt]) => (
-                                                        <div key={name} className="bg-white p-2 rounded-lg border border-[#e5e1d8] text-xs shadow-[0_1px_2px_rgba(0,0,0,0.02)] flex flex-col justify-between h-full hover:border-[#5c6b53]/30">
-                                                            {/* 簡化顯示：只顯示名字 */}
-                                                            <div className="text-[#a8a297] font-black text-[10px] mb-1">{name}</div>
-                                                            <div>
-                                                                <div className="text-[#5c6b53] font-black text-sm">
-                                                                    {CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(amt)}
-                                                                </div>
-                                                                {exp.currency !== 'TWD' && (
-                                                                    <div className="text-[10px] text-[#8d775f] font-bold opacity-80 border-t border-[#e5e1d8]/50 mt-1 pt-1">
-                                                                        ≈ TWD {formatNum(amt * exp.rate)}
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                            
+                                            {/* 分攤明細區塊 - 手機版: 直行列式 / 電腦版: 保持 Grid 方塊 (sm:grid-cols-2) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3">
+                                                {Object.entries(exp.splits).map(([name, amt]) => (
+                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-2 sm:p-4 rounded-xl border border-[#e5e1d8]/60 flex sm:flex-col items-center sm:items-start justify-between sm:justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
+                                                        {/* 左側: 人名 (移除括號與分攤字樣) */}
+                                                        <div className="text-[#a8a297] font-black text-sm sm:text-xs uppercase sm:mb-1 tracking-wider">
+                                                            {name}
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                        
+                                                        {/* 右側: 金額 */}
+                                                        <div className="text-right sm:text-left">
+                                                            <div className="text-[#5c6b53] font-black text-base sm:text-lg leading-tight">
+                                                                {CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(amt)}
+                                                            </div>
+                                                            {exp.currency !== 'TWD' && (
+                                                                <div className="text-[10px] text-[#8d775f] font-black opacity-90 block sm:mt-1 sm:border-t sm:border-[#e5e1d8]/60 sm:pt-1">
+                                                                    ≈ TWD {formatNum(amt * exp.rate)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     );
@@ -479,75 +498,91 @@
                         </section>
 
                         {/* 4. 結算統計 */}
-                        <section className="space-y-4 pb-8">
-                            <div className="flex justify-between items-center px-1">
-                                <h2 className="text-base font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="check-circle-2" /> 最終結算</h2>
-                                <button onClick={copyToClipboard} className="flex items-center gap-1.5 text-xs font-black text-white bg-[#5c6b53] px-3 py-1.5 rounded-full hover:bg-[#4a5843] shadow-md active:scale-95 transition-all"><Icon name="copy" className="w-3 h-3" /> 複製清單</button>
+                        <section className="space-y-4">
+                            <div className="flex justify-between items-center px-2">
+                                <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="check-circle-2" className="w-5 h-5"/> 最終結算</h2>
+                                <button onClick={copyToClipboard} className="flex items-center gap-1.5 text-xs font-black text-white bg-[#5c6b53] px-4 py-2.5 rounded-full hover:bg-[#4a5843] shadow-lg active:scale-95 transition-all"><Icon name="copy" className="w-3 h-3" /> 複製清單</button>
                             </div>
-                            <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden shadow-sm">
-                                <div className="p-4 space-y-4">
-                                    {settlement.transactions.length === 0 ? (
-                                        <div className="text-center py-8 text-[#a8a297] font-black border-2 border-dashed border-[#f3f0e9] rounded-xl text-sm">帳目已結清</div>
-                                    ) : settlement.transactions.map((t, i) => (
-                                        <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-[#fdfaf5] rounded-xl border border-[#e5e1d8]/50 gap-3">
-                                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 rounded-lg border border-[#e5e1d8]">{t.from}</div>
-                                                    <Icon name="arrow-right" className="text-[#5c6b53] w-4 h-4" />
-                                                    <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 rounded-lg border border-[#e5e1d8]">{t.to}</div>
+                            <div className="bg-white rounded-[2rem] border border-[#e5e1d8] overflow-hidden shadow-md">
+                                <div className="bg-[#fdfaf5] p-4 border-b border-[#e5e1d8] flex justify-between items-center">
+                                    <h4 className="text-base text-[#5c6b53] font-black tracking-[0.2em]">Final Settlement</h4>
+                                    <span className="text-[10px] text-[#a8a297] font-black opacity-60 tracking-widest">{new Date().toLocaleDateString()}</span>
+                                </div>
+                                <div className="p-4 sm:p-6 space-y-4">
+                                    {settlement.transactions.map((t, i) => (
+                                        <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-5 bg-[#fdfaf5] rounded-2xl border border-[#e5e1d8]/50 gap-3 sm:gap-6">
+                                            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-5 w-full sm:w-auto">
+                                                <div className="flex flex-col items-center w-full sm:w-auto">
+                                                    <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black tracking-widest">應付者</span>
+                                                    <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#e5e1d8] w-full sm:min-w-[80px] text-center shadow-sm">{t.from}</div>
+                                                </div>
+                                                
+                                                <Icon name="arrow-right" className="text-[#5c6b53] mt-1 sm:mt-5 animate-pulse rotate-90 sm:rotate-0 w-4 h-4" />
+                                                
+                                                <div className="flex flex-col items-center w-full sm:w-auto">
+                                                    <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black tracking-widest">應收者</span>
+                                                    <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#e5e1d8] w-full sm:min-w-[80px] text-center shadow-sm">{t.to}</div>
                                                 </div>
                                             </div>
 
-                                            <div className="text-right flex flex-col justify-center items-end">
-                                                <div className="text-lg font-black text-[#5c6b53] whitespace-nowrap leading-none">
-                                                     <span className="text-[10px] font-bold opacity-60 mr-1">
-                                                          {settlement.primaryCode && settlement.primaryCode !== 'TWD' ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol : 'TWD'}
-                                                     </span> 
-                                                     {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' ? t.amount / settlement.primaryRate : t.amount)}
+                                            <div className="text-center sm:text-right w-full sm:w-auto border-t sm:border-t-0 border-[#e5e1d8]/50 pt-2 sm:pt-0 mt-1 sm:mt-0 flex flex-col justify-center sm:items-end">
+                                                <div className="text-xl font-black text-[#5c6b53] whitespace-nowrap">
+                                                    <span className="text-xs font-bold opacity-60 mr-1">
+                                                         {settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                                            ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol 
+                                                            : 'TWD'}
+                                                    </span> 
+                                                    {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' 
+                                                        ? t.amount / settlement.primaryRate 
+                                                        : t.amount)}
                                                 </div>
                                                 {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
-                                                    <div className="text-[10px] text-[#8d775f] font-black mt-1 opacity-80">
+                                                    <div className="text-xs text-[#8d775f] font-black mt-0.5 opacity-80 bg-[#e5e1d8]/40 px-2 py-0.5 rounded inline-block sm:block">
                                                         ≈ TWD {formatNum(t.amount)}
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                     ))}
+                                    {settlement.transactions.length === 0 && (
+                                        <div className="text-center py-10 text-[#a8a297] font-black border-4 border-dashed border-[#f3f0e9] rounded-[2rem] text-sm">所有帳目均已結清</div>
+                                    )}
                                 </div>
+                                <div className="bg-[#fdfaf5] py-3 text-center text-[10px] text-[#a8a297] tracking-[0.3em] font-black opacity-60 uppercase border-t border-[#e5e1d8]/40">Happy Travel • Fair Sharing</div>
                             </div>
                         </section>
                     </main>
 
                     {/* Toast 訊息 */}
                     {toast && (
-                        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-6 py-3 rounded-xl shadow-xl z-[150] font-black text-xs tracking-widest animate-bounce whitespace-nowrap">
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-6 py-3 rounded-2xl shadow-2xl z-[150] font-black text-xs tracking-widest animate-bounce">
                             {toast}
                         </div>
                     )}
 
-                    {/* 單筆刪除確認 */}
+                    {/* 單筆刪除確認視窗 */}
                     {expenseToDelete !== null && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
-                                <h3 className="text-lg font-black text-[#5c6b53] mb-3">刪除項目？</h3>
-                                <p className="text-[#7a746a] text-xs mb-6 leading-relaxed font-black">確定移除此筆紀錄？無法還原。</p>
-                                <div className="flex flex-col gap-2">
-                                    <button onClick={confirmDeleteExpense} className="w-full py-3 bg-[#5c6b53] text-white text-sm font-black rounded-xl tracking-widest shadow-md">確認刪除</button>
-                                    <button onClick={() => setExpenseToDelete(null)} className="w-full py-2 text-[#a8a297] text-xs font-black hover:text-[#4a4a4a]">取消</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
+                                <h3 className="text-xl font-black text-[#5c6b53] mb-4">刪除此筆項目？</h3>
+                                <p className="text-[#7a746a] text-sm mb-8 leading-relaxed font-black">確定要移除這筆支出紀錄嗎？<br/>此操作無法還原。</p>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={confirmDeleteExpense} className="w-full py-4 bg-[#5c6b53] text-white text-sm font-black rounded-2xl tracking-[0.4em] uppercase shadow-lg active:scale-95 transition-all">確認刪除</button>
+                                    <button onClick={() => setExpenseToDelete(null)} className="w-full py-3 text-[#a8a297] text-xs font-black uppercase hover:text-[#4a4a4a]">取消</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 全部清除確認 */}
+                    {/* 全部清除確認視窗 */}
                     {showClearConfirm && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
-                                <h3 className="text-lg font-black text-red-500 mb-3">全部清除？</h3>
-                                <p className="text-[#7a746a] text-xs mb-6 leading-relaxed font-black">確定移除所有資料？無法還原。</p>
-                                <div className="flex flex-col gap-2">
-                                    <button onClick={() => { setExpenses([]); setMembers([]); setShowClearConfirm(false); showToast("已全數清除"); }} className="w-full py-3 bg-red-500 text-white text-sm font-black rounded-xl tracking-widest shadow-md">確認移除</button>
-                                    <button onClick={() => setShowClearConfirm(false)} className="w-full py-2 text-[#a8a297] text-xs font-black hover:text-[#4a4a4a]">取消</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
+                                <h3 className="text-xl font-black text-red-500 mb-4">全部清除？</h3>
+                                <p className="text-[#7a746a] text-sm mb-8 leading-relaxed font-black">確定要移除所有旅伴與支出明細嗎？此操作無法還原。</p>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={() => { setExpenses([]); setMembers([]); setShowClearConfirm(false); showToast("紀錄已全數清除"); }} className="w-full py-4 bg-red-500 text-white text-sm font-black rounded-2xl tracking-[0.4em] uppercase shadow-lg active:scale-95 transition-all">確認移除</button>
+                                    <button onClick={() => setShowClearConfirm(false)} className="w-full py-3 text-[#a8a297] text-xs font-black uppercase hover:text-[#4a4a4a]">取消</button>
                                 </div>
                             </div>
                         </div>
