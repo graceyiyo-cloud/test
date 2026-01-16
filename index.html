@@ -1,4 +1,4 @@
-<!-- 版本：緊湊版面 & 手機直式優化 (Compact Layout & Mobile List View) -->
+<!-- 版本：電腦版分攤明細列表化 (Desktop Split List View) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -468,22 +468,22 @@
                                                 <button onClick={() => setExpenseToDelete(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1"><Icon name="trash" className="w-4 h-4" /></button>
                                             </div>
                                             
-                                            {/* 分攤明細區塊 - 手機版: 直行列式 / 電腦版: 保持 Grid 方塊 (sm:grid-cols-2) */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3">
+                                            {/* 分攤明細區塊 - 修改為電腦版與手機版一致的直式列表 */}
+                                            <div className="grid grid-cols-1 gap-2 mt-3">
                                                 {Object.entries(exp.splits).map(([name, amt]) => (
-                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-2 sm:p-4 rounded-xl border border-[#e5e1d8]/60 flex sm:flex-col items-center sm:items-start justify-between sm:justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
-                                                        {/* 左側: 人名 (移除括號與分攤字樣) */}
-                                                        <div className="text-[#a8a297] font-black text-sm sm:text-xs uppercase sm:mb-1 tracking-wider">
+                                                    <div key={name} className="bg-[#fdfaf5] px-4 py-2 rounded-xl border border-[#e5e1d8]/60 flex items-center justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
+                                                        {/* 左側: 人名 */}
+                                                        <div className="text-[#a8a297] font-black text-sm uppercase tracking-wider">
                                                             {name}
                                                         </div>
                                                         
                                                         {/* 右側: 金額 */}
-                                                        <div className="text-right sm:text-left">
+                                                        <div className="text-right">
                                                             <div className="text-[#5c6b53] font-black text-base sm:text-lg leading-tight">
                                                                 {CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(amt)}
                                                             </div>
                                                             {exp.currency !== 'TWD' && (
-                                                                <div className="text-[10px] text-[#8d775f] font-black opacity-90 block sm:mt-1 sm:border-t sm:border-[#e5e1d8]/60 sm:pt-1">
+                                                                <div className="text-[10px] text-[#8d775f] font-black opacity-90 block">
                                                                     ≈ TWD {formatNum(amt * exp.rate)}
                                                                 </div>
                                                             )}
