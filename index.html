@@ -49,7 +49,6 @@
             background-color: #fefce8; 
             color: #334155; 
             -webkit-tap-highlight-color: transparent;
-            /* 全域字體調小，行高調緊 */
             font-size: 15px; 
             line-height: 1.4;
         } 
@@ -63,18 +62,16 @@
             box-shadow: 0 0 30px rgba(14, 165, 233, 0.1); 
             display: flex; 
             flex-direction: column; 
-            padding-bottom: 90px; /* 底部留白減少 */
+            padding-bottom: 90px;
             border-left: 1px solid #fef9c3; 
             border-right: 1px solid #fef9c3; 
         }
         .input-label { display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 4px; font-weight: 600; letter-spacing: 0.02em; }
-        /* 輸入框 Padding 減少，字體變小 */
         .input-field { width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 0.95rem; transition: all 0.2s; -webkit-appearance: none; background: #fff; color: #334155; }
         .input-field:focus { border-color: #38bdf8; outline: none; background: white; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); } 
         .input-field::placeholder { color: #cbd5e1; }
         .input-sm { padding: 8px; font-size: 0.85rem; }
         
-        /* 按鈕 Padding 減少 */
         .btn-primary { 
             background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); 
             color: white; 
@@ -102,12 +99,11 @@
         .stat-bar-bg { background-color: #f1f5f9; border-radius: 9999px; height: 6px; width: 100%; overflow: hidden; }
         .stat-bar-fill { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #38bdf8, #0ea5e9); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* Header 高度減少 */
+        /* Header 樣式 */
         .header-solid { background: linear-gradient(120deg, #0ea5e9, #2dd4bf); box-shadow: 0 4px 20px -5px rgba(14, 165, 233, 0.4); padding: 16px; padding-bottom: 10px; min-height: 110px; border-radius: 0 0 1.5rem 1.5rem; }
         
         .fab-container { position: fixed; bottom: 2rem; left: 0; right: 0; z-index: 50; pointer-events: none; display: flex; justify-content: center; }
         .fab-wrapper { width: 100%; max-width: 600px; padding: 0 1.25rem; display: flex; justify-content: flex-end; }
-        /* FAB 縮小 */
         .fab-btn { 
             pointer-events: auto; width: 3.5rem; height: 3.5rem; border-radius: 50%; 
             background: linear-gradient(135deg, #facc15 0%, #fbbf24 100%); 
@@ -123,7 +119,6 @@
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        /* Calculator Styles - Compact */
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .calc-btn { background: white; border: 1px solid #f1f5f9; border-radius: 12px; height: 48px; font-size: 1.2rem; font-weight: 600; color: #475569; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.1s; }
         .calc-btn:active { transform: scale(0.95); background-color: #f8fafc; }
@@ -768,7 +763,8 @@
                         <div>
                             <span className="text-sky-100 text-[10px] uppercase tracking-widest block font-bold opacity-80 mb-0.5">Project</span>
                             <div className="flex items-center gap-2">
-                                <h2 className="font-extrabold text-xl leading-tight tracking-wide drop-shadow-sm">{tripId}</h2>
+                                {/* 文字調小: text-xl -> text-lg */}
+                                <h2 className="font-extrabold text-lg leading-tight tracking-wide drop-shadow-sm">{tripId}</h2>
                                 <button onClick={onRenameProject} className="text-sky-200 hover:text-white transition-colors bg-white/10 w-5 h-5 rounded-full flex items-center justify-center" title="修改專案名稱"><i className="fa-solid fa-pen text-[9px]"></i></button>
                             </div>
                         </div>
@@ -785,10 +781,11 @@
                     <div className="overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing relative z-10 mt-1" ref={scrollRef}>
                         <div className="text-[10px] text-sky-100 mb-0.5 font-medium opacity-90 flex items-center gap-1"><i className="fa-solid fa-wallet text-[9px]"></i> {filterCategory === 'All' ? '總花費' : `${filterCategory} 小計`}</div>
                         <div className="flex gap-4">
-                            {Object.keys(totals).length === 0 ? <span className="text-2xl font-bold">NT$ 0</span> : Object.entries(totals).map(([curr, val]) => (
+                            {Object.keys(totals).length === 0 ? <span className="text-xl font-bold">NT$ 0</span> : Object.entries(totals).map(([curr, val]) => (
                                 <div key={curr} className="flex-shrink-0">
                                     <div className="flex items-baseline gap-1.5">
-                                        <span className="text-2xl font-bold tracking-tight drop-shadow-sm">{curr} {Number(val.amt).toLocaleString()}</span>
+                                        {/* 文字調小: text-2xl -> text-xl */}
+                                        <span className="text-xl font-bold tracking-tight drop-shadow-sm">{curr} {Number(val.amt).toLocaleString()}</span>
                                         {curr !== 'TWD' && <span className="text-xs text-sky-100 font-medium">≈ NT$ {Number(val.twd).toLocaleString()}</span>}
                                     </div>
                                 </div>
@@ -1100,9 +1097,9 @@
                 <div className="card-soft p-4 pb-6 mb-3 border-2 border-white/50">
                     {loading && <ProcessingModal progress={progress} />}
                     {showRescueModal && <ApiKeyRescueModal onSave={handleRescueKey} onCancel={() => setShowRescueModal(false)} />}
-                    <h2 className="text-lg font-bold text-stone-700 mb-4 flex justify-between items-center"><span className="flex items-center gap-2"><div className={`w-7 h-7 rounded-full flex items-center justify-center ${initialData ? 'bg-amber-100 text-amber-500' : 'bg-sage-100 text-sage-500'}`}><i className={`fa-solid ${initialData ? 'fa-pen-to-square' : 'fa-plus'} text-sm`}></i></div>{initialData ? '修改花費' : '新增花費'}</span><button type="button" onClick={() => fileRef.current.click()} className="text-xs bg-gradient-to-r from-sage-400 to-sage-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 hover:shadow-md transition-all font-bold shadow-sage-200/50"><i className="fa-solid fa-camera"></i><span>拍收據</span></button><input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleImageUpload} /></h2>
+                    <h2 className="text-lg font-bold text-stone-700 mb-4 flex justify-between items-center"><span className="flex items-center gap-2"><div className={`w-7 h-7 rounded-full flex items-center justify-center ${initialData ? 'bg-amber-100 text-amber-500' : 'bg-sage-100 text-sage-500'}`}><i className={`fa-solid ${initialData ? 'fa-pen-to-square' : 'fa-plus'} text-sm`}></i></div>{initialData ? '修改花費' : '新增花費'}</span>{!initialData && (<><button type="button" onClick={() => fileRef.current.click()} className="text-xs bg-gradient-to-r from-sage-400 to-sage-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 hover:shadow-md transition-all font-bold shadow-sage-200/50"><i className="fa-solid fa-camera"></i><span>拍收據</span></button><input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleImageUpload} /></>)}</h2>
                     {/* 新增的 API 提示 */}
-                    <p className="text-[10px] text-stone-400 -mt-2 mb-4 text-right w-full"><i className="fa-solid fa-circle-info mr-1"></i>由於使用免費API Key有每分鐘可辨識數量的限制，若辨識失敗可以等幾分鐘再試。</p>
+                    {!initialData && <p className="text-[10px] text-stone-400 -mt-2 mb-4 text-right w-full"><i className="fa-solid fa-circle-info mr-1"></i>由於使用免費API Key有每分鐘可辨識數量的限制，若辨識失敗可以等幾分鐘再試。</p>}
 
                     {scannedItems.length > 0 ? (
                         <div className="mb-4 animate-fade-in">
