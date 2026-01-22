@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>行李清單 (Organic Style)</title>
+    <title>行李清單 (Organic Style - Compact)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -28,22 +28,22 @@
             theme: {
                 extend: {
                     colors: {
-                        paper: '#FDFCF8',      // 背景：米紙色
-                        ink: '#2C2C24',        // 文字：深壤灰
-                        moss: '#5D7052',       // 主色：苔蘚綠
-                        mist: '#F3F4F1',       // 淺色：晨霧白
-                        clay: '#C18C5D',       // 次要：陶土橘
-                        sand: '#E6DCCD',       // 點綴：沙色
-                        stone: '#F0EBE5',      // 邊框/底色：石頭灰
-                        grass: '#78786C',      // 次要文字：乾草色
+                        paper: '#FDFCF8',
+                        ink: '#2C2C24',
+                        moss: '#5D7052',
+                        mist: '#F3F4F1',
+                        clay: '#C18C5D',
+                        sand: '#E6DCCD',
+                        stone: '#F0EBE5',
+                        grass: '#78786C',
                     },
                     fontFamily: {
                         serif: ['Fraunces', 'serif'],
                         sans: ['Quicksand', 'sans-serif'],
                     },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)', // 帶綠色的柔和陰影
-                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)', // 帶橘色的浮動陰影
+                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)',
+                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)',
                         'inner-light': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
                     }
                 }
@@ -57,9 +57,11 @@
             background-color: #FDFCF8;
             color: #2C2C24;
             overflow-x: hidden;
+            /* 修改：縮小全域行高 */
+            line-height: 1.35; 
         }
 
-        /* 質感紋理 (Noise Texture) */
+        /* 質感紋理 */
         body::before {
             content: "";
             position: fixed;
@@ -67,7 +69,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Base64 Noise Pattern */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
             opacity: 0.04;
             pointer-events: none;
@@ -75,7 +76,6 @@
             mix-blend-mode: multiply;
         }
 
-        /* 有機形狀 Blob 背景 */
         .blob-bg {
             position: fixed;
             border-radius: 50%;
@@ -84,11 +84,9 @@
             opacity: 0.6;
         }
         
-        /* 隱藏滾動條 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 拖曳樣式 */
         .dragging {
             opacity: 0.8;
             transform: scale(0.98) rotate(1deg);
@@ -100,12 +98,10 @@
             background-color: rgba(193, 140, 93, 0.05) !important;
         }
 
-        /* 有機圓角 checkbox */
         .organic-checkbox {
             border-radius: 40% 60% 60% 40% / 40% 50% 50% 60%;
         }
 
-        /* 標題字體 */
         h1, h2, h3 {
             font-family: 'Fraunces', serif;
         }
@@ -115,14 +111,13 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- Icons (Lucide React) - 改為圓潤風格 ---
+        // --- Icons (Lucide React) ---
         const Icons = {
             Trash2: ({size=18, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
             Plus: ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
             RefreshCw: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>,
             Check: ({size=18, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 6 9 17 4 12"/></svg>,
             LogIn: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>,
-            // 手繪有機感背包圖示
             OrganicBag: ({size=48, className=""}) => (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                     <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
@@ -140,7 +135,7 @@
             Pencil: ({size=16, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
         };
 
-        // --- Firebase 設定 (不變) ---
+        // --- Firebase Config ---
         const firebaseConfig = {
           apiKey: "AIzaSyB34DnVg26SFsKh3yj3r01YKCflCKiOvjo",
           authDomain: "packing-list-app-3730f.firebaseapp.com",
@@ -171,7 +166,7 @@
         
         const DEFAULT_CATEGORY_ORDER = ["醫藥與防護", "電子產品", "小孩衣物用品", "大人個人用品", "備註"];
 
-        // 有機風 Loading
+        // Loading
         const LoadingSpinner = () => (
           <div className="flex flex-col justify-center items-center h-40 gap-4">
             <div className="w-12 h-12 rounded-full border-4 border-stone border-t-moss animate-spin"></div>
@@ -532,13 +527,13 @@
                         value={enteredId}
                         onChange={(e) => setEnteredId(e.target.value)}
                         placeholder="e.g. Kyoto_Trip"
-                        className="w-full px-6 py-4 rounded-full border border-stone bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-moss/20 focus:border-moss/50 transition-all placeholder-stone text-ink font-medium"
+                        className="w-full px-6 py-4 rounded-full border border-stone bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-moss/20 focus:border-moss/50 transition-all placeholder-stone text-ink font-medium leading-tight"
                       />
                     </div>
                     <button 
                       type="submit"
                       disabled={!enteredId.trim()}
-                      className="w-full bg-moss text-mist font-bold py-4 rounded-full flex items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:hover:transform-none disabled:shadow-none active:scale-95"
+                      className="w-full bg-moss text-mist font-bold py-4 rounded-full flex items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:hover:transform-none disabled:shadow-none active:scale-95 leading-tight"
                     >
                       <Icons.LogIn />
                       Let's Go
@@ -557,7 +552,7 @@
                                     onClick={() => { setEnteredId(id); joinList(id); }}
                                     className="flex items-center justify-between px-5 py-3 rounded-2xl border border-stone/50 bg-white/40 hover:bg-white hover:border-moss/30 hover:shadow-sm cursor-pointer transition-all group"
                                 >
-                                    <span className="text-ink font-medium">{id}</span>
+                                    <span className="text-ink font-medium leading-tight">{id}</span>
                                     <button 
                                         onClick={(e) => removeHistory(e, id)}
                                         className="text-stone hover:text-clay p-1 opacity-0 group-hover:opacity-100 transition-all hover:bg-clay/10 rounded-full"
@@ -573,7 +568,7 @@
                   {showHelp && (
                     <div className="absolute inset-0 bg-paper/95 z-50 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center animate-in fade-in duration-300">
                         <h3 className="text-2xl font-serif font-bold text-clay mb-6">How it works</h3>
-                        <ol className="text-left text-ink space-y-4 mb-8 list-decimal pl-6 text-base font-medium">
+                        <ol className="text-left text-ink space-y-4 mb-8 list-decimal pl-6 text-base font-medium leading-snug">
                           <li>Create a name for your trip <br/><span className="text-sm text-grass font-normal">(e.g. family-camping)</span></li>
                           <li>Share the exact name</li>
                           <li>Pack together in real-time</li>
@@ -598,7 +593,7 @@
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/10 backdrop-blur-sm p-4" onClick={closeModal}>
                     <div className="bg-paper rounded-[2rem] p-8 max-w-xs w-full shadow-float relative flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300 border border-stone" onClick={e => e.stopPropagation()}>
                         <h3 className="text-xl font-serif font-bold text-ink mb-2">Are you sure?</h3>
-                        <p className="text-grass text-sm mb-8 leading-relaxed">{modalConfig.message}</p>
+                        <p className="text-grass text-sm mb-8 leading-snug">{modalConfig.message}</p>
                         
                         <div className="flex gap-3 w-full">
                             <button onClick={closeModal} className="flex-1 py-3 rounded-full border border-stone text-grass hover:bg-stone/30 transition-colors font-bold text-sm">Cancel</button>
@@ -614,7 +609,7 @@
                   <div className="bg-paper border border-stone rounded-[2rem] p-8 max-w-sm w-full relative shadow-float animate-in slide-in-from-bottom-4 duration-300">
                     <button onClick={() => setShowHelp(false)} className="absolute top-6 right-6 text-stone hover:text-ink transition-colors"><Icons.X /></button>
                     <h3 className="text-2xl font-serif font-bold text-moss mb-6 flex items-center gap-2">Guide</h3>
-                    <ul className="text-left text-ink space-y-5 mb-8 text-base">
+                    <ul className="text-left text-ink space-y-4 mb-8 text-base leading-snug">
                       <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">1</span><div><b>Invite:</b> Share ID <b>{listId}</b></div></li>
                       <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">2</span><div><b>Sync:</b> Instant updates for everyone</div></li>
                       <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">3</span><div><b>Sort:</b> Drag <Icons.GripVertical size={14} className="inline text-clay"/> to reorder</div></li>
@@ -625,11 +620,11 @@
               )}
 
               {/* 頂部導航 (Glassmorphism Sticky) */}
-              <div className="sticky top-4 z-30 px-4 mb-8">
-                  <div className="max-w-3xl mx-auto bg-white/70 backdrop-blur-md border border-white/50 rounded-full shadow-soft px-4 py-3 flex items-center justify-between">
+              <div className="sticky top-4 z-30 px-4 mb-6">
+                  <div className="max-w-3xl mx-auto bg-white/70 backdrop-blur-md border border-white/50 rounded-full shadow-soft px-4 py-2.5 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <button onClick={handleLogout} className="bg-stone/50 hover:bg-stone text-ink p-2 rounded-full transition-colors"><Icons.ArrowLeft size={20}/></button>
-                        <h1 className="text-lg font-bold text-ink truncate max-w-[150px] sm:max-w-xs">{listId}</h1>
+                        <button onClick={handleLogout} className="bg-stone/50 hover:bg-stone text-ink p-2 rounded-full transition-colors"><Icons.ArrowLeft size={18}/></button>
+                        <h1 className="text-lg font-bold text-ink truncate max-w-[150px] sm:max-w-xs leading-tight">{listId}</h1>
                       </div>
                       
                       <div className="flex items-center gap-3">
@@ -643,8 +638,8 @@
                               });
                               const percent = total === 0 ? 0 : Math.round((currentCheckedCount / total) * 100);
                               return (
-                                <div className="flex items-center gap-2 bg-moss/10 px-3 py-1.5 rounded-full border border-moss/10">
-                                    <div className="h-2 w-16 bg-white rounded-full overflow-hidden">
+                                <div className="flex items-center gap-2 bg-moss/10 px-3 py-1 rounded-full border border-moss/10">
+                                    <div className="h-1.5 w-14 bg-white rounded-full overflow-hidden">
                                         <div className="h-full bg-moss transition-all duration-700 ease-in-out rounded-full" style={{ width: `${percent}%` }}></div>
                                     </div>
                                     <span className="text-xs font-bold text-moss">{percent}%</span>
@@ -657,17 +652,17 @@
               </div>
 
               {/* 主要內容區 */}
-              <div className="max-w-3xl mx-auto px-4 space-y-8">
+              <div className="max-w-3xl mx-auto px-4 space-y-6">
                 {loading ? <LoadingSpinner /> : (
                   <>
                     <div className="flex justify-end px-2">
-                      <button onClick={resetList} className="text-xs font-bold bg-white/50 hover:bg-white text-grass hover:text-clay py-2 px-4 rounded-full border border-stone/50 flex items-center gap-2 transition-all shadow-sm hover:shadow-md">
-                        <Icons.RefreshCw /> Reset All
+                      <button onClick={resetList} className="text-xs font-bold bg-white/50 hover:bg-white text-grass hover:text-clay py-1.5 px-3 rounded-full border border-stone/50 flex items-center gap-2 transition-all shadow-sm hover:shadow-md leading-tight">
+                        <Icons.RefreshCw size={14} /> Reset All
                       </button>
                     </div>
                     
                     {/* 分類卡片區 */}
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                     {categoryOrder.map((cat, index) => {
                       if (!data[cat]) return null;
                       const isEditing = editingCategory === cat;
@@ -682,8 +677,8 @@
                             onDragEnd={dragEnd}
                             onDragOver={(e) => e.preventDefault()}
                         >
-                          {/* 分類標題區 */}
-                          <div className="bg-sand/30 px-6 py-5 flex items-center justify-between touch-none min-h-[72px]">
+                          {/* 分類標題區 - 縮減高度與間距 */}
+                          <div className="bg-sand/30 px-6 py-4 flex items-center justify-between touch-none min-h-[60px]">
                             {isEditing ? (
                                 /* 編輯模式 */
                                 <div className="flex-1 flex items-center gap-2">
@@ -692,20 +687,20 @@
                                         value={editingName} 
                                         onChange={(e) => setEditingName(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && saveCategoryName(cat)}
-                                        className="flex-1 px-4 py-2 rounded-xl bg-white/50 border border-clay/30 text-ink focus:outline-none focus:ring-2 focus:ring-clay/20 w-full font-serif font-bold text-lg"
+                                        className="flex-1 px-4 py-1.5 rounded-xl bg-white/50 border border-clay/30 text-ink focus:outline-none focus:ring-2 focus:ring-clay/20 w-full font-serif font-bold text-lg leading-tight"
                                         autoFocus
                                     />
-                                    <button onClick={() => saveCategoryName(cat)} className="text-moss bg-moss/10 hover:bg-moss/20 p-2 rounded-full transition-colors"><Icons.Check size={20} /></button>
-                                    <button onClick={cancelEditing} className="text-clay bg-clay/10 hover:bg-clay/20 p-2 rounded-full transition-colors"><Icons.X size={20} /></button>
+                                    <button onClick={() => saveCategoryName(cat)} className="text-moss bg-moss/10 hover:bg-moss/20 p-2 rounded-full transition-colors"><Icons.Check size={18} /></button>
+                                    <button onClick={cancelEditing} className="text-clay bg-clay/10 hover:bg-clay/20 p-2 rounded-full transition-colors"><Icons.X size={18} /></button>
                                 </div>
                             ) : (
                                 /* 檢視模式 */
-                                <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                                <div className="flex items-center gap-3 flex-1 overflow-hidden">
                                     <div className="cursor-grab active:cursor-grabbing text-clay/60 hover:text-clay p-1 transition-colors flex-shrink-0">
                                         <Icons.GripVertical />
                                     </div>
                                     
-                                    <h2 className="font-serif font-bold text-ink text-xl truncate tracking-wide">
+                                    <h2 className="font-serif font-bold text-ink text-lg truncate tracking-wide leading-tight">
                                         {cat}
                                     </h2>
                                     
@@ -713,7 +708,7 @@
                                         onClick={() => startEditing(cat)} 
                                         className="text-stone hover:text-clay p-2 rounded-full hover:bg-clay/10 transition-colors"
                                     >
-                                        <Icons.Pencil size={16} />
+                                        <Icons.Pencil size={14} />
                                     </button>
                                 </div>
                             )}
@@ -723,26 +718,27 @@
                                     onClick={() => deleteCategory(cat)}
                                     className="text-stone hover:text-destructive hover:bg-red-50 p-2 rounded-full transition-colors ml-2 flex-shrink-0"
                                 >
-                                    <Icons.Trash2 size={18} />
+                                    <Icons.Trash2 size={16} />
                                 </button>
                             )}
                           </div>
                           
-                          {/* 項目列表 */}
+                          {/* 項目列表 - 縮減垂直間距 */}
                           <div className="divide-y divide-stone/40">
                             {data[cat].map((item, idx) => {
                               const isChecked = checkedItems.includes(`${cat}-${item}`);
                               return (
-                                <div key={`${cat}-${idx}`} className={`flex items-center px-6 py-4 hover:bg-sand/10 transition-all duration-300 cursor-pointer group ${isChecked ? 'opacity-60 grayscale-[0.5]' : ''}`}>
-                                  <div className="flex-1 flex items-center gap-4" onClick={() => toggleCheck(cat, item)}>
+                                <div key={`${cat}-${idx}`} className={`flex items-center px-6 py-2.5 hover:bg-sand/10 transition-all duration-300 cursor-pointer group ${isChecked ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                  <div className="flex-1 flex items-center gap-3" onClick={() => toggleCheck(cat, item)}>
                                     {/* 有機 Checkbox */}
-                                    <div className={`w-6 h-6 organic-checkbox border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0 ${isChecked ? 'bg-moss border-moss rotate-3 scale-110' : 'bg-white border-stone group-hover:border-clay'}`}>
-                                      {isChecked && <Icons.Check className="text-white w-4 h-4" />}
+                                    <div className={`w-5 h-5 organic-checkbox border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0 ${isChecked ? 'bg-moss border-moss rotate-3 scale-110' : 'bg-white border-stone group-hover:border-clay'}`}>
+                                      {isChecked && <Icons.Check className="text-white w-3 h-3" />}
                                     </div>
-                                    <span className={`text-base font-medium transition-all ${isChecked ? 'text-grass line-through decoration-stone' : 'text-ink'}`}>{item}</span>
+                                    {/* 縮小行高 leading-tight */}
+                                    <span className={`text-base font-medium transition-all leading-tight ${isChecked ? 'text-grass line-through decoration-stone' : 'text-ink'}`}>{item}</span>
                                   </div>
-                                  <button onClick={(e) => deleteItem(e, cat, idx)} className="p-2 text-stone hover:text-clay rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
-                                      <Icons.Trash2 size={18} />
+                                  <button onClick={(e) => deleteItem(e, cat, idx)} className="p-1.5 text-stone hover:text-clay rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                      <Icons.Trash2 size={16} />
                                   </button>
                                 </div>
                               );
@@ -750,21 +746,21 @@
                           </div>
                           
                           {/* 新增項目輸入框 */}
-                          <div className="p-4 bg-white/40 flex gap-3">
+                          <div className="p-3 bg-white/40 flex gap-3">
                             <input 
                               type="text" 
                               value={newItemText[cat] || ''} 
                               onChange={(e) => setNewItemText({ ...newItemText, [cat]: e.target.value })} 
                               onKeyDown={(e) => e.key === 'Enter' && addItem(cat)} 
                               placeholder={`Add to ${cat}...`} 
-                              className="flex-1 px-5 py-3 rounded-full border border-stone bg-white/80 focus:outline-none focus:ring-2 focus:ring-moss/20 text-ink text-sm placeholder-stone/70 shadow-inner-light" 
+                              className="flex-1 px-4 py-2 rounded-full border border-stone bg-white/80 focus:outline-none focus:ring-2 focus:ring-moss/20 text-ink text-sm placeholder-stone/70 shadow-inner-light leading-tight" 
                             />
                             <button 
                               onClick={() => addItem(cat)} 
                               disabled={!newItemText[cat]?.trim()} 
-                              className="bg-moss hover:bg-[#4E5F45] text-white p-3 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none transition-all hover:rotate-90 duration-300"
+                              className="bg-moss hover:bg-[#4E5F45] text-white p-2.5 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none transition-all hover:rotate-90 duration-300"
                             >
-                              <Icons.Plus size={20} />
+                              <Icons.Plus size={18} />
                             </button>
                           </div>
                         </div>
@@ -773,23 +769,23 @@
                     </div>
 
                     {/* 建立新分類區塊 */}
-                    <div className="mt-12 py-8 text-center">
-                        <h3 className="text-moss font-serif italic text-lg mb-4 opacity-80">Forget something?</h3>
-                        <div className="bg-white/60 p-2 rounded-full border border-stone shadow-sm inline-flex items-center gap-2 max-w-md w-full backdrop-blur-sm">
+                    <div className="mt-10 py-6 text-center">
+                        <h3 className="text-moss font-serif italic text-lg mb-3 opacity-80">Forget something?</h3>
+                        <div className="bg-white/60 p-1.5 rounded-full border border-stone shadow-sm inline-flex items-center gap-2 max-w-md w-full backdrop-blur-sm">
                             <input 
                                 type="text"
                                 value={newCategoryName}
                                 onChange={(e) => setNewCategoryName(e.target.value)}
                                 placeholder="New Category Name..."
-                                className="flex-1 px-6 py-2 bg-transparent focus:outline-none text-ink placeholder-stone font-medium"
+                                className="flex-1 px-4 py-2 bg-transparent focus:outline-none text-ink placeholder-stone font-medium leading-tight"
                                 onKeyDown={(e) => e.key === 'Enter' && addNewCategory()}
                             />
                             <button 
                                 onClick={addNewCategory}
                                 disabled={!newCategoryName.trim()}
-                                className="bg-clay text-white px-6 py-3 rounded-full font-bold hover:bg-[#A87B51] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                                className="bg-clay text-white px-5 py-2.5 rounded-full font-bold hover:bg-[#A87B51] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5"
                             >
-                                <Icons.Plus size={18} />
+                                <Icons.Plus size={16} />
                             </button>
                         </div>
                     </div>
@@ -798,8 +794,8 @@
               </div>
               
               {/* 底部 ID 提示 */}
-              <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur border-t border-stone/50 py-3 text-center text-xs text-grass font-medium z-20">
-                Session ID: <span className="text-moss bg-moss/10 px-2 py-1 rounded select-all ml-1 font-bold">{listId}</span>
+              <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur border-t border-stone/50 py-2 text-center text-xs text-grass font-medium z-20">
+                Session ID: <span className="text-moss bg-moss/10 px-2 py-0.5 rounded select-all ml-1 font-bold">{listId}</span>
               </div>
             </div>
           );
