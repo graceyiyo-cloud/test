@@ -99,10 +99,7 @@
         .stat-bar-bg { background-color: #f1f5f9; border-radius: 9999px; height: 6px; width: 100%; overflow: hidden; }
         .stat-bar-fill { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #38bdf8, #0ea5e9); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        /* Header 樣式修正：
-           1. padding-bottom 增加至 30px (原 10px)，確保文字不會被下方的負邊距區塊蓋住。
-           2. min-height 增加至 120px (原 110px)，提供更多空間。
-        */
+        /* Header 樣式修正 */
         .header-solid { 
             background: linear-gradient(120deg, #0ea5e9, #2dd4bf); 
             box-shadow: 0 4px 20px -5px rgba(14, 165, 233, 0.4); 
@@ -773,7 +770,6 @@
                         <div>
                             <span className="text-sky-100 text-[10px] uppercase tracking-widest block font-bold opacity-80 mb-0.5">Project</span>
                             <div className="flex items-center gap-2">
-                                {/* 文字調小: text-xl -> text-lg */}
                                 <h2 className="font-extrabold text-lg leading-tight tracking-wide drop-shadow-sm">{tripId}</h2>
                                 <button onClick={onRenameProject} className="text-sky-200 hover:text-white transition-colors bg-white/10 w-5 h-5 rounded-full flex items-center justify-center" title="修改專案名稱"><i className="fa-solid fa-pen text-[9px]"></i></button>
                             </div>
@@ -794,7 +790,6 @@
                             {Object.keys(totals).length === 0 ? <span className="text-xl font-bold">NT$ 0</span> : Object.entries(totals).map(([curr, val]) => (
                                 <div key={curr} className="flex-shrink-0">
                                     <div className="flex items-baseline gap-1.5">
-                                        {/* 文字調小: text-2xl -> text-xl */}
                                         <span className="text-xl font-bold tracking-tight drop-shadow-sm">{curr} {Number(val.amt).toLocaleString()}</span>
                                         {curr !== 'TWD' && <span className="text-xs text-sky-100 font-medium">≈ NT$ {Number(val.twd).toLocaleString()}</span>}
                                     </div>
@@ -953,13 +948,17 @@
                             <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center text-stone-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors z-10"><i className="fa-solid fa-trash text-[10px]"></i></button>
                             <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 pr-6"><span className="bg-sage-50 text-sage-600 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase border border-sage-100 shadow-sm">{item.category}</span><span className="text-[10px] text-stone-400 font-medium">{formatDateTime(item.createdAt?.seconds)}</span></div>
-                                <div className="flex justify-between items-start">
-                                    <div className="font-bold text-stone-700 text-base leading-snug break-words flex-1 pr-2">{item.item || "未命名"}</div>
-                                    <div className="flex flex-col items-end flex-shrink-0">
-                                        <div className="flex items-baseline gap-1">
-                                            {item.currency !== 'TWD' ? (<span className="font-bold text-stone-800 text-base tracking-tight">{item.currency} {Number(item.foreignAmount).toLocaleString()}</span>) : (<span className="font-bold text-stone-800 text-lg tracking-tight text-sage-600">{formatMoney(item.twdAmount)}</span>)}
-                                        </div>
-                                        {item.currency !== 'TWD' && <span className="text-[10px] text-stone-400 font-medium bg-stone-50 px-1.5 py-0.5 rounded-md">≈ NT$ {Number(item.twdAmount).toLocaleString()}</span>}
+                                <div className="flex flex-col gap-1 mt-1">
+                                    <div className="font-bold text-stone-800 text-lg leading-tight break-words pr-2">{item.item || "未命名"}</div>
+                                    <div className="flex items-baseline gap-2 mt-0.5">
+                                        {item.currency !== 'TWD' ? (
+                                            <>
+                                                <span className="font-extrabold text-sage-600 text-xl tracking-tight font-mono">{item.currency} <span className="text-2xl">{Number(item.foreignAmount).toLocaleString()}</span></span>
+                                                <span className="text-xs text-stone-400 font-medium bg-stone-50 px-1.5 py-0.5 rounded-md self-center">≈ {formatMoney(item.twdAmount)}</span>
+                                            </>
+                                        ) : (
+                                            <span className="font-extrabold text-sage-600 text-2xl tracking-tight font-mono">{formatMoney(item.twdAmount)}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
