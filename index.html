@@ -699,7 +699,7 @@
 
                     <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-xl shadow-ink-200/40 border border-white w-full max-w-sm text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-ink-400 to-ink-200"></div>
-                        <div className="text-5xl text-ink-400 mb-4 animate-bounce-slow inline-block drop-shadow-sm"><i className="fa-solid fa-plane-departure text-clay-400"></i></div>
+                        <div className="text-5xl text-ink-400 mb-4 mt-4 animate-bounce-slow inline-block drop-shadow-sm"><i className="fa-solid fa-plane-departure text-clay-400"></i></div>
                         <h1 className="text-2xl font-extrabold text-stone-700 mb-0.5 tracking-wide">旅行記帳</h1>
                         <p className="text-stone-400 text-xs mb-6 font-medium">記錄每一筆美好的回憶</p>
                         
@@ -956,15 +956,15 @@
                             <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 pr-6"><span className="bg-ink-50 text-ink-600 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase border border-ink-100 shadow-sm">{item.category}</span><span className="text-[10px] text-stone-400 font-medium">{formatDateTime(item.createdAt?.seconds)}</span></div>
                                 <div className="flex flex-col gap-1 mt-1">
-                                    <div className="text-stone-700 text-base leading-tight break-words pr-2">{item.item || "未命名"}</div>
+                                    <div className="text-stone-700 text-sm leading-tight break-words pr-2">{item.item || "未命名"}</div>
                                     <div className="flex items-baseline gap-2 mt-0.5">
                                         {item.currency !== 'TWD' ? (
                                             <>
-                                                <span className="text-ink-600 text-base tracking-tight font-mono">{item.currency} <span className="text-lg">{Number(item.foreignAmount).toLocaleString()}</span></span>
+                                                <span className="text-ink-600 text-sm tracking-tight font-mono">{item.currency} <span className="text-base">{Number(item.foreignAmount).toLocaleString()}</span></span>
                                                 <span className="text-xs text-stone-400 font-medium bg-stone-50 px-1.5 py-0.5 rounded-md self-center">≈ {formatMoney(item.twdAmount)}</span>
                                             </>
                                         ) : (
-                                            <span className="text-ink-600 text-xl tracking-tight font-mono">{formatMoney(item.twdAmount)}</span>
+                                            <span className="text-ink-600 text-lg tracking-tight font-mono">{formatMoney(item.twdAmount)}</span>
                                         )}
                                     </div>
                                 </div>
