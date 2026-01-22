@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>行李清單雲端版 (Tech Style)</title>
+    <title>行李清單 (Organic Style)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -19,63 +23,91 @@
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#FDFCF8',      // 背景：米紙色
+                        ink: '#2C2C24',        // 文字：深壤灰
+                        moss: '#5D7052',       // 主色：苔蘚綠
+                        mist: '#F3F4F1',       // 淺色：晨霧白
+                        clay: '#C18C5D',       // 次要：陶土橘
+                        sand: '#E6DCCD',       // 點綴：沙色
+                        stone: '#F0EBE5',      // 邊框/底色：石頭灰
+                        grass: '#78786C',      // 次要文字：乾草色
+                    },
+                    fontFamily: {
+                        serif: ['Fraunces', 'serif'],
+                        sans: ['Quicksand', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)', // 帶綠色的柔和陰影
+                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)', // 帶橘色的浮動陰影
+                        'inner-light': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body {
-            /* 科技風配色：深藍灰底色 */
-            font-family: 'Microsoft JhengHei', '微軟正黑體', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #0f172a; /* Slate 900 */
-            color: #e2e8f0; /* Slate 200 */
-            
-            /* 科技網格背景 (低對比度，非螢光) */
-            background-image: 
-                linear-gradient(to right, #1e293b 1px, transparent 1px),
-                linear-gradient(to bottom, #1e293b 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        
-        /* 科技風滾動條 */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569; 
+            font-family: 'Quicksand', sans-serif;
+            background-color: #FDFCF8;
+            color: #2C2C24;
+            overflow-x: hidden;
         }
 
-        /* 拖曳時的樣式 */
-        .dragging {
+        /* 質感紋理 (Noise Texture) */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Base64 Noise Pattern */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 50;
+            mix-blend-mode: multiply;
+        }
+
+        /* 有機形狀 Blob 背景 */
+        .blob-bg {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
             opacity: 0.6;
-            transform: scale(0.98);
-            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3); /* 藍色微光 */
-            border: 1px solid #0ea5e9;
+        }
+        
+        /* 隱藏滾動條 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 拖曳樣式 */
+        .dragging {
+            opacity: 0.8;
+            transform: scale(0.98) rotate(1deg);
+            box-shadow: 0 20px 40px -10px rgba(93,112,82,0.2);
+            z-index: 40;
         }
         .drag-over {
-            border: 1px dashed #0ea5e9 !important; /* Sky 500 */
-            background-color: #1e293b !important; /* Slate 800 */
-        }
-        
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            border: 2px dashed #C18C5D !important;
+            background-color: rgba(193, 140, 93, 0.05) !important;
         }
 
-        /* 單聲道字體用於 ID 和數字 */
-        .font-mono {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        /* 有機圓角 checkbox */
+        .organic-checkbox {
+            border-radius: 40% 60% 60% 40% / 40% 50% 50% 60%;
         }
 
-        /* 自定義科技風陰影 */
-        .tech-shadow {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        /* 標題字體 */
+        h1, h2, h3 {
+            font-family: 'Fraunces', serif;
         }
     </style>
 </head>
@@ -83,32 +115,32 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // --- 內建圖示區 (Lucide Icons) - 調整顏色與風格 ---
+        // --- Icons (Lucide React) - 改為圓潤風格 ---
         const Icons = {
             Trash2: ({size=18, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
-            Plus: ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+            Plus: ({size=24, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
             RefreshCw: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>,
-            Check: ({size=18, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
+            Check: ({size=18, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 6 9 17 4 12"/></svg>,
             LogIn: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>,
-            // 修改後的科技感行李箱 (簡約線條)
-            TechLuggage: ({size=48, className=""}) => (
+            // 手繪有機感背包圖示
+            OrganicBag: ({size=48, className=""}) => (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    <rect x="3" y="6" width="18" height="14" rx="2" />
+                    <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
                     <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                    <path d="M10 11h4" /> {/* 鎖扣細節 */}
-                    <path d="M3 15h18" /> {/* 分隔線 */}
+                    <path d="M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6" />
+                    <path d="M9 10h6" />
                 </svg>
             ),
             ArrowLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
             HelpCircle: ({size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>,
             X: ({size=20, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
             History: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
-            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="text-sky-400"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            Leaf: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="text-moss/60"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>,
             GripVertical: ({className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>,
             Pencil: ({size=16, className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
         };
 
-        // --- Firebase 設定 ---
+        // --- Firebase 設定 (不變) ---
         const firebaseConfig = {
           apiKey: "AIzaSyB34DnVg26SFsKh3yj3r01YKCflCKiOvjo",
           authDomain: "packing-list-app-3730f.firebaseapp.com",
@@ -139,11 +171,11 @@
         
         const DEFAULT_CATEGORY_ORDER = ["醫藥與防護", "電子產品", "小孩衣物用品", "大人個人用品", "備註"];
 
-        // 科技風 Loading
+        // 有機風 Loading
         const LoadingSpinner = () => (
           <div className="flex flex-col justify-center items-center h-40 gap-4">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-sky-500"></div>
-            <p className="text-sky-500 font-mono tracking-widest text-sm">LOADING DATA...</p>
+            <div className="w-12 h-12 rounded-full border-4 border-stone border-t-moss animate-spin"></div>
+            <p className="text-moss font-serif tracking-widest text-sm">Gathering Items...</p>
           </div>
         );
 
@@ -342,7 +374,7 @@
             if (!user || !listId) return;
             e.stopPropagation();
 
-            showConfirm("確認刪除此項目？", () => {
+            showConfirm("確定要刪除這個項目嗎？", () => {
                 const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(listId).doc('main');
                 const newData = { ...data };
                 const itemValue = newData[cat][itemIndex];
@@ -380,7 +412,7 @@
           const deleteCategory = (catName) => {
               if (!user || !listId) return;
               
-              showConfirm(`確認刪除分類「${catName}」與所有內容？`, () => {
+              showConfirm(`確定要刪除整個「${catName}」分類嗎？\n裡面的東西都會不見喔！`, () => {
                   const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(listId).doc('main');
                   const newData = { ...data };
                   
@@ -427,7 +459,7 @@
               }
 
               if (data[newName]) {
-                  alert("名稱已存在");
+                  alert("這個名字已經有人用囉！");
                   return;
               }
 
@@ -460,71 +492,75 @@
 
           const resetList = () => {
             if (!user || !listId) return;
-            showConfirm("確認重設所有勾選狀態？", () => {
+            showConfirm("確定要重設所有勾選狀態嗎？", () => {
                 const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(listId).doc('main');
                 docRef.update({ checkedItems: [] });
             });
           };
 
-          // --- 登入畫面 (Tech Style) ---
+          // --- 登入畫面 (Organic Style) ---
           if (!isJoined) {
             return (
-              <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="bg-[#1e293b] border border-[#334155] p-8 rounded-2xl max-w-md w-full relative tech-shadow">
+              <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+                {/* 裝飾 Blobs */}
+                <div className="blob-bg w-96 h-96 bg-moss -top-20 -left-20"></div>
+                <div className="blob-bg w-80 h-80 bg-clay top-40 -right-20"></div>
+
+                <div className="bg-white/80 backdrop-blur-md border border-white/50 p-8 rounded-[2.5rem] max-w-md w-full relative shadow-float">
                   
-                  {/* 裝飾性元素 */}
-                  <div className="absolute -top-6 -left-6 bg-[#0f172a] rounded-full p-4 border border-[#334155] hidden sm:block">
-                      <Icons.Star />
+                  <div className="absolute -top-6 -left-6 bg-paper rounded-full p-4 border border-stone shadow-sm hidden sm:block">
+                      <Icons.Leaf />
                   </div>
 
-                  <button onClick={() => setShowHelp(true)} className="absolute top-4 right-4 text-[#64748b] hover:text-[#38bdf8] transition-colors">
+                  <button onClick={() => setShowHelp(true)} className="absolute top-5 right-5 text-grass hover:text-clay transition-colors hover:rotate-12 transform duration-300">
                     <Icons.HelpCircle />
                   </button>
                   
                   <div className="text-center mb-10">
-                    <div className="inline-block p-4 rounded-xl bg-[#0f172a] border border-[#334155] mb-4 text-[#38bdf8]">
-                      <Icons.TechLuggage />
+                    <div className="inline-block p-5 rounded-[2rem] bg-moss/10 mb-4 text-moss">
+                      <Icons.OrganicBag />
                     </div>
-                    <h1 className="text-3xl font-bold text-[#e2e8f0] tracking-widest mb-2 font-mono">PACKING_LIST</h1>
+                    <h1 className="text-4xl font-bold text-ink mb-2 tracking-tight">Packing List</h1>
+                    <p className="text-grass font-medium">Ready for your next journey?</p>
                   </div>
                   
                   <form onSubmit={handleJoin} className="space-y-6">
                     <div>
-                      <label className="block text-sm font-bold text-[#94a3b8] mb-2 uppercase tracking-wider">Session ID</label>
+                      <label className="block text-sm font-bold text-moss mb-2 ml-2">LIST ID</label>
                       <input 
                         type="text" 
                         value={enteredId}
                         onChange={(e) => setEnteredId(e.target.value)}
-                        placeholder="ENTER_ID"
-                        className="w-full px-4 py-3 rounded-lg border border-[#475569] bg-[#020617] text-[#e2e8f0] focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] transition-all font-mono placeholder-[#334155]"
+                        placeholder="e.g. Kyoto_Trip"
+                        className="w-full px-6 py-4 rounded-full border border-stone bg-white/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-moss/20 focus:border-moss/50 transition-all placeholder-stone text-ink font-medium"
                       />
                     </div>
                     <button 
                       type="submit"
                       disabled={!enteredId.trim()}
-                      className="w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(2,132,199,0.3)] hover:shadow-[0_0_20px_rgba(2,132,199,0.5)]"
+                      className="w-full bg-moss text-mist font-bold py-4 rounded-full flex items-center justify-center gap-3 transition-all hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:hover:transform-none disabled:shadow-none active:scale-95"
                     >
                       <Icons.LogIn />
-                      INITIALIZE
+                      Let's Go
                     </button>
                   </form>
 
                   {savedLists.length > 0 && (
-                    <div className="mt-8 border-t border-[#334155] pt-6">
-                        <h3 className="text-xs font-bold text-[#64748b] mb-3 flex items-center gap-2 uppercase tracking-widest">
-                            <Icons.History /> Recent Sessions
+                    <div className="mt-10 pt-6 border-t border-stone/50">
+                        <h3 className="text-xs font-bold text-clay mb-4 flex items-center gap-2 uppercase tracking-widest pl-2">
+                            <Icons.History /> Recent
                         </h3>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {savedLists.map((id) => (
                                 <div 
                                     key={id} 
                                     onClick={() => { setEnteredId(id); joinList(id); }}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-[#334155] bg-[#0f172a] hover:bg-[#1e293b] hover:border-[#475569] cursor-pointer transition-all group"
+                                    className="flex items-center justify-between px-5 py-3 rounded-2xl border border-stone/50 bg-white/40 hover:bg-white hover:border-moss/30 hover:shadow-sm cursor-pointer transition-all group"
                                 >
-                                    <span className="text-[#cbd5e1] font-mono text-sm">{id}</span>
+                                    <span className="text-ink font-medium">{id}</span>
                                     <button 
                                         onClick={(e) => removeHistory(e, id)}
-                                        className="text-[#64748b] hover:text-red-400 p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="text-stone hover:text-clay p-1 opacity-0 group-hover:opacity-100 transition-all hover:bg-clay/10 rounded-full"
                                     >
                                         <Icons.Trash2 size={16} />
                                     </button>
@@ -535,14 +571,14 @@
                   )}
 
                   {showHelp && (
-                    <div className="absolute inset-0 bg-[#0f172a]/95 z-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center animate-in fade-in duration-200 border border-[#334155]">
-                        <h3 className="text-xl font-bold text-[#38bdf8] mb-6 font-mono">SYSTEM_GUIDE</h3>
-                        <ol className="text-left text-[#cbd5e1] space-y-4 mb-8 list-decimal pl-6 text-sm">
-                          <li>Create a unique ID <br/><span className="text-xs text-[#64748b]">(e.g., JAPAN_TRIP)</span></li>
-                          <li>Share exact ID with team</li>
-                          <li>Data syncs automatically</li>
+                    <div className="absolute inset-0 bg-paper/95 z-50 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center animate-in fade-in duration-300">
+                        <h3 className="text-2xl font-serif font-bold text-clay mb-6">How it works</h3>
+                        <ol className="text-left text-ink space-y-4 mb-8 list-decimal pl-6 text-base font-medium">
+                          <li>Create a name for your trip <br/><span className="text-sm text-grass font-normal">(e.g. family-camping)</span></li>
+                          <li>Share the exact name</li>
+                          <li>Pack together in real-time</li>
                         </ol>
-                        <button onClick={() => setShowHelp(false)} className="bg-[#1e293b] text-[#38bdf8] px-8 py-2 rounded-full font-bold border border-[#38bdf8] hover:bg-[#38bdf8] hover:text-[#0f172a] transition-all">CLOSE</button>
+                        <button onClick={() => setShowHelp(false)} className="bg-ink text-paper px-10 py-3 rounded-full font-bold hover:scale-105 transition-transform shadow-soft">Got it</button>
                     </div>
                   )}
                 </div>
@@ -550,24 +586,23 @@
             );
           }
 
-          // --- 主畫面 (Tech Style) ---
+          // --- 主畫面 (Organic Style) ---
           return (
-            <div className="min-h-screen pb-24 relative">
+            <div className="min-h-screen pb-32 relative">
+                {/* 背景裝飾 */}
+                <div className="blob-bg w-[500px] h-[500px] bg-sand -top-40 -right-40 opacity-40"></div>
+                <div className="blob-bg w-[400px] h-[400px] bg-moss/20 top-80 -left-20"></div>
               
               {/* 自訂確認彈窗 */}
               {modalConfig.show && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closeModal}>
-                    <div className="bg-[#1e293b] rounded-lg p-6 max-w-xs w-full border border-[#475569] tech-shadow relative flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                         <div className="absolute -top-5 bg-[#0284c7] text-white p-2 rounded-full border-4 border-[#1e293b]">
-                            <Icons.HelpCircle size={24} />
-                         </div>
-
-                        <h3 className="text-lg font-bold text-[#e2e8f0] mt-4 mb-2">CONFIRM ACTION</h3>
-                        <p className="text-[#94a3b8] text-sm mb-6 whitespace-pre-line">{modalConfig.message}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/10 backdrop-blur-sm p-4" onClick={closeModal}>
+                    <div className="bg-paper rounded-[2rem] p-8 max-w-xs w-full shadow-float relative flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-300 border border-stone" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-serif font-bold text-ink mb-2">Are you sure?</h3>
+                        <p className="text-grass text-sm mb-8 leading-relaxed">{modalConfig.message}</p>
                         
                         <div className="flex gap-3 w-full">
-                            <button onClick={closeModal} className="flex-1 py-2 rounded-md border border-[#475569] text-[#cbd5e1] hover:bg-[#334155] transition-colors text-sm">CANCEL</button>
-                            <button onClick={modalConfig.onConfirm} className="flex-1 py-2 rounded-md bg-[#0284c7] text-white hover:bg-[#0369a1] transition-all text-sm shadow-[0_0_10px_rgba(2,132,199,0.3)]">CONFIRM</button>
+                            <button onClick={closeModal} className="flex-1 py-3 rounded-full border border-stone text-grass hover:bg-stone/30 transition-colors font-bold text-sm">Cancel</button>
+                            <button onClick={modalConfig.onConfirm} className="flex-1 py-3 rounded-full bg-clay text-white hover:bg-[#A87B51] hover:shadow-lg hover:-translate-y-0.5 transition-all font-bold text-sm">Confirm</button>
                         </div>
                     </div>
                 </div>
@@ -575,66 +610,64 @@
 
               {/* 幫助彈窗 */}
               {showHelp && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                  <div className="bg-[#1e293b] border border-[#475569] rounded-lg p-6 max-w-sm w-full relative tech-shadow">
-                    <button onClick={() => setShowHelp(false)} className="absolute top-4 right-4 text-[#64748b] hover:text-[#e2e8f0]"><Icons.X /></button>
-                    <h3 className="text-lg font-bold text-[#38bdf8] mb-6 flex items-center gap-2 font-mono"><Icons.HelpCircle /> MANUAL</h3>
-                    <ul className="text-left text-[#cbd5e1] space-y-4 mb-8 text-sm">
-                      <li className="flex gap-3"><span className="text-[#38bdf8] font-bold font-mono">01.</span><div><b>Invite:</b> Share ID (<b>{listId}</b>)</div></li>
-                      <li className="flex gap-3"><span className="text-[#38bdf8] font-bold font-mono">02.</span><div><b>Sync:</b> Real-time updates</div></li>
-                      <li className="flex gap-3"><span className="text-[#38bdf8] font-bold font-mono">03.</span><div><b>Sort:</b> Drag <Icons.GripVertical size={14} className="inline text-[#64748b]"/> handle</div></li>
-                      <li className="flex gap-3"><span className="text-[#38bdf8] font-bold font-mono">04.</span><div><b>Edit:</b> Click <Icons.Pencil size={14} className="inline text-[#64748b]"/> to rename</div></li>
+                <div className="fixed inset-0 bg-ink/20 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                  <div className="bg-paper border border-stone rounded-[2rem] p-8 max-w-sm w-full relative shadow-float animate-in slide-in-from-bottom-4 duration-300">
+                    <button onClick={() => setShowHelp(false)} className="absolute top-6 right-6 text-stone hover:text-ink transition-colors"><Icons.X /></button>
+                    <h3 className="text-2xl font-serif font-bold text-moss mb-6 flex items-center gap-2">Guide</h3>
+                    <ul className="text-left text-ink space-y-5 mb-8 text-base">
+                      <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">1</span><div><b>Invite:</b> Share ID <b>{listId}</b></div></li>
+                      <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">2</span><div><b>Sync:</b> Instant updates for everyone</div></li>
+                      <li className="flex gap-4 items-start"><span className="bg-sand text-ink w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">3</span><div><b>Sort:</b> Drag <Icons.GripVertical size={14} className="inline text-clay"/> to reorder</div></li>
                     </ul>
-                    <button onClick={() => setShowHelp(false)} className="w-full bg-[#334155] text-[#e2e8f0] py-2 rounded-md hover:bg-[#475569] transition-all text-sm border border-[#475569]">ACKNOWLEDGED</button>
+                    <button onClick={() => setShowHelp(false)} className="w-full bg-moss text-white py-3 rounded-full hover:bg-[#4E5F45] transition-all font-bold shadow-soft hover:shadow-lg hover:-translate-y-0.5">Understood</button>
                   </div>
                 </div>
               )}
 
-              {/* 頂部導航 */}
-              <div className="bg-[#0f172a]/90 backdrop-blur border-b border-[#334155] sticky top-0 z-10">
-                <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <button onClick={handleLogout} className="bg-[#1e293b] hover:bg-[#334155] text-[#94a3b8] hover:text-[#e2e8f0] p-2 rounded-md border border-[#334155] transition-colors"><Icons.ArrowLeft size={20}/></button>
-                    <h1 className="text-lg font-bold text-[#e2e8f0] truncate max-w-[150px] sm:max-w-xs font-mono tracking-tight">{listId}</h1>
-                  </div>
-                  <div className="flex items-center gap-3">
-                      <button onClick={() => setShowHelp(true)} className="text-[#64748b] hover:text-[#38bdf8] transition-colors"><Icons.HelpCircle /></button>
-                      <div className="text-[10px] bg-[#020617] border border-[#1e293b] text-[#10b981] px-2 py-1 rounded-sm flex items-center gap-2 font-mono tracking-wider">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_5px_#10b981] animate-pulse"></div>ONLINE
+              {/* 頂部導航 (Glassmorphism Sticky) */}
+              <div className="sticky top-4 z-30 px-4 mb-8">
+                  <div className="max-w-3xl mx-auto bg-white/70 backdrop-blur-md border border-white/50 rounded-full shadow-soft px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <button onClick={handleLogout} className="bg-stone/50 hover:bg-stone text-ink p-2 rounded-full transition-colors"><Icons.ArrowLeft size={20}/></button>
+                        <h1 className="text-lg font-bold text-ink truncate max-w-[150px] sm:max-w-xs">{listId}</h1>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                           {/* 進度條 (Circular or Pill) */}
+                           {(() => {
+                              let total = 0;
+                              let currentCheckedCount = 0;
+                              Object.keys(data).forEach(cat => {
+                                total += data[cat].length;
+                                data[cat].forEach(item => { if (checkedItems.includes(`${cat}-${item}`)) currentCheckedCount++; });
+                              });
+                              const percent = total === 0 ? 0 : Math.round((currentCheckedCount / total) * 100);
+                              return (
+                                <div className="flex items-center gap-2 bg-moss/10 px-3 py-1.5 rounded-full border border-moss/10">
+                                    <div className="h-2 w-16 bg-white rounded-full overflow-hidden">
+                                        <div className="h-full bg-moss transition-all duration-700 ease-in-out rounded-full" style={{ width: `${percent}%` }}></div>
+                                    </div>
+                                    <span className="text-xs font-bold text-moss">{percent}%</span>
+                                </div>
+                              );
+                            })()}
+                          <button onClick={() => setShowHelp(true)} className="text-grass hover:text-moss transition-colors"><Icons.HelpCircle /></button>
                       </div>
                   </div>
-                </div>
-                
-                {/* 進度條 */}
-                {(() => {
-                  let total = 0;
-                  let currentCheckedCount = 0;
-                  Object.keys(data).forEach(cat => {
-                    total += data[cat].length;
-                    data[cat].forEach(item => { if (checkedItems.includes(`${cat}-${item}`)) currentCheckedCount++; });
-                  });
-                  const percent = total === 0 ? 0 : Math.round((currentCheckedCount / total) * 100);
-                  return (
-                    <div className="h-1 w-full bg-[#1e293b] relative">
-                        <div className="h-full bg-[#0ea5e9] transition-all duration-500 ease-out shadow-[0_0_10px_rgba(14,165,233,0.5)]" style={{ width: `${percent}%` }}></div>
-                        <span className="absolute right-2 top-2 text-[10px] font-mono text-[#64748b]">{percent}% COMPLETED</span>
-                    </div>
-                  );
-                })()}
               </div>
 
               {/* 主要內容區 */}
-              <div className="max-w-3xl mx-auto p-4 space-y-6 mt-4">
+              <div className="max-w-3xl mx-auto px-4 space-y-8">
                 {loading ? <LoadingSpinner /> : (
                   <>
-                    <div className="flex justify-end">
-                      <button onClick={resetList} className="text-xs bg-[#1e293b] hover:bg-[#334155] text-[#94a3b8] hover:text-[#e2e8f0] py-2 px-3 rounded-md border border-[#334155] flex items-center gap-2 transition-all">
-                        <Icons.RefreshCw /> RESET STATUS
+                    <div className="flex justify-end px-2">
+                      <button onClick={resetList} className="text-xs font-bold bg-white/50 hover:bg-white text-grass hover:text-clay py-2 px-4 rounded-full border border-stone/50 flex items-center gap-2 transition-all shadow-sm hover:shadow-md">
+                        <Icons.RefreshCw /> Reset All
                       </button>
                     </div>
                     
                     {/* 分類卡片區 */}
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                     {categoryOrder.map((cat, index) => {
                       if (!data[cat]) return null;
                       const isEditing = editingCategory === cat;
@@ -642,7 +675,7 @@
                       return (
                         <div 
                             key={cat} 
-                            className="category-card bg-[#1e293b] rounded-lg border border-[#334155] overflow-hidden tech-shadow relative transition-all duration-200"
+                            className="category-card bg-[#FEFEFA] rounded-[2rem] border border-stone/60 overflow-hidden shadow-soft relative transition-all duration-500 hover:-translate-y-1 hover:shadow-float"
                             draggable={!isEditing}
                             onDragStart={(e) => dragStart(e, index)}
                             onDragEnter={(e) => dragEnter(e, index)}
@@ -650,7 +683,7 @@
                             onDragOver={(e) => e.preventDefault()}
                         >
                           {/* 分類標題區 */}
-                          <div className="bg-[#0f172a] px-4 py-3 border-b border-[#334155] flex items-center justify-between touch-none min-h-[60px]">
+                          <div className="bg-sand/30 px-6 py-5 flex items-center justify-between touch-none min-h-[72px]">
                             {isEditing ? (
                                 /* 編輯模式 */
                                 <div className="flex-1 flex items-center gap-2">
@@ -659,28 +692,28 @@
                                         value={editingName} 
                                         onChange={(e) => setEditingName(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && saveCategoryName(cat)}
-                                        className="flex-1 px-3 py-1 rounded bg-[#020617] border border-[#0ea5e9] text-[#e2e8f0] focus:outline-none w-full font-bold"
+                                        className="flex-1 px-4 py-2 rounded-xl bg-white/50 border border-clay/30 text-ink focus:outline-none focus:ring-2 focus:ring-clay/20 w-full font-serif font-bold text-lg"
                                         autoFocus
                                     />
-                                    <button onClick={() => saveCategoryName(cat)} className="text-[#10b981] hover:bg-[#10b981]/10 p-1 rounded"><Icons.Check size={18} /></button>
-                                    <button onClick={cancelEditing} className="text-[#ef4444] hover:bg-[#ef4444]/10 p-1 rounded"><Icons.X size={18} /></button>
+                                    <button onClick={() => saveCategoryName(cat)} className="text-moss bg-moss/10 hover:bg-moss/20 p-2 rounded-full transition-colors"><Icons.Check size={20} /></button>
+                                    <button onClick={cancelEditing} className="text-clay bg-clay/10 hover:bg-clay/20 p-2 rounded-full transition-colors"><Icons.X size={20} /></button>
                                 </div>
                             ) : (
                                 /* 檢視模式 */
-                                <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                                    <div className="cursor-grab active:cursor-grabbing text-[#475569] hover:text-[#94a3b8] p-1 rounded transition-colors flex-shrink-0">
+                                <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                                    <div className="cursor-grab active:cursor-grabbing text-clay/60 hover:text-clay p-1 transition-colors flex-shrink-0">
                                         <Icons.GripVertical />
                                     </div>
                                     
-                                    <h2 className="font-bold text-[#e2e8f0] text-lg truncate tracking-wide">
+                                    <h2 className="font-serif font-bold text-ink text-xl truncate tracking-wide">
                                         {cat}
                                     </h2>
                                     
                                     <button 
                                         onClick={() => startEditing(cat)} 
-                                        className="text-[#475569] hover:text-[#38bdf8] p-1 rounded transition-colors"
+                                        className="text-stone hover:text-clay p-2 rounded-full hover:bg-clay/10 transition-colors"
                                     >
-                                        <Icons.Pencil size={14} />
+                                        <Icons.Pencil size={16} />
                                     </button>
                                 </div>
                             )}
@@ -688,27 +721,28 @@
                             {!isEditing && (
                                 <button 
                                     onClick={() => deleteCategory(cat)}
-                                    className="text-[#475569] hover:text-red-400 p-2 rounded transition-colors ml-1 flex-shrink-0"
+                                    className="text-stone hover:text-destructive hover:bg-red-50 p-2 rounded-full transition-colors ml-2 flex-shrink-0"
                                 >
-                                    <Icons.Trash2 size={16} />
+                                    <Icons.Trash2 size={18} />
                                 </button>
                             )}
                           </div>
                           
                           {/* 項目列表 */}
-                          <div className="divide-y divide-[#334155]">
+                          <div className="divide-y divide-stone/40">
                             {data[cat].map((item, idx) => {
                               const isChecked = checkedItems.includes(`${cat}-${item}`);
                               return (
-                                <div key={`${cat}-${idx}`} className={`flex items-center px-4 py-3 hover:bg-[#253045] transition-colors cursor-pointer group ${isChecked ? 'bg-[#0f172a]/50' : ''}`}>
-                                  <div className="flex-1 flex items-center gap-3" onClick={() => toggleCheck(cat, item)}>
-                                    <div className={`w-5 h-5 rounded-sm border flex items-center justify-center transition-all flex-shrink-0 ${isChecked ? 'bg-[#334155] border-[#475569]' : 'bg-[#0f172a] border-[#475569] group-hover:border-[#38bdf8]'}`}>
-                                      {isChecked && <div className="w-2.5 h-2.5 bg-[#10b981] shadow-[0_0_5px_#10b981]"></div>}
+                                <div key={`${cat}-${idx}`} className={`flex items-center px-6 py-4 hover:bg-sand/10 transition-all duration-300 cursor-pointer group ${isChecked ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                                  <div className="flex-1 flex items-center gap-4" onClick={() => toggleCheck(cat, item)}>
+                                    {/* 有機 Checkbox */}
+                                    <div className={`w-6 h-6 organic-checkbox border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0 ${isChecked ? 'bg-moss border-moss rotate-3 scale-110' : 'bg-white border-stone group-hover:border-clay'}`}>
+                                      {isChecked && <Icons.Check className="text-white w-4 h-4" />}
                                     </div>
-                                    <span className={`text-base transition-all ${isChecked ? 'text-[#475569] line-through decoration-[#475569]' : 'text-[#cbd5e1]'}`}>{item}</span>
+                                    <span className={`text-base font-medium transition-all ${isChecked ? 'text-grass line-through decoration-stone' : 'text-ink'}`}>{item}</span>
                                   </div>
-                                  <button onClick={(e) => deleteItem(e, cat, idx)} className="p-2 text-[#475569] hover:text-red-400 rounded transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100">
-                                      <Icons.Trash2 size={16} />
+                                  <button onClick={(e) => deleteItem(e, cat, idx)} className="p-2 text-stone hover:text-clay rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                      <Icons.Trash2 size={18} />
                                   </button>
                                 </div>
                               );
@@ -716,21 +750,21 @@
                           </div>
                           
                           {/* 新增項目輸入框 */}
-                          <div className="p-3 bg-[#1e293b] border-t border-[#334155] flex gap-2">
+                          <div className="p-4 bg-white/40 flex gap-3">
                             <input 
                               type="text" 
                               value={newItemText[cat] || ''} 
                               onChange={(e) => setNewItemText({ ...newItemText, [cat]: e.target.value })} 
                               onKeyDown={(e) => e.key === 'Enter' && addItem(cat)} 
-                              placeholder={`Add item...`} 
-                              className="flex-1 px-3 py-2 rounded-md border border-[#334155] bg-[#020617] focus:outline-none focus:border-[#0ea5e9] text-[#e2e8f0] text-sm placeholder-[#475569]" 
+                              placeholder={`Add to ${cat}...`} 
+                              className="flex-1 px-5 py-3 rounded-full border border-stone bg-white/80 focus:outline-none focus:ring-2 focus:ring-moss/20 text-ink text-sm placeholder-stone/70 shadow-inner-light" 
                             />
                             <button 
                               onClick={() => addItem(cat)} 
                               disabled={!newItemText[cat]?.trim()} 
-                              className="bg-[#0f172a] hover:bg-[#334155] text-[#38bdf8] p-2 rounded-md border border-[#334155] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                              className="bg-moss hover:bg-[#4E5F45] text-white p-3 rounded-full shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none transition-all hover:rotate-90 duration-300"
                             >
-                              <Icons.Plus size={18} />
+                              <Icons.Plus size={20} />
                             </button>
                           </div>
                         </div>
@@ -739,22 +773,23 @@
                     </div>
 
                     {/* 建立新分類區塊 */}
-                    <div className="mt-8 border-t border-dashed border-[#334155] pt-8 pb-4">
-                        <div className="bg-[#1e293b] p-4 rounded-lg border border-[#334155] flex flex-col sm:flex-row gap-3">
+                    <div className="mt-12 py-8 text-center">
+                        <h3 className="text-moss font-serif italic text-lg mb-4 opacity-80">Forget something?</h3>
+                        <div className="bg-white/60 p-2 rounded-full border border-stone shadow-sm inline-flex items-center gap-2 max-w-md w-full backdrop-blur-sm">
                             <input 
                                 type="text"
                                 value={newCategoryName}
                                 onChange={(e) => setNewCategoryName(e.target.value)}
-                                placeholder="NEW CATEGORY NAME..."
-                                className="flex-1 px-4 py-2 rounded-md border border-[#334155] focus:outline-none focus:border-[#0ea5e9] bg-[#020617] text-[#e2e8f0] placeholder-[#475569]"
+                                placeholder="New Category Name..."
+                                className="flex-1 px-6 py-2 bg-transparent focus:outline-none text-ink placeholder-stone font-medium"
                                 onKeyDown={(e) => e.key === 'Enter' && addNewCategory()}
                             />
                             <button 
                                 onClick={addNewCategory}
                                 disabled={!newCategoryName.trim()}
-                                className="bg-[#0284c7] text-white px-6 py-2 rounded-md font-bold hover:bg-[#0369a1] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-[0_0_10px_rgba(2,132,199,0.2)]"
+                                className="bg-clay text-white px-6 py-3 rounded-full font-bold hover:bg-[#A87B51] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5"
                             >
-                                <Icons.Plus size={16} /> CREATE
+                                <Icons.Plus size={18} />
                             </button>
                         </div>
                     </div>
@@ -763,8 +798,8 @@
               </div>
               
               {/* 底部 ID 提示 */}
-              <div className="fixed bottom-0 left-0 right-0 bg-[#0f172a] border-t border-[#334155] p-2 text-center text-xs text-[#64748b] font-mono">
-                SESSION_ID: <span className="text-[#38bdf8] select-all ml-1">{listId}</span>
+              <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur border-t border-stone/50 py-3 text-center text-xs text-grass font-medium z-20">
+                Session ID: <span className="text-moss bg-moss/10 px-2 py-1 rounded select-all ml-1 font-bold">{listId}</span>
               </div>
             </div>
           );
