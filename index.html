@@ -2,74 +2,75 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅遊費用分算 - 自然有機版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的雲端書櫃</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        serif: ['Fraunces', 'serif'],
+                    },
                     colors: {
                         background: '#FDFCF8', // Rice Paper
                         foreground: '#2C2C24', // Deep Loam
-                        primary: '#5D7052', // Moss Green
-                        'primary-foreground': '#F3F4F1',
-                        secondary: '#C18C5D', // Terracotta
-                        'secondary-foreground': '#FFFFFF',
-                        accent: '#E6DCCD', // Sand
+                        primary: {
+                            DEFAULT: '#5D7052', // Moss Green
+                            foreground: '#F3F4F1', // Pale Mist
+                            50: '#f4f6f3',
+                            100: '#e5e9e2',
+                            500: '#5D7052',
+                            600: '#4a5a41',
+                        },
+                        secondary: {
+                            DEFAULT: '#C18C5D', // Terracotta
+                            foreground: '#FFFFFF',
+                            100: '#fdf8f3',
+                            500: '#C18C5D',
+                            600: '#a6764d',
+                        },
+                        accent: {
+                            DEFAULT: '#E6DCCD', // Sand
+                            foreground: '#4A4A40',
+                        },
+                        timber: '#DED8CF', // Borders
+                        destructive: '#A85448', // Burnt Sienna
                         muted: '#F0EBE5', // Stone
                         'muted-foreground': '#78786C', // Dried Grass
-                        border: '#DED8CF', // Raw Timber
-                        destructive: '#A85448', // Burnt Sienna
-                    },
-                    fontFamily: {
-                        serif: ['Fraunces', 'serif'],
-                        sans: ['Nunito', 'sans-serif'],
                     },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)',
-                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)',
-                        'inner-organic': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)', // Moss tinted
+                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)', // Clay tinted
+                        'hover': '0 20px 40px -10px rgba(93, 112, 82, 0.15)',
                     },
-                    borderRadius: {
-                        'organic': '2rem',
+                    backgroundImage: {
+                        'noise': "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjQiLz48L3N2Zz4=')",
                     }
                 }
             }
         }
     </script>
-
     <style>
-        /* 全域設定 */
-        html {
-            font-size: 100%;
-        }
-        
+        /* Base Texture & Typography */
         body {
-            font-family: "Nunito", "Microsoft JhengHei", sans-serif;
             background-color: #FDFCF8;
             color: #2C2C24;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Nunito', sans-serif;
             position: relative;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* 紙張紋理 (Noise Texture) */
-        body::before {
-            content: "";
+        /* Noise Overlay */
+        .noise-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -77,807 +78,963 @@
             height: 100%;
             pointer-events: none;
             z-index: 50;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=');
             opacity: 0.04;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
             mix-blend-mode: multiply;
         }
 
-        h1, h2, h3, h4, .font-serif {
-            font-family: "Fraunces", "Microsoft JhengHei", serif;
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Fraunces', serif;
         }
 
-        /* 移除預設 outline，改用柔和 focus */
-        input:focus, select:focus, button:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(93, 112, 82, 0.3);
-            border-color: #5D7052 !important;
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-modal-in {
+            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        .loader {
-            border: 3px solid #E6DCCD;
-            border-top: 3px solid #5D7052;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Utilities */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Organic Blob Utilities */
+        .blob-card-1 { border-radius: 2rem 3rem 2rem 2rem; }
+        .blob-card-2 { border-radius: 3rem 2rem 2.5rem 2rem; }
+        .blob-input { border-radius: 9999px; }
 
-        .scale-up-center {
-            animation: scale-up-center 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        @keyframes scale-up-center {
-            0% { transform: scale(0.9) translateY(10px); opacity: 0; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        /* 自定義有機形狀 */
-        .shape-blob {
-            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-        }
-        .shape-stone {
-            border-radius: 2rem 2.5rem 2rem 3rem;
-        }
+        input, textarea, select { font-size: 1rem !important; }
     </style>
 </head>
-<body>
+<body class="selection:bg-secondary-100 selection:text-foreground pb-20">
+    <div class="noise-overlay"></div>
     <div id="root"></div>
 
-    <script type="text/babel">
-        // --- Firebase 設定 (維持不變) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDXPngTQ57pSYkct6omI0BEvUIlN-uMqys",
-            authDomain: "travelledger-fa981.firebaseapp.com",
-            projectId: "travelledger-fa981",
-            storageBucket: "travelledger-fa981.firebasestorage.app",
-            messagingSenderId: "575807326202",
-            appId: "1:575807326202:web:c69bff9eef548b5d0bc643",
-            measurementId: "G-T6NKH0R274"
-        };
-
-        if (!firebase.apps.length) {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                if (firebase.analytics) firebase.analytics();
-            } catch (e) {
-                console.error("Firebase 初始化失敗", e);
-                console.warn("Firebase 初始化失敗，請檢查網路連線或 Console 錯誤訊息。");
-            }
-        }
-        const db = firebase.firestore();
-        // --- Firebase 設定結束 ---
-
-        const { useState, useEffect, useMemo } = React;
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3
+        } from 'https://esm.sh/lucide-react@0.344.0';
         
-        const Icon = ({ name, className = "w-5 h-5" }) => {
-            return <i data-lucide={name} className={className}></i>;
+        // --- Firebase Config (Unchanged) ---
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
+            authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+            projectId: "my-reading-tracker-58f69",
+            storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+            messagingSenderId: "370802674969",
+            appId: "1:370802674969:web:efb1c045e0028925154988",
+            measurementId: "G-52EWLNG7ST"
         };
 
-        const CURRENCIES = [
-            { code: 'TWD', name: '台幣', symbol: 'TWD' },
-            { code: 'USD', name: '美金', symbol: 'USD' },
-            { code: 'JPY', name: '日圓', symbol: '¥' },
-            { code: 'KRW', name: '韓元', symbol: '₩' },
-            { code: 'CNY', name: '人民幣', symbol: 'CNY' },
-            { code: 'EUR', name: '歐元', symbol: 'EUR' },
-            { code: 'HKD', name: '港幣', symbol: 'HKD' },
-            { code: 'GBP', name: '英鎊', symbol: 'GBP' },
-            { code: 'AUD', name: '澳幣', symbol: 'AUD' },
-            { code: 'SGD', name: '新加坡幣', symbol: 'SGD' },
-            { code: 'THB', name: '泰銖', symbol: 'THB' },
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "my-reading-app"; 
+        const ESTIMATE_WORDS_PER_PAGE = 350;
+
+        const DEFAULT_CATEGORIES = [
+            "玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", 
+            "科幻", "懸疑", "推理", "驚悚", "恐怖", "冒險", "耽美 (BL)", "百合 (GL)", 
+            "穿越", "重生", "系統", "快穿", "無限流", "末世", "種田", "宅鬥", "宮鬥", 
+            "娛樂圈", "電競", "校園", "職場", "先婚後愛", "破鏡重圓", "青梅竹馬", 
+            "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
         ];
 
-        // --- 登入頁面組件 (Style Refactored) ---
-        const LoginScreen = ({ onJoin }) => {
-            const [tripId, setTripId] = useState('');
-            const [history, setHistory] = useState([]);
+        // --- Component: Organic Category Picker ---
+        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [filterText, setFilterText] = useState('');
 
-            useEffect(() => {
-                const stored = localStorage.getItem('trip_history');
-                if (stored) {
-                    try {
-                        setHistory(JSON.parse(stored));
-                    } catch (e) { console.error("History parse error", e); }
-                }
-            }, []);
-            
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            });
+            const filtered = useMemo(() => {
+                const term = filterText.toLowerCase();
+                return allCategories.filter(c => c.toLowerCase().includes(term));
+            }, [allCategories, filterText]);
 
-            const handleJoin = (idToJoin) => {
-                const targetId = idToJoin || tripId;
-                if (!targetId) return;
-                const newHistory = [targetId, ...history.filter(h => h !== targetId)].slice(0, 5);
-                setHistory(newHistory);
-                localStorage.setItem('trip_history', JSON.stringify(newHistory));
-                onJoin(targetId);
-            };
-
-            const removeHistoryItem = (e, idToRemove) => {
-                e.stopPropagation();
-                const newHistory = history.filter(h => h !== idToRemove);
-                setHistory(newHistory);
-                localStorage.setItem('trip_history', JSON.stringify(newHistory));
-            };
-            
             return (
-                <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-background">
-                    {/* 背景 Blob 裝飾 */}
-                    <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 blur-3xl rounded-full mix-blend-multiply opacity-70 animate-pulse"></div>
-                    <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary/10 blur-3xl rounded-full mix-blend-multiply opacity-70"></div>
+                <div className="w-full">
+                    <div className="flex flex-wrap gap-2 items-center min-h-[44px] p-1 border-b border-timber/50">
+                        {selectedCategories.map(cat => (
+                            <span key={cat} className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                                {cat}
+                                <X size={12} className="cursor-pointer hover:text-white/80" onClick={(e) => { e.stopPropagation(); onToggle(cat); }}/>
+                            </span>
+                        ))}
+                        <button 
+                            type="button" 
+                            onClick={() => setIsOpen(!isOpen)} 
+                            className={`text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-full transition-all duration-300 ${isOpen ? 'bg-timber text-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                        >
+                            <Plus size={12}/> {isOpen ? '收起' : '選擇分類'}
+                        </button>
+                    </div>
 
-                    <div className="relative bg-white/60 backdrop-blur-sm p-8 rounded-[2.5rem] shadow-float max-w-sm w-full border border-white/50 space-y-6 text-center z-10">
-                        <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2 text-primary shape-blob">
-                            <Icon name="cloud" className="w-10 h-10" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-serif font-bold text-foreground tracking-tight">Travel Ledger</h1>
-                            <p className="text-muted-foreground text-sm mt-2 font-medium">輸入旅程代碼，同步彼此的足跡。</p>
-                        </div>
-                        
-                        <div className="space-y-4">
+                    {isOpen && (
+                        <div className="mt-3 p-4 bg-background/80 backdrop-blur-sm rounded-[1.5rem] border border-timber/50 shadow-soft animate-fade-in relative z-10">
                             <input 
                                 type="text" 
-                                value={tripId} 
-                                onChange={e => setTripId(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === 'Enter' && tripId) handleJoin();
-                                }}
-                                placeholder="例如：TOKYO2026" 
-                                className="w-full px-6 py-4 bg-white/80 border border-border rounded-full text-center text-lg font-bold uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-muted-foreground/50 transition-all focus:bg-white"
+                                placeholder="搜尋或建立新分類..." 
+                                value={filterText}
+                                onChange={e => setFilterText(e.target.value)}
+                                className="w-full mb-4 p-3 bg-white/50 border border-timber/30 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
+                                autoFocus
                             />
                             
-                            <button 
-                                onClick={() => handleJoin()}
-                                className="w-full bg-primary text-primary-foreground py-4 rounded-full text-lg shadow-soft font-bold hover:scale-[1.02] hover:shadow-[0_6px_24px_-4px_rgba(93,112,82,0.25)] active:scale-95 transition-all duration-300"
-                            >
-                                進入記帳
-                            </button>
-                        </div>
-
-                        {history.length > 0 && (
-                            <div className="pt-6 border-t border-border/50 mt-4">
-                                <p className="text-xs text-muted-foreground mb-4 font-bold tracking-widest uppercase">最近足跡</p>
-                                <div className="flex flex-wrap gap-2 justify-center">
-                                    {history.map(h => (
-                                        <div 
-                                            key={h}
-                                            className="inline-flex items-center bg-white/50 rounded-full border border-border/60 overflow-hidden shadow-sm hover:shadow-md transition-all group"
-                                        >
-                                            <span 
-                                                onClick={() => handleJoin(h)}
-                                                className="px-4 py-2 text-primary text-sm font-bold cursor-pointer hover:bg-muted/50 transition-colors border-r border-border/30"
-                                            >
-                                                {h}
-                                            </span>
+                            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
+                                {filterText && !allCategories.includes(filterText) && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { onAddNew(filterText); setFilterText(''); }}
+                                        className="bg-primary text-primary-foreground text-xs font-bold px-4 py-2 rounded-full hover:bg-primary-600 hover:scale-105 transition-all duration-300 shadow-sm flex items-center gap-1.5"
+                                    >
+                                        <Plus size={12}/> 建立「{filterText}」
+                                    </button>
+                                )}
+                                
+                                {filtered.map(cat => {
+                                    const isSelected = selectedCategories.includes(cat);
+                                    if (isSelected) return null;
+                                    return (
+                                        <div key={cat} className="group relative">
                                             <button 
-                                                onClick={(e) => removeHistoryItem(e, h)}
-                                                className="px-3 py-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center outline-none"
+                                                type="button" 
+                                                onClick={() => onToggle(cat)} 
+                                                className="bg-white border border-timber/50 text-muted-foreground text-xs font-medium px-3 py-1.5 rounded-full hover:border-primary/50 hover:text-primary hover:bg-primary/5 hover:scale-105 transition-all duration-300"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                </svg>
+                                                {cat}
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => onDelete(cat, e)}
+                                                className="absolute -top-1.5 -right-1.5 bg-background text-muted-foreground hover:text-destructive rounded-full p-1 shadow-sm border border-timber opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-90 hover:scale-110"
+                                                title="刪除分類"
+                                            >
+                                                <X size={10} strokeWidth={3} />
                                             </button>
                                         </div>
-                                    ))}
-                                </div>
+                                    )
+                                })}
+                                {filtered.length === 0 && !filterText && <span className="text-xs text-muted-foreground py-1 italic">無符合分類</span>}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
-        // --- 主程式組件 ---
-        function App() {
-            // 狀態管理 (維持不變)
-            const [tripId, setTripId] = useState(localStorage.getItem('my_trip_id') || null);
-            const [loading, setLoading] = useState(false);
-            
-            const [members, setMembers] = useState([]);
-            const [expenses, setExpenses] = useState([]);
-            const [rates, setRates] = useState({ TWD: 1 });
-            
-            // UI 狀態
-            const [newMemberName, setNewMemberName] = useState('');
-            const [loadingRates, setLoadingRates] = useState(false);
-            const [showClearConfirm, setShowClearConfirm] = useState(false);
-            const [deleteTargetId, setDeleteTargetId] = useState(null); 
-            const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); 
-            const [toast, setToast] = useState(null);
-            const [form, setForm] = useState({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
+        function ReadingTracker() {
+            const [user, setUser] = useState(null);
+            const [books, setBooks] = useState([]);
+            const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+            const [loading, setLoading] = useState(true);
+            const [customId, setCustomId] = useState('');
+            const [isLoginMode, setIsLoginMode] = useState(true);
+            const [isAuthChecking, setIsAuthChecking] = useState(true);
+            const [toast, setToast] = useState(null); 
 
-            // 1. 初始化與監聽 Firebase 資料
-            useEffect(() => {
-                if (!tripId) return;
+            // Search & Filter State
+            const [searchTerm, setSearchTerm] = useState('');
 
-                setLoading(true);
-                const unsubscribe = db.collection('trips').doc(tripId).onSnapshot((doc) => {
-                    setLoading(false);
-                    if (doc.exists) {
-                        const data = doc.data();
-                        setMembers(data.members || []);
-                        setExpenses(data.expenses || []);
-                    } else {
-                        db.collection('trips').doc(tripId).set({
-                            members: [],
-                            expenses: [],
-                            createdAt: new Date()
-                        });
-                    }
-                }, (error) => {
-                    console.error("Firebase Sync Error:", error);
-                    setLoading(false);
-                    showToast("同步失敗：請檢查網路連線");
-                });
-
-                localStorage.setItem('my_trip_id', tripId);
-                fetchRates();
-
-                return () => unsubscribe();
-            }, [tripId]);
-
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
+            const [newBook, setNewBook] = useState({
+                title: '', author: '', wordCount: '', isWordCountManual: false,
+                addDate: new Date().toISOString().split('T')[0],
+                reviewUrl: '', synopsis: '', category: [] 
             });
+            const [isSearching, setIsSearching] = useState(false);
+            const [activeBookId, setActiveBookId] = useState(null);
+            
+            const [modalType, setModalType] = useState(null); 
+            const [modalData, setModalData] = useState({});
+            const [expandedBooks, setExpandedBooks] = useState({});
 
-            // --- 功能函數 (維持不變) ---
+            useEffect(() => {
+                signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
+                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                        const savedId = localStorage.getItem('reading_tracker_custom_id');
+                        if (savedId) {
+                            setCustomId(savedId);
+                            setIsLoginMode(false);
+                        } else {
+                            setIsLoginMode(true);
+                        }
+                    }
+                    setIsAuthChecking(false);
+                });
+                return () => unsubscribe();
+            }, []);
 
-            const handleLogout = () => {
-                setShowLogoutConfirm(true); 
-            };
+            useEffect(() => {
+                if (!user || !customId) {
+                    setLoading(false);
+                    return;
+                }
+                setLoading(true);
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                
+                const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+                    const fetchedBooks = [];
+                    let fetchedCategories = [...DEFAULT_CATEGORIES];
 
-            const confirmLogout = () => {
-                localStorage.removeItem('my_trip_id');
-                setTripId(null);
-                setMembers([]);
-                setExpenses([]);
-                setShowLogoutConfirm(false);
-            };
+                    snapshot.docs.forEach(doc => {
+                        if (doc.id === 'settings') {
+                            if (doc.data().categories && Array.isArray(doc.data().categories)) {
+                                fetchedCategories = doc.data().categories;
+                            }
+                        } else {
+                            fetchedBooks.push({ id: doc.id, ...doc.data() });
+                        }
+                    });
+                    
+                    fetchedBooks.sort((a, b) => {
+                        const isReadingA = a.status === 'reading';
+                        const isReadingB = b.status === 'reading';
+                        if (isReadingA && !isReadingB) return -1;
+                        if (!isReadingA && isReadingB) return 1;
+                        return new Date(b.addDate) - new Date(a.addDate);
+                    });
+                    
+                    setBooks(fetchedBooks);
+                    setCategories(fetchedCategories);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error", error);
+                    setLoading(false);
+                    showToast("資料讀取失敗", "error");
+                });
+                return () => unsubscribe();
+            }, [user, customId]);
 
-            const showToast = (msg) => {
-                setToast(msg);
+            const showToast = (message, type = 'info') => {
+                setToast({ message, type });
                 setTimeout(() => setToast(null), 3000);
             };
 
-            const fetchRates = async () => {
-                setLoadingRates(true);
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
+                localStorage.setItem('reading_tracker_custom_id', customId);
+                setIsLoginMode(false);
+            };
+
+            const handleLogout = () => {
+                setModalType('logout');
+            };
+
+            const searchBookInfo = async () => {
+                if (!newBook.title) return;
+                setIsSearching(true);
                 try {
-                    const res = await fetch(`https://open.er-api.com/v6/latest/TWD`);
+                    const q = `intitle:${newBook.title}${newBook.author ? `+inauthor:${newBook.author}` : ''}`;
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
                     const data = await res.json();
-                    if (data && data.rates) {
-                        const newRates = { TWD: 1 };
-                        CURRENCIES.forEach(curr => {
-                            if (curr.code === 'TWD') return;
-                            if (data.rates[curr.code]) {
-                                newRates[curr.code] = (1 / data.rates[curr.code] * 1.02).toFixed(4);
-                            }
-                        });
-                        setRates(newRates);
+                    if (data.items && data.items.length > 0) {
+                        const info = data.items[0].volumeInfo;
+                        setNewBook(prev => ({
+                            ...prev,
+                            author: prev.author || info.authors?.[0] || '',
+                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE,
+                            isWordCountManual: false,
+                            synopsis: info.description || ''
+                        }));
+                        showToast("找到書籍資料！");
+                    } else {
+                        showToast("找不到書籍資料", "error");
                     }
                 } catch (error) {
-                    console.error("匯率更新失敗", error);
-                    showToast("匯率更新失敗，使用快取");
+                    showToast("搜尋失敗", "error");
                 } finally {
-                    setLoadingRates(false);
+                    setIsSearching(false);
                 }
             };
 
-            const updateMembersInCloud = (newMembers) => {
-                db.collection('trips').doc(tripId).update({ members: newMembers })
-                    .catch(err => showToast("更新成員失敗"));
-            };
-
-            const addMember = () => {
-                const trimmed = newMemberName.trim();
-                if (!trimmed || members.includes(trimmed)) return;
-                const newMembers = [...members, trimmed];
-                setMembers(newMembers); 
-                updateMembersInCloud(newMembers);
-                setNewMemberName('');
-            };
-
-            const removeMember = (name) => {
-                const newMembers = members.filter(m => m !== name);
-                if (form.payer === name) setForm({ ...form, payer: '' });
-                setForm(prev => ({ ...prev, participants: prev.participants.filter(p => p !== name) }));
-                updateMembersInCloud(newMembers);
-            };
-
-            const updateExpensesInCloud = (newExpenses) => {
-                db.collection('trips').doc(tripId).update({ expenses: newExpenses })
-                    .catch(err => showToast("更新支出失敗"));
-            };
-
-            const submitExpense = () => {
-                const { item, amount, currency, payer, participants } = form;
-                if (!item || !amount || !payer || participants.length === 0) return;
-                
-                const totalAmount = parseFloat(amount);
-                const count = participants.length;
-                const baseSplit = Math.round(totalAmount / count);
-                const lastSplit = totalAmount - (baseSplit * (count - 1));
-                const splits = {};
-                participants.forEach((name, index) => { splits[name] = index === count - 1 ? lastSplit : baseSplit; });
-
-                const newExpense = {
-                    id: Date.now(),
-                    item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
-                    payer, splits,
-                    timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-                };
-
-                const newExpenses = [...expenses, newExpense];
-                updateExpensesInCloud(newExpenses);
-                
-                setForm({ ...form, item: '', amount: '', participants: [] });
-                showToast("支出已儲存至雲端");
-            };
-
-            const confirmDeleteExpense = () => {
-                if (deleteTargetId) {
-                    const newExpenses = expenses.filter(e => e.id !== deleteTargetId);
-                    updateExpensesInCloud(newExpenses);
-                    setDeleteTargetId(null);
-                    showToast("已刪除該筆支出");
-                }
-            };
-
-            const clearAllData = () => {
-                db.collection('trips').doc(tripId).update({
-                    members: [],
-                    expenses: []
-                }).then(() => {
-                    setShowClearConfirm(false);
-                    showToast("雲端紀錄已全數清除");
-                });
-            };
-
-            const toggleParticipant = (name) => {
-                setForm(prev => {
-                    const isIncluded = prev.participants.includes(name);
-                    return { ...prev, participants: isIncluded ? prev.participants.filter(p => p !== name) : [...prev.participants, name] };
-                });
-            };
-
-            const formatNum = (num) => new Intl.NumberFormat('en-US').format(Math.round(num));
-
-            const settlement = useMemo(() => {
-                const balances = {}; 
-                let totalTWD = 0;
-                members.forEach(m => balances[m] = 0);
-
-                const currencyCounts = {};
-                expenses.forEach(e => {
-                    if (e.currency !== 'TWD') {
-                        currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
-                    }
-                });
-                const primaryCode = Object.keys(currencyCounts).reduce((a, b) => currencyCounts[a] > currencyCounts[b] ? a : b, null);
-                const primaryRate = primaryCode ? (rates[primaryCode] || 1) : 1;
-
-                expenses.forEach(exp => {
-                    const amountTWD = exp.amount * exp.rate;
-                    totalTWD += amountTWD;
-                    
-                    if (balances[exp.payer] !== undefined) {
-                        balances[exp.payer] += amountTWD;
-                    }
-                    
-                    Object.entries(exp.splits).forEach(([name, splitAmt]) => { 
-                        if (balances[name] !== undefined) {
-                            balances[name] -= (splitAmt * exp.rate); 
-                        }
+            const addBook = async (e) => {
+                e.preventDefault();
+                if (!newBook.title || !customId) return;
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), {
+                        ...newBook,
+                        status: 'reading',
+                        createdAt: serverTimestamp()
                     });
-                });
-
-                const debtors = [], creditors = [];
-                Object.entries(balances).forEach(([name, bal]) => {
-                    if (bal < -1) debtors.push({ name, amount: Math.abs(bal) });
-                    else if (bal > 1) creditors.push({ name, amount: bal });
-                });
-
-                const transactions = [];
-                let dIdx = 0, cIdx = 0;
-                const td = JSON.parse(JSON.stringify(debtors)), tc = JSON.parse(JSON.stringify(creditors));
-                
-                while (dIdx < td.length && cIdx < tc.length) {
-                    const amt = Math.min(td[dIdx].amount, tc[cIdx].amount);
-                    if (amt > 0) transactions.push({ from: td[dIdx].name, to: tc[cIdx].name, amount: amt });
-                    
-                    td[dIdx].amount -= amt; 
-                    tc[cIdx].amount -= amt;
-                    
-                    if (td[dIdx].amount <= 0.1) dIdx++;
-                    if (tc[cIdx].amount <= 0.1) cIdx++;
+                    setNewBook({
+                        title: '', author: '', wordCount: '', isWordCountManual: false,
+                        addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: []
+                    });
+                    showToast("新增成功！");
+                } catch (error) {
+                    showToast("新增失敗", "error");
                 }
+            };
 
-                return { totalTWD, transactions, primaryCode, primaryRate };
-            }, [expenses, members, rates]);
+            const updateCategoriesInDb = async (newCats) => {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), {
+                        categories: newCats
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Failed to update categories", err);
+                    showToast("更新分類失敗", "error");
+                }
+            };
 
-            const copyToClipboard = () => {
-                let text = `【${tripId} 費用結算清單】\n`;
-                
-                let hasPrepaid = false;
-                members.forEach(m => {
-                    const paidItems = expenses.filter(e => e.payer === m);
-                    if (paidItems.length > 0) {
-                        hasPrepaid = true;
-                        text += `\n${m} 預付：`;
-                        const itemsStr = paidItems.map(e => {
-                            const sym = CURRENCIES.find(c => c.code === e.currency)?.symbol || '$';
-                            return `${e.item} ${sym}${formatNum(e.amount)}`;
-                        }).join(' + ');
-                        
-                        const totalPrepaidTWD = paidItems.reduce((sum, e) => sum + (e.amount * e.rate), 0);
-                        text += `${itemsStr} = 總共預付 `;
+            const addNewCategory = async (catName) => {
+                if (!catName.trim()) return;
+                const name = catName.trim();
+                if (categories.includes(name)) {
+                    showToast("分類已存在", "error");
+                    return;
+                }
+                const updatedCats = [...categories, name];
+                await updateCategoriesInDb(updatedCats);
+                showToast(`已新增分類「${name}」`);
+                return name; 
+            };
 
-                        if (settlement.primaryCode && settlement.primaryCode !== 'TWD') {
-                            const approxForeign = totalPrepaidTWD / settlement.primaryRate;
-                            const sym = CURRENCIES.find(c => c.code === settlement.primaryCode).symbol;
-                            text += `約 ${sym} ${formatNum(approxForeign)} (TWD ${formatNum(totalPrepaidTWD)})`;
-                        } else {
-                            text += `TWD ${formatNum(totalPrepaidTWD)}`;
-                        }
+            const handleDeleteCategory = async (catToDelete, e) => {
+                e.stopPropagation();
+                setModalData({ category: catToDelete });
+                setModalType('deleteCategory');
+            };
+
+            const toggleNewBookCategory = (cat) => {
+                setNewBook(prev => {
+                    const currentCats = Array.isArray(prev.category) ? prev.category : [];
+                    if (currentCats.includes(cat)) {
+                        return { ...prev, category: currentCats.filter(c => c !== cat) };
+                    } else {
+                        return { ...prev, category: [...currentCats, cat] };
                     }
                 });
+            };
+            
+            const toggleEditBookCategory = (cat) => {
+                setModalData(prev => {
+                    const currentCats = Array.isArray(prev.category) ? prev.category : [];
+                    if (currentCats.includes(cat)) {
+                        return { ...prev, category: currentCats.filter(c => c !== cat) };
+                    } else {
+                        return { ...prev, category: [...currentCats, cat] };
+                    }
+                });
+            };
+
+            const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
+                 const newName = await addNewCategory(name);
+                 if(newName && targetStateSetter) {
+                     targetStateSetter(prev => ({
+                         ...prev,
+                         category: [...(prev.category || []), newName]
+                     }));
+                 }
+            };
+
+            const handleModalAction = async () => {
+                if (!modalType) return;
                 
-                if (hasPrepaid) text += `\n`;
+                try {
+                    if (modalType === 'logout') {
+                        localStorage.removeItem('reading_tracker_custom_id');
+                        setCustomId('');
+                        setBooks([]);
+                        setIsLoginMode(true);
+                        closeModal();
+                        return;
+                    }
+                    
+                    if (modalType === 'deleteCategory') {
+                        const catToDelete = modalData.category;
+                        const updatedCats = categories.filter(c => c !== catToDelete);
+                        await updateCategoriesInDb(updatedCats);
+                        showToast(`已刪除分類「${catToDelete}」`);
+                        closeModal();
+                        return;
+                    }
 
-                text += `━━━━\n\n`;
+                    if (!activeBookId) return;
+                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
 
-                members.forEach(member => {
-                    const involved = expenses.filter(e => e.splits[member] !== undefined);
-                    if (involved.length > 0) {
-                        text += `［${member}］\n`;
-                        involved.forEach(e => {
-                            const splitAmt = e.splits[member];
-                            const twd = Math.round(splitAmt * e.rate);
-                            const sym = CURRENCIES.find(c => c.code === e.currency)?.symbol || '$';
-                            text += ` - ${e.item}：${sym} ${formatNum(splitAmt)}${e.currency === 'TWD' ? '' : ` (TWD ${formatNum(twd)})`}\n`;
+                    if (modalType === 'delete') {
+                        await deleteDoc(bookRef);
+                        showToast("已刪除書籍");
+                    } else if (modalType === 'edit') {
+                        await updateDoc(bookRef, {
+                            title: modalData.title,
+                            author: modalData.author,
+                            category: modalData.category,
+                            wordCount: modalData.wordCount,
+                            addDate: modalData.addDate,
+                            reviewUrl: modalData.reviewUrl,
+                            synopsis: modalData.synopsis
                         });
-                        text += `\n`;
-                    }
-                });
-                text += `━━━━\n【最終收付】(建議以台幣結算)\n`;
-                if (settlement.transactions.length === 0) text += `目前的帳目已結清。\n`;
-                else {
-                    settlement.transactions.forEach(t => {
-                        text += `◆ ${t.from} → ${t.to}：`;
-                        if (settlement.primaryCode && settlement.primaryCode !== 'TWD') {
-                            const foreignAmt = Math.round(t.amount / settlement.primaryRate);
-                            const sym = CURRENCIES.find(c => c.code === settlement.primaryCode).symbol;
-                            text += `約 ${sym} ${formatNum(foreignAmt)} (TWD ${formatNum(t.amount)})`;
-                        } else {
-                            text += `TWD ${formatNum(t.amount)}`;
+                        showToast("書籍資料已更新");
+                    } else {
+                        const updates = {};
+                        if (modalType === 'finish') {
+                            updates.status = 'finished';
+                            updates.finishDate = modalData.date;
+                            updates.rating = modalData.rating;
+                            updates.review = modalData.review || '';
+                            updates.dropChapter = null;
+                            updates.dropDate = null;
+                        } else if (modalType === 'drop') {
+                            updates.status = 'dropped';
+                            updates.dropChapter = modalData.chapter;
+                            updates.dropDate = modalData.date;
+                            updates.finishDate = null;
+                            updates.rating = null;
+                        } else if (modalType === 'reset') {
+                            updates.status = 'reading';
+                            updates.finishDate = null;
+                            updates.dropChapter = null;
+                            updates.dropDate = null;
+                            updates.rating = null;
+                            updates.review = null;
                         }
-                        text += `\n`;
-                    });
+                        await updateDoc(bookRef, updates);
+                        showToast("狀態已更新");
+                    }
+                    closeModal();
+                } catch (error) {
+                    console.error("Action failed:", error);
+                    showToast("操作失敗，請稍後再試", "error");
                 }
-                const el = document.createElement('textarea');
-                el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-                showToast("已複製詳細清單至剪貼簿");
             };
 
-            // 如果沒有 tripId，顯示登入畫面
-            if (!tripId) {
-                return <LoginScreen onJoin={(id) => setTripId(id)} />;
-            }
+            const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
 
-            // 如果正在載入資料
-            if (loading && members.length === 0) {
-                 return (
-                    <div className="min-h-screen flex items-center justify-center bg-background flex-col gap-6">
-                        <div className="loader"></div>
-                        <p className="text-primary tracking-[0.2em] text-xs uppercase font-bold animate-pulse">Syncing with Nature...</p>
+            const openModal = (book, type, e) => {
+                if (e) e.stopPropagation();
+                setActiveBookId(book.id);
+                setModalType(type);
+                
+                if (type === 'edit') {
+                    setModalData({
+                        title: book.title || '',
+                        author: book.author || '',
+                        category: book.category || [],
+                        wordCount: book.wordCount || '',
+                        addDate: book.addDate || '',
+                        reviewUrl: book.reviewUrl || '',
+                        synopsis: book.synopsis || ''
+                    });
+                } else {
+                    setModalData({ 
+                        date: new Date().toISOString().split('T')[0], 
+                        chapter: type === 'drop' ? '' : undefined,
+                        rating: type === 'finish' ? 0 : undefined,
+                        review: type === 'finish' ? (book.review || '') : undefined
+                    });
+                }
+            };
+
+            const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
+
+            const activeBook = useMemo(() => {
+                return books.find(b => b.id === activeBookId);
+            }, [books, activeBookId]);
+
+            const filteredBooks = useMemo(() => {
+                if (!searchTerm.trim()) return books;
+                const term = searchTerm.toLowerCase();
+                return books.filter(b => {
+                    return (
+                        b.title?.toLowerCase().includes(term) ||
+                        b.author?.toLowerCase().includes(term) ||
+                        (b.category && b.category.some(c => c.toLowerCase().includes(term)))
+                    );
+                });
+            }, [books, searchTerm]);
+            
+            const stats = useMemo(() => {
+                const yearStats = {};
+                let totalFinished = 0, totalDropped = 0, totalReading = 0;
+                const activeYears = new Set();
+                books.forEach(b => {
+                    let y = null;
+                    if (b.status === 'reading') {
+                        totalReading++;
+                    } else if (b.status === 'finished' && b.finishDate) {
+                        y = new Date(b.finishDate).getFullYear();
+                        totalFinished++;
+                    } else if (b.status === 'dropped' && b.dropDate) {
+                        y = new Date(b.dropDate).getFullYear();
+                        totalDropped++;
+                    }
+                    if (y) {
+                        activeYears.add(y);
+                        if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
+                        if (b.status === 'finished') yearStats[y].finished++;
+                        if (b.status === 'dropped') yearStats[y].dropped++;
+                    }
+                });
+                return { 
+                    years: Array.from(activeYears).sort((a, b) => b - a), 
+                    data: yearStats, 
+                    total: { finished: totalFinished, dropped: totalDropped, reading: totalReading } 
+                };
+            }, [books]);
+
+            const StarRating = ({ rating, setRating, interactive = false }) => {
+                return (
+                    <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((index) => {
+                            const filled = rating >= index;
+                            const half = rating >= index - 0.5 && !filled;
+                            return (
+                                <div 
+                                    key={index} 
+                                    className={`relative ${interactive ? 'cursor-pointer transition-transform duration-300 active:scale-90 hover:scale-110' : ''}`}
+                                    onClick={(e) => {
+                                        if (interactive) {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const width = rect.width;
+                                            const clickX = e.clientX - rect.left;
+                                            const isLeft = clickX < width / 2;
+                                            setRating(isLeft ? index - 0.5 : index);
+                                        }
+                                    }}
+                                >
+                                    <Star size={interactive ? 32 : 16} className="text-timber fill-transparent" strokeWidth={1.5}/>
+                                    <div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
+                                        <Star size={interactive ? 32 : 16} className="text-secondary fill-secondary border-none"/>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                 );
+                );
+            };
+
+            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-background"><RefreshCw className="animate-spin text-primary" /></div>;
+
+            if (isLoginMode) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+                        {/* Blob Backgrounds */}
+                        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+
+                        {toast && (
+                            <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-soft z-50 animate-fade-in text-white text-sm font-bold tracking-wide flex items-center gap-2 ${toast.type === 'error' ? 'bg-destructive' : 'bg-primary'}`}>
+                                {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                                {toast.message}
+                            </div>
+                        )}
+                        <div className="bg-white/70 p-10 rounded-[3rem] shadow-float border border-white/50 w-full max-w-md backdrop-blur-md relative z-10">
+                            <div className="flex justify-center mb-8 text-primary">
+                                <div className="p-4 bg-primary/10 rounded-full">
+                                    <BookOpen size={48} strokeWidth={1.5} />
+                                </div>
+                            </div>
+                            <h1 className="text-4xl font-bold text-center mb-2 text-foreground tracking-tight">雲端書櫃</h1>
+                            <p className="text-muted-foreground text-center mb-10 text-sm tracking-wide">輸入專屬 ID，開啟你的閱讀旅程。</p>
+                            <form onSubmit={handleLogin} className="space-y-6">
+                                <input 
+                                    value={customId} 
+                                    onChange={e=>setCustomId(e.target.value)} 
+                                    placeholder="例如: alex2026" 
+                                    className="w-full p-4 bg-white/50 border border-timber rounded-full text-center text-lg placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" 
+                                />
+                                <button type="submit" className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold flex justify-center gap-2 hover:scale-105 hover:shadow-hover transition-all duration-300">
+                                    <LogIn size={20} strokeWidth={2}/> 進入書櫃
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                );
             }
 
             return (
-                <div className="min-h-screen pb-32">
-                    {/* Header: Organic & Glassmorphism */}
-                    <header className="fixed top-4 left-0 right-0 max-w-xl mx-auto z-40 px-4">
-                        <div className="bg-white/70 backdrop-blur-md border border-border/50 rounded-full px-6 py-3 shadow-soft flex justify-between items-center transition-all hover:bg-white/80">
-                            <div>
-                                <h1 className="text-lg flex items-center gap-2 text-primary font-serif font-bold tracking-tight">
-                                    <Icon name="cloud-sun" className="w-5 h-5 text-secondary" /> {tripId}
-                                </h1>
+                <div className="min-h-screen relative">
+                    {toast && (
+                        <div className={`fixed top-24 md:top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-soft z-50 animate-fade-in text-white text-sm font-bold tracking-wide flex items-center gap-2 ${toast.type === 'error' ? 'bg-destructive' : 'bg-primary'}`}>
+                            {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
+                            {toast.message}
+                        </div>
+                    )}
+
+                    <header className="sticky top-4 z-40 mx-auto max-w-3xl px-4 mb-8">
+                        <div className="bg-white/70 backdrop-blur-md rounded-full shadow-soft border border-white/40 px-6 py-3 flex justify-between items-center">
+                            <div className="flex items-center gap-3 text-foreground font-bold text-xl tracking-tight">
+                                <div className="bg-primary/10 p-2 rounded-full text-primary">
+                                    <BookOpen size={20} strokeWidth={2} />
+                                </div>
+                                <span className="font-serif">閱讀手帳</span>
                             </div>
-                            <div className="flex gap-1">
-                                 <button onClick={fetchRates} className={`p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors ${loadingRates ? 'animate-spin' : ''}`}>
-                                    <Icon name="refresh-cw" className="w-4 h-4" />
-                                </button>
-                                <button onClick={handleLogout} className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="登出">
-                                    <Icon name="log-out" className="w-4 h-4" />
+                            <div className="flex items-center gap-4">
+                                <div className="hidden md:block text-xs font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full tracking-wide">
+                                    ID: {customId}
+                                </div>
+                                <button onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors p-2 hover:bg-destructive/10 rounded-full" title="登出">
+                                    <LogOut size={20} strokeWidth={2}/>
                                 </button>
                             </div>
                         </div>
                     </header>
 
-                    <main className="max-w-xl mx-auto p-4 pt-24 space-y-8">
-                        {/* 1. 同行夥伴 */}
-                        <section className="bg-[#FEFEFA] rounded-organic border border-border/50 p-6 shadow-soft relative overflow-hidden group">
-                             <div className="absolute top-0 right-0 w-32 h-32 bg-accent/30 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-                            
-                            <h2 className="text-xl font-serif font-bold mb-6 flex items-center gap-3 text-foreground">
-                                <div className="p-2 bg-primary/10 rounded-xl text-primary"><Icon name="users" className="w-5 h-5" /></div> 同行夥伴
-                            </h2>
-                            <div className="flex gap-2 mb-6">
-                                <input type="text" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} onKeyPress={e => e.key === 'Enter' && addMember()} placeholder="輸入夥伴姓名..." className="flex-1 min-w-0 px-6 py-3 bg-white border border-border rounded-full outline-none text-base placeholder:text-muted-foreground/60 focus:bg-white/80 transition-all" />
-                                <button onClick={addMember} className="bg-primary text-primary-foreground w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><Icon name="plus" /></button>
+                    <main className="max-w-4xl mx-auto px-4 pb-20 space-y-12">
+                        {/* 統計區塊 - Organic Blobs */}
+                        <section className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4 md:gap-8">
+                                <div className="bg-[#F6F5F0] p-6 md:p-8 blob-card-1 border border-timber/30 shadow-soft relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">
+                                    <div className="absolute -right-4 -top-4 text-timber/20 group-hover:text-timber/30 transition-colors duration-500"><Hourglass size={80}/></div>
+                                    <div className="text-sm text-muted-foreground font-medium mb-1 relative z-10">待讀清單</div>
+                                    <div className="text-4xl md:text-5xl font-bold text-foreground font-serif relative z-10">
+                                        {stats.total.reading} <span className="text-base font-sans font-normal text-muted-foreground">本</span>
+                                    </div>
+                                </div>
+                                <div className="bg-primary text-primary-foreground p-6 md:p-8 blob-card-2 shadow-soft relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">
+                                    <div className="absolute -right-4 -top-4 text-white/10 group-hover:text-white/20 transition-colors duration-500"><Trophy size={80}/></div>
+                                    <div className="text-sm text-primary-foreground/80 font-medium mb-1 relative z-10">已完食</div>
+                                    <div className="text-4xl md:text-5xl font-bold font-serif relative z-10">
+                                        {stats.total.finished} <span className="text-base font-sans font-normal text-primary-foreground/60">本</span>
+                                    </div>
+                                    {stats.total.dropped > 0 && <div className="text-xs text-primary-foreground/60 mt-2 relative z-10">另有 {stats.total.dropped} 本棄書</div>}
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-3">
-                                {members.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground italic pl-2">加入朋友，開始這段旅程...</p>
-                                ) : members.map(m => (
-                                    <span key={m} className="bg-muted text-foreground px-5 py-2.5 rounded-full flex items-center gap-3 text-sm font-bold shadow-sm border border-transparent hover:border-border transition-all">
-                                        {m} <button onClick={() => removeMember(m)} className="text-muted-foreground/70 hover:text-destructive transition-colors"><Icon name="x" className="w-3.5 h-3.5" /></button>
-                                    </span>
+                            
+                            {stats.years.length > 0 && (
+                                <div className="flex flex-wrap gap-4 justify-center">
+                                    {stats.years.map(y => (
+                                        <div key={y} className="bg-white/60 backdrop-blur-sm px-6 py-3 rounded-[2rem] border border-timber/30 flex items-center gap-4 shadow-sm hover:shadow-soft transition-all duration-300">
+                                            <span className="text-sm font-bold text-primary font-serif text-lg">{y}</span>
+                                            <div className="w-px h-6 bg-timber/50"></div>
+                                            <div className="flex gap-4 text-xs font-medium text-muted-foreground">
+                                                <span className="flex items-center gap-1"><CheckCircle size={12} className="text-primary"/> {stats.data[y].finished}</span>
+                                                <span className="flex items-center gap-1"><BookX size={12} className="text-destructive"/> {stats.data[y].dropped}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+
+                        {/* 新增書籍區塊 */}
+                        <section className="bg-white/40 backdrop-blur-sm rounded-[2.5rem] border border-white/60 p-6 md:p-10 shadow-float relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0"></div>
+                            
+                            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-foreground font-serif">
+                                <span className="bg-accent p-2 rounded-xl text-accent-foreground"><PenTool size={20} /></span>
+                                紀錄新書
+                            </h2>
+                            
+                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                                <div className="md:col-span-5">
+                                    <input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" required />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
+                                </div>
+                                <div className="md:col-span-3">
+                                    <button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full text-primary-600 bg-secondary/10 hover:bg-secondary/20 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm font-bold disabled:opacity-50 py-3">
+                                        {isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" strokeWidth={2.5} />} 搜尋資訊
+                                    </button>
+                                </div>
+                                
+                                <div className="md:col-span-12 relative py-2">
+                                    <CategoryPicker 
+                                        selectedCategories={newBook.category} 
+                                        onToggle={toggleNewBookCategory} 
+                                        allCategories={categories}
+                                        onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)}
+                                        onDelete={handleDeleteCategory}
+                                    />
+                                </div>
+
+                                <div className="md:col-span-4 relative">
+                                    <input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
+                                    {!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-4 top-3.5 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">估算</span>}
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all text-muted-foreground" />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
+                                </div>
+                                
+                                <div className="md:col-span-12">
+                                    <textarea placeholder="寫下故事大綱或是當下的期待..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-5 bg-white rounded-[2rem] border border-timber focus:border-primary/50 outline-none h-32 placeholder:text-muted-foreground/70 resize-none text-base focus:shadow-soft transition-all" />
+                                </div>
+                                
+                                <div className="md:col-span-12 flex justify-end mt-2">
+                                    <button type="submit" className="w-full md:w-auto bg-primary text-primary-foreground px-10 py-3 rounded-full font-bold hover:bg-primary-600 hover:shadow-hover hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2">
+                                        <Plus size={20} strokeWidth={2.5} /> 加入書櫃
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+
+                        {/* 書單列表區塊 */}
+                        <section className="space-y-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+                                <h2 className="text-2xl font-bold text-foreground font-serif flex items-center gap-2">
+                                    書單列表 {loading && <RefreshCw className="animate-spin text-muted-foreground w-4 h-4" />}
+                                </h2>
+                                
+                                <div className="w-full md:w-auto relative group">
+                                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜尋書名、作者..." 
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                        className="w-full md:w-64 pl-10 pr-10 py-2.5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm shadow-sm"
+                                    />
+                                    {searchTerm && (
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                            <X size={14} strokeWidth={3}/>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {!loading && filteredBooks.length === 0 && (
+                                <div className="text-center py-20 text-muted-foreground bg-white/30 rounded-[3rem] border-2 border-dashed border-timber/50">
+                                    <BookOpen className="mx-auto mb-4 opacity-30 w-12 h-12" strokeWidth={1} />
+                                    <p className="font-serif italic text-lg opacity-70">
+                                        {books.length === 0 ? "書櫃空空如也，像是一張白紙。" : "沒有找到相關的書籍。"}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 gap-6">
+                                {filteredBooks.map((book, idx) => (
+                                    <div key={book.id} className={`group bg-[#FEFEFA] p-6 md:p-8 border border-timber/40 hover:border-primary/30 transition-all duration-500 animate-fade-in shadow-sm hover:shadow-hover relative overflow-hidden flex flex-col md:flex-row gap-6 md:gap-8 ${idx % 2 === 0 ? 'rounded-[2rem_3rem_2rem_2.5rem]' : 'rounded-[3rem_2rem_2.5rem_2rem]'}`}>
+                                        
+                                        {/* Status Indicator Stripe */}
+                                        <div className={`absolute left-0 top-0 bottom-0 w-2 ${book.status==='finished'?'bg-primary': book.status==='dropped'?'bg-destructive': 'bg-timber'}`}></div>
+
+                                        <div className="flex-1 pl-4 md:pl-0">
+                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-2">
+                                                <div>
+                                                    <div className="flex flex-wrap gap-2 items-center mb-2">
+                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${book.status==='finished'?'bg-primary/10 text-primary': book.status==='dropped'?'bg-destructive/10 text-destructive': 'bg-muted text-muted-foreground'}`}>
+                                                            {book.status==='finished'?'COMPLETED':book.status==='dropped'?'DROPPED':'READING'}
+                                                        </span>
+                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, i) => (
+                                                            <span key={i} className="text-[10px] text-foreground/70 bg-secondary/10 px-2 py-0.5 rounded-md">{cat}</span>
+                                                        ))}
+                                                    </div>
+                                                    <h3 className="font-serif font-bold text-2xl text-foreground leading-tight group-hover:text-primary transition-colors duration-300">{book.title}</h3>
+                                                </div>
+                                                {book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}
+                                            </div>
+                                            
+                                            <div className="text-sm text-muted-foreground space-y-4">
+                                                <div className="flex flex-wrap gap-4 md:gap-6 text-xs font-medium opacity-80 border-b border-timber/30 pb-3 border-dashed">
+                                                    <span className="flex items-center gap-1.5"><User size={14}/> {book.author||'佚名'}</span>
+                                                    <span className="flex items-center gap-1.5"><TrendingUp size={14}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()} 字` : '-'}</span>
+                                                    <span className="flex items-center gap-1.5"><Calendar size={14}/> {book.addDate}</span>
+                                                </div>
+
+                                                {book.status === 'finished' && (
+                                                    <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                                                        <p className="text-primary-600 flex items-center gap-2 text-sm font-bold mb-1"><CheckCircle size={16}/> 完食於 {book.finishDate}</p>
+                                                        {book.review && <p className="text-foreground/80 text-sm italic leading-relaxed pl-6 border-l-2 border-primary/20">{book.review}</p>}
+                                                    </div>
+                                                )}
+                                                
+                                                {book.status === 'dropped' && (
+                                                    <div className="bg-destructive/5 p-4 rounded-2xl border border-destructive/10 text-destructive">
+                                                        <p className="flex items-center gap-2 font-bold"><BookX size={16}/> <span>止步於第 {book.dropChapter} 章</span></p>
+                                                        {book.dropDate && <p className="text-xs opacity-75 mt-1 pl-6">{book.dropDate}</p>}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex flex-wrap gap-4 pt-1">
+                                                    {book.reviewUrl && (
+                                                        <a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1.5 text-secondary hover:text-secondary-600 font-bold text-xs transition-colors hover:underline decoration-2 underline-offset-4">
+                                                            <LinkIcon size={14}/> 閱讀推薦
+                                                        </a>
+                                                    )}
+                                                    {book.synopsis && (
+                                                        <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors">
+                                                            <FileText size={14}/> {expandedBooks[book.id] ? '收起大綱' : '查看大綱'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                
+                                                {expandedBooks[book.id] && (
+                                                    <div className="text-sm text-foreground/80 leading-7 bg-white/50 p-4 rounded-2xl whitespace-pre-wrap animate-fade-in border border-timber/20">
+                                                        {book.synopsis}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-row md:flex-col gap-2 md:w-32 shrink-0 md:justify-center border-t md:border-t-0 md:border-l border-timber/30 pt-4 md:pt-0 md:pl-6">
+                                            {book.status === 'reading' ? (
+                                                <>
+                                                    <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-primary text-primary-foreground hover:bg-primary-600 rounded-full text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
+                                                        <CheckCircle size={16} /> 完食
+                                                    </button>
+                                                    <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-white text-destructive border border-destructive/30 hover:bg-destructive hover:text-white rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                                        <BookX size={16} /> 棄書
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-white text-muted-foreground hover:text-foreground border border-timber hover:border-foreground/30 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                                    <RotateCcw size={16} /> 重讀
+                                                </button>
+                                            )}
+                                            
+                                            <div className="hidden md:block w-8 h-px bg-timber/50 mx-auto my-2"></div>
+
+                                            <div className="flex gap-2 justify-center">
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors" title="編輯">
+                                                    <Edit3 size={18} strokeWidth={2} />
+                                                </button>
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="p-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors" title="刪除">
+                                                    <Trash2 size={18} strokeWidth={2} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </section>
 
-                        {/* 2. 紀錄支出 */}
-                        <section className="bg-[#FEFEFA] rounded-organic border border-border/50 p-6 shadow-soft space-y-6 relative overflow-hidden">
-                             <div className="absolute bottom-0 left-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+                        {/* Modals - Glassmorphism & Organic */}
+                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory') && (
+                            <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-4 md:p-6 transition-all" onClick={closeModal}>
+                                <div className="bg-[#FDFCF8] rounded-[2rem] w-full max-w-lg p-8 shadow-2xl border border-white animate-modal-in max-h-[85vh] overflow-y-auto no-scrollbar relative" onClick={e => e.stopPropagation()}>
+                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20"></div>
+                                    
+                                    <h3 className="text-2xl font-bold mb-6 text-center text-foreground font-serif">
+                                        {modalType === 'finish' && '紀錄完食日'}
+                                        {modalType === 'drop' && '紀錄棄書點'}
+                                        {modalType === 'reset' && '重設狀態'}
+                                        {modalType === 'delete' && '刪除書籍'}
+                                        {modalType === 'logout' && '登出確認'}
+                                        {modalType === 'deleteCategory' && '刪除分類'}
+                                        {modalType === 'edit' && '編輯書籍資料'}
+                                    </h3>
 
-                            <h2 className="text-xl font-serif font-bold flex items-center gap-3 text-foreground">
-                                <div className="p-2 bg-secondary/10 rounded-xl text-secondary"><Icon name="coffee" className="w-5 h-5" /></div> 紀錄足跡
-                            </h2>
-                            
-                            <div className="space-y-4 relative z-10">
-                                <div className="relative group">
-                                    <label className="text-xs font-bold text-muted-foreground ml-4 mb-1 block uppercase tracking-wider">項目</label>
-                                    <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：山間小食、車票..." className="w-full px-6 py-3 bg-white/50 border border-border rounded-full outline-none text-base transition-all focus:bg-white" />
-                                </div>
-                                
-                                <div className="flex gap-3">
-                                    <div className="w-[40%]">
-                                        <label className="text-xs font-bold text-muted-foreground ml-4 mb-1 block uppercase tracking-wider">幣別</label>
-                                        <div className="relative">
-                                            <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-full px-5 py-3 bg-white/50 border border-border rounded-full text-base outline-none appearance-none focus:bg-white transition-all">
-                                                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                                            </select>
-                                            <Icon name="chevron-down" className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                        </div>
+                                    <div className="mb-8">
+                                        {modalType === 'edit' && (
+                                            <div className="space-y-4">
+                                                <input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
+                                                <input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
+                                                
+                                                <CategoryPicker 
+                                                    selectedCategories={modalData.category} 
+                                                    onToggle={toggleEditBookCategory} 
+                                                    allCategories={categories}
+                                                    onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)}
+                                                    onDelete={handleDeleteCategory}
+                                                />
+
+                                                <div className="flex gap-4">
+                                                    <input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-1/2 p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
+                                                    <input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-1/2 p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
+                                                </div>
+                                                <input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
+                                                <textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-4 bg-white rounded-3xl border border-timber outline-none h-32 resize-none" />
+                                            </div>
+                                        )}
+                                        {modalType === 'finish' && (
+                                            <div className="bg-primary/5 p-6 rounded-3xl space-y-6">
+                                                <div>
+                                                    <label className="text-xs font-bold text-primary mb-2 block uppercase tracking-wider">完食日期</label>
+                                                    <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-white border border-timber rounded-full outline-none p-3 px-5 text-center text-foreground font-bold" />
+                                                </div>
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <label className="text-xs font-bold text-primary uppercase tracking-wider">評分</label>
+                                                    <StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider"><MessageSquare size={12}/> 心得</label>
+                                                    <textarea 
+                                                        placeholder="寫點什麼紀錄一下心情..." 
+                                                        value={modalData.review} 
+                                                        onChange={e=>setModalData({...modalData, review:e.target.value})} 
+                                                        className="w-full p-4 bg-white rounded-2xl border border-timber focus:border-primary outline-none h-24 resize-none text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        {modalType === 'drop' && (
+                                            <div className="bg-destructive/5 p-6 rounded-3xl space-y-5">
+                                                <div className="space-y-2"><label className="text-xs font-bold text-destructive block uppercase tracking-wider">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-white border border-destructive/20 rounded-full outline-none p-3 px-5 text-center text-foreground font-bold" /></div>
+                                                <div className="space-y-2"><label className="text-xs font-bold text-destructive block uppercase tracking-wider">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-white border border-destructive/20 rounded-full outline-none p-3 px-5 text-center placeholder-muted-foreground" /></div>
+                                            </div>
+                                        )}
+                                        {modalType === 'reset' && (
+                                            <div className="text-center p-4">
+                                                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <RotateCcw size={32} className="text-muted-foreground" />
+                                                </div>
+                                                <p className="mb-2 font-bold text-foreground text-lg font-serif">{activeBook?.title}</p>
+                                                <p className="text-sm text-muted-foreground">確定要將這本書重設為「未讀」嗎？</p>
+                                            </div>
+                                        )}
+                                        {modalType === 'delete' && (
+                                            <div className="text-center p-4">
+                                                <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <Trash2 size={32} className="text-destructive" />
+                                                </div>
+                                                <p className="mb-2 font-bold text-foreground text-lg font-serif">{activeBook?.title}</p>
+                                                <p className="text-sm text-muted-foreground">確定要刪除這筆紀錄嗎？<br/>此動作無法復原。</p>
+                                            </div>
+                                        )}
+                                        {modalType === 'logout' && (
+                                            <div className="text-center p-4">
+                                                <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <LogOut size={32} className="text-accent-foreground" />
+                                                </div>
+                                                <p className="text-lg font-bold font-serif mb-2">確定要登出嗎？</p>
+                                                <p className="text-xs text-muted-foreground">下次需要重新輸入 ID 才能查看書櫃。</p>
+                                            </div>
+                                        )}
+                                        {modalType === 'deleteCategory' && (
+                                            <div className="text-center p-4">
+                                                <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <Trash2 size={32} className="text-destructive" />
+                                                </div>
+                                                <p className="mb-2 font-bold text-foreground text-lg">{modalData.category}</p>
+                                                <p className="text-sm text-muted-foreground">確定要刪除此分類嗎？</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex-1 relative">
-                                        <label className="text-xs font-bold text-muted-foreground ml-4 mb-1 block uppercase tracking-wider">金額</label>
-                                        <span className="absolute left-5 top-[2.2rem] text-muted-foreground text-sm">{CURRENCIES.find(c => c.code === form.currency)?.symbol}</span>
-                                        <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="0" className="w-full pl-12 pr-6 py-3 bg-white/50 border border-border rounded-full text-xl font-bold outline-none text-right focus:bg-white transition-all text-primary" />
-                                    </div>
-                                </div>
 
-                                <div className="bg-muted/30 px-5 py-3 rounded-2xl border border-border/30 flex justify-between items-center text-sm text-muted-foreground">
-                                    <span className="flex items-center gap-2"><Icon name="trending-up" className="w-3 h-3" /> 匯率</span>
-                                    <span className="font-mono text-xs font-bold">1 {form.currency} ≈ {rates[form.currency] || '1.00'} TWD</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 relative z-10">
-                                <label className="text-xs font-bold text-muted-foreground ml-1 uppercase tracking-wider">由誰預付</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {members.map(m => (
-                                        <button key={m} onClick={() => setForm({...form, payer: m})} 
-                                            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${form.payer === m ? 'bg-primary text-primary-foreground shadow-lg scale-105' : 'bg-white border border-border text-muted-foreground hover:border-primary/50'}`}>
-                                            {m}
+                                    <div className="flex gap-4">
+                                        <button onClick={closeModal} className="flex-1 py-3 text-muted-foreground hover:bg-muted rounded-full transition font-bold text-sm">取消</button>
+                                        <button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm font-bold
+                                            ${['finish', 'edit'].includes(modalType)?'bg-primary':
+                                            ['reset', 'logout'].includes(modalType)?'bg-foreground':
+                                            'bg-destructive'}`}>
+                                            確認
                                         </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 relative z-10">
-                                <label className="text-xs font-bold text-muted-foreground ml-1 uppercase tracking-wider">誰要分攤</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {members.map(m => (
-                                        <button key={m} onClick={() => toggleParticipant(m)} 
-                                            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${form.participants.includes(m) ? 'bg-secondary text-white shadow-md' : 'bg-white border border-border text-muted-foreground hover:border-secondary/50'}`}>
-                                            {m}
-                                        </button>
-                                    ))}
-                                    <button onClick={() => setForm({...form, participants: [...members]})} className="text-xs text-primary font-bold px-3 hover:underline underline-offset-4 decoration-wavy decoration-primary/30">全選</button>
-                                </div>
-                            </div>
-
-                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} 
-                                className="w-full bg-primary text-primary-foreground py-4 rounded-full text-lg shadow-soft font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] hover:shadow-lg active:scale-95 transition-all duration-300 tracking-wide mt-4">
-                                記錄並同步
-                            </button>
-                        </section>
-
-                        {/* 累計看板 */}
-                        <section className="bg-primary rounded-[2.5rem] p-8 shadow-float text-center text-primary-foreground relative overflow-hidden group">
-                            {/* 裝飾圓圈 */}
-                            <div className="absolute top-[-20%] left-[-10%] w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
-                            <div className="absolute bottom-[-20%] right-[-10%] w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
-                            
-                            <h3 className="text-xs text-primary-foreground/70 font-bold tracking-[0.2em] uppercase mb-2">Total Trip Expenditure</h3>
-                            
-                            <div className="text-5xl font-serif font-bold flex items-center justify-center gap-2 mb-2">
-                                <span className="text-2xl opacity-60 font-sans tracking-tight">
-                                    {settlement.primaryCode && settlement.primaryCode !== 'TWD' ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol : 'TWD'}
-                                </span> 
-                                {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' ? settlement.totalTWD / settlement.primaryRate : settlement.totalTWD)}
-                            </div>
-                            
-                            {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
-                                <div className="inline-block bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium border border-white/10">
-                                    ≈ TWD {formatNum(settlement.totalTWD)}
-                                </div>
-                            )}
-
-                            <div className="mt-6 flex justify-center">
-                                <div className="bg-white/20 backdrop-blur-md px-5 py-2 rounded-full flex items-center gap-2 text-sm font-bold border border-white/20">
-                                    <Icon name="scroll" className="w-4 h-4" /> {expenses.length} 筆回憶
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* 3. 支出明細 */}
-                        <section className="space-y-6">
-                            <div className="flex justify-between items-center px-4">
-                                <h2 className="text-xl font-serif font-bold flex items-center gap-3 text-foreground"><Icon name="history" className="text-muted-foreground" /> 明細</h2>
-                                <button onClick={() => setShowClearConfirm(true)} className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-destructive transition-colors px-3 py-1.5 hover:bg-destructive/10 rounded-full">
-                                    <Icon name="trash-2" className="w-3.5 h-3.5" /> 清除
-                                </button>
-                            </div>
-                            <div className="space-y-4">
-                                {expenses.length === 0 ? (
-                                    <div className="py-16 text-center">
-                                        <div className="text-muted-foreground/30 mb-2"><Icon name="leaf" className="w-12 h-12 mx-auto" /></div>
-                                        <p className="text-muted-foreground font-serif text-lg">尚未有紀錄</p>
                                     </div>
-                                ) : expenses.map((exp, idx) => {
-                                    return (
-                                        <div key={exp.id} className="bg-white rounded-[2rem] p-5 shadow-sm border border-border/40 hover:border-primary/30 hover:shadow-soft transition-all duration-300 group">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="bg-muted w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground font-serif font-bold text-lg shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                                        {idx + 1}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-bold text-foreground leading-tight">{exp.item}</h3>
-                                                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                                                            <span>{exp.timestamp}</span>
-                                                            {exp.currency !== 'TWD' && <span className="bg-muted/50 px-1.5 py-0.5 rounded text-[10px]">Ex: {exp.rate}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => setDeleteTargetId(exp.id)} className="text-border hover:text-destructive p-2 transition-colors"><Icon name="x-circle" className="w-5 h-5" /></button>
-                                            </div>
-
-                                            <div className="pl-14">
-                                                <div className="flex items-baseline gap-2 mb-3">
-                                                    <span className="text-sm text-muted-foreground">由 <strong className="text-primary">{exp.payer}</strong> 支付</span>
-                                                    <span className="text-xl font-serif font-bold text-foreground">
-                                                        {CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(exp.amount)}
-                                                    </span>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    {Object.entries(exp.splits).map(([name, amt]) => (
-                                                        <div key={name} className="flex justify-between items-center bg-[#FDFCF8] px-4 py-2 rounded-xl border border-border/30 text-sm">
-                                                            <span className="text-muted-foreground font-medium">{name}</span>
-                                                            <span className="font-bold text-foreground/80">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(amt)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
-
-                        {/* 4. 結算統計 */}
-                        <section className="space-y-6">
-                            <div className="flex justify-between items-center px-4">
-                                <h2 className="text-xl font-serif font-bold flex items-center gap-3 text-foreground"><Icon name="check-circle-2" className="text-primary" /> 最終結算</h2>
-                                <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs font-bold text-primary-foreground bg-primary px-5 py-2.5 rounded-full hover:bg-primary/90 shadow-lg active:scale-95 transition-all"><Icon name="copy" className="w-3.5 h-3.5" /> 複製文字</button>
-                            </div>
-                            
-                            <div className="bg-[#FEFEFA] rounded-[2.5rem] border border-border/60 shadow-float overflow-hidden relative">
-                                <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-50"></div>
-                                <div className="p-6 sm:p-8 space-y-6">
-                                    <div className="text-center pb-6 border-b border-dashed border-border/60">
-                                        <h4 className="text-sm text-primary font-bold tracking-[0.2em] uppercase">Settlement Plan</h4>
-                                        <p className="text-xs text-muted-foreground mt-1">Happy Travel • Fair Sharing</p>
-                                    </div>
-
-                                    {settlement.transactions.map((t, i) => (
-                                        <div key={i} className="flex flex-col sm:flex-row items-center justify-between p-5 bg-white rounded-3xl border border-border/40 gap-4 shadow-sm hover:shadow-md transition-all">
-                                            <div className="flex items-center gap-3 w-full sm:w-auto justify-center">
-                                                <div className="text-center">
-                                                    <div className="text-sm font-bold text-foreground bg-muted/30 px-4 py-1.5 rounded-full border border-border/20">{t.from}</div>
-                                                </div>
-                                                <Icon name="arrow-right" className="text-muted-foreground/50" />
-                                                <div className="text-center">
-                                                    <div className="text-sm font-bold text-foreground bg-muted/30 px-4 py-1.5 rounded-full border border-border/20">{t.to}</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-center sm:items-end">
-                                                <div className="text-2xl font-serif font-bold text-secondary flex items-baseline gap-1">
-                                                    <span className="text-sm font-sans font-medium opacity-60">
-                                                         {settlement.primaryCode && settlement.primaryCode !== 'TWD' ? CURRENCIES.find(c => c.code === settlement.primaryCode)?.symbol : 'TWD'}
-                                                    </span> 
-                                                    {formatNum(settlement.primaryCode && settlement.primaryCode !== 'TWD' ? t.amount / settlement.primaryRate : t.amount)}
-                                                </div>
-                                                {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
-                                                    <span className="text-xs text-muted-foreground mt-0.5">≈ TWD {formatNum(t.amount)}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {settlement.transactions.length === 0 && (
-                                        <div className="text-center py-8 text-muted-foreground font-serif italic bg-muted/20 rounded-3xl">所有帳目均已結清</div>
-                                    )}
                                 </div>
                             </div>
-                        </section>
+                        )}
                     </main>
-
-                    {/* Toast 訊息 */}
-                    {toast && (
-                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-foreground text-background px-8 py-3 rounded-full shadow-2xl z-[150] font-bold text-sm tracking-wide animate-bounce border border-white/10">
-                            {toast}
-                        </div>
-                    )}
-
-                    {/* 刪除確認視窗 */}
-                    {deleteTargetId && (
-                        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-float border border-border scale-up-center text-center">
-                                <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4 text-destructive">
-                                    <Icon name="alert-triangle" />
-                                </div>
-                                <h3 className="text-xl font-serif font-bold text-foreground mb-2">確認刪除？</h3>
-                                <p className="text-muted-foreground text-sm mb-8">這筆紀錄將會永久移除。</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => setDeleteTargetId(null)} className="py-3 text-muted-foreground font-bold hover:bg-muted/50 rounded-2xl transition-colors">取消</button>
-                                    <button onClick={confirmDeleteExpense} className="py-3 bg-destructive text-white font-bold rounded-2xl hover:shadow-lg hover:scale-105 transition-all">刪除</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 登出確認視窗 */}
-                    {showLogoutConfirm && (
-                        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-float border border-border scale-up-center text-center">
-                                <h3 className="text-xl font-serif font-bold text-primary mb-2">暫時離開？</h3>
-                                <p className="text-muted-foreground text-sm mb-8">資料已安全保存在雲端，隨時可以回來。</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => setShowLogoutConfirm(false)} className="py-3 text-muted-foreground font-bold hover:bg-muted/50 rounded-2xl transition-colors">取消</button>
-                                    <button onClick={confirmLogout} className="py-3 bg-primary text-primary-foreground font-bold rounded-2xl hover:shadow-lg hover:scale-105 transition-all">登出</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 清除全部確認 */}
-                    {showClearConfirm && (
-                        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-float border border-border scale-up-center text-center">
-                                <h3 className="text-xl font-serif font-bold text-destructive mb-2">清空所有紀錄？</h3>
-                                <p className="text-muted-foreground text-sm mb-8">此操作無法復原，請確保所有人都已經完成對帳。</p>
-                                <div className="flex flex-col gap-3">
-                                    <button onClick={clearAllData} className="w-full py-4 bg-destructive text-white font-bold rounded-2xl shadow-lg hover:scale-105 transition-all">確認清空</button>
-                                    <button onClick={() => setShowClearConfirm(false)} className="w-full py-3 text-muted-foreground font-bold hover:bg-muted/50 rounded-2xl transition-colors">取消</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const root = createRoot(document.getElementById('root'));
+        root.render(<ReadingTracker />);
     </script>
 </body>
 </html>
