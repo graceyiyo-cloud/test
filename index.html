@@ -6,15 +6,16 @@
     <title>1/30(五)年會排演工作人員點餐</title>
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --bg-color: #eaeff2;
-            --card-bg: #ffffff;
-            --text-main: #2c3e50;
-            --text-sub: #7f8c8d;
-            --border-color: #dce4ec;
-            --success-color: #27ae60;
-            --error-color: #e74c3c;
+            /* 文青風配色：森林綠、暖焦糖、米白背景 */
+            --primary-color: #3d5a45;    /* 森林深綠 */
+            --accent-color: #a67c52;     /* 暖焦糖色 */
+            --bg-color: #f4f1ea;         /* 文青米色 */
+            --card-bg: #ffffff;          /* 純白卡片 */
+            --text-main: #4a4a4a;        /* 暖灰文字 */
+            --text-sub: #8c8c8c;         /* 淺灰文字 */
+            --border-color: #e0ddd5;     /* 淺米邊框 */
+            --success-color: #6b8e23;    /* 橄欖綠 */
+            --error-color: #bc5e5e;      /* 磚紅 */
         }
 
         body {
@@ -23,7 +24,7 @@
             margin: 0;
             padding: 20px 15px 80px 15px;
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.8;
             -webkit-text-size-adjust: 100%;
         }
 
@@ -32,73 +33,84 @@
             margin: 0 auto;
             background: var(--card-bg);
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.1);
+            border-radius: 20px; /* 增加圓角感 */
+            box-shadow: 0 15px 35px rgba(61, 90, 69, 0.08);
             width: 100%;
             box-sizing: border-box;
             position: relative;
         }
 
         @media (max-width: 480px) {
-            .container { padding: 25px 20px; }
+            .container { padding: 30px 20px; }
             h1 { font-size: 18px; }
             header p { font-size: 1.3em; }
         }
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 20px;
+            padding-bottom: 25px;
         }
 
         h1 {
-            color: var(--text-sub);
+            color: var(--accent-color);
             margin: 0 0 10px 0;
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 2px;
         }
         
         header p {
             font-weight: 700;
-            font-size: 1.5em;
+            font-size: 1.4em;
             margin: 0;
-            color: var(--text-main);
+            color: var(--primary-color);
         }
 
         .deadline-notice {
             color: var(--error-color);
-            font-size: 0.95em;
-            margin-top: 8px;
-            font-weight: 600;
+            font-size: 0.9em;
+            margin-top: 12px;
+            font-weight: 500;
             display: inline-block;
-            background: rgba(231, 76, 60, 0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
+            background: rgba(188, 94, 94, 0.08);
+            padding: 4px 16px;
+            border-radius: 30px;
         }
 
-        .form-group { margin-bottom: 25px; }
+        .form-group { margin-bottom: 28px; }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
             font-size: 0.95em;
+            color: var(--primary-color);
         }
 
         input, select {
             width: 100%;
-            padding: 12px 15px;
+            padding: 14px 15px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 10px;
             font-size: 16px !important;
             box-sizing: border-box;
-            background-color: #f9fbfc;
+            background-color: #fafaf8;
+            color: var(--text-main);
             appearance: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(166, 124, 82, 0.1);
         }
 
         select {
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232c3e50%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a67c52%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 15px top 50%;
             background-size: 12px auto;
@@ -107,28 +119,30 @@
         .options-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
         
         .option-btn {
             padding: 12px 5px;
             border: 1px solid var(--border-color);
             background-color: #fff;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 15px;
-            transition: all 0.2s;
+            color: var(--text-sub);
+            transition: all 0.25s;
         }
         
         .option-btn.active {
             background-color: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(61, 90, 69, 0.2);
         }
 
         .option-btn:disabled {
-            background-color: #f0f0f0;
-            color: #ccc !important;
+            background-color: #f5f5f5;
+            color: #ddd !important;
             cursor: not-allowed;
             border-color: #eee;
         }
@@ -136,60 +150,61 @@
         .price-display {
             text-align: right;
             font-size: 1.3em;
-            color: var(--primary-color);
+            color: var(--accent-color);
             font-weight: 700;
-            margin: 30px 0 25px 0;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
+            margin: 35px 0 30px 0;
+            padding-top: 25px;
+            border-top: 1px dashed var(--border-color); /* 虛線更有文青感 */
             display: flex;
             justify-content: space-between;
         }
 
         .submit-btn {
             width: 100%;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: var(--primary-color);
             color: white;
-            padding: 16px;
+            padding: 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
+            letter-spacing: 1.5px;
+            transition: all 0.3s;
         }
 
+        .submit-btn:active { transform: scale(0.98); }
+
         .submit-btn:disabled {
-            background: #95a5a6;
+            background: #d1d1d1;
             cursor: not-allowed;
         }
 
         .success-msg { display: none; text-align: center; padding-top: 20px; }
-        .success-title { color: var(--success-color); font-size: 1.5em; font-weight: 700; margin-bottom: 30px; }
+        .success-title { color: var(--primary-color); font-size: 1.6em; font-weight: 700; margin-bottom: 35px; }
         
         .btn-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 15px;
             align-items: center;
-            margin-top: 20px;
         }
 
         .action-btn { 
             display: inline-block; 
             width: 80%;
             max-width: 250px;
-            padding: 14px 20px; 
+            padding: 15px 20px; 
             border-radius: 50px; 
             text-decoration: none; 
             font-weight: 600; 
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s;
         }
         
-        .action-btn:active { transform: scale(0.98); }
-
         .check-result-btn { 
-            background-color: var(--success-color); 
+            background-color: var(--accent-color); 
             color: white; 
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+            box-shadow: 0 5px 15px rgba(166, 124, 82, 0.2);
         }
         
         .others-btn { 
@@ -312,7 +327,7 @@
         if (new Date() > DEADLINE) {
             document.querySelectorAll('input, select, .option-btn').forEach(el => el.disabled = true);
             submitBtn.textContent = "訂餐時間已截止，若需要加點請找宇均";
-            submitBtn.style.background = "#e74c3c";
+            submitBtn.style.background = "#bc5e5e";
             return false;
         }
         return true;
