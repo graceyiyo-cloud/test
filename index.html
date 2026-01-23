@@ -3,1038 +3,567 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的雲端書櫃</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;400;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>1/30(五)年會排演工作人員點餐</title>
+    <style>
+        :root {
+            /* 專業配色：深海藍搭配冷灰 */
+            --primary-color: #2c3e50;    /* 深藍色 (主要) */
+            --accent-color: #3498db;     /* 亮藍色 (強調) */
+            --bg-color: #eaeff2;         /* 背景色 (淡灰藍) */
+            --card-bg: #ffffff;          /* 卡片白 */
+            --text-main: #2c3e50;        /* 主要文字 */
+            --text-sub: #7f8c8d;         /* 次要文字 */
+            --border-color: #dce4ec;     /* 邊框色 */
+            --success-color: #27ae60;    /* 成功綠 */
+            --error-color: #e74c3c;      /* 警示紅 */
+        }
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Nunito', 'sans-serif'],
-                        serif: ['Fraunces', 'serif'],
-                    },
-                    colors: {
-                        background: '#FDFCF8', // Rice Paper
-                        foreground: '#2C2C24', // Deep Loam
-                        primary: {
-                            DEFAULT: '#5D7052', // Moss Green
-                            foreground: '#F3F4F1', // Pale Mist
-                            50: '#f4f6f3',
-                            100: '#e5e9e2',
-                            500: '#5D7052',
-                            600: '#4a5a41',
-                        },
-                        secondary: {
-                            DEFAULT: '#C18C5D', // Terracotta
-                            foreground: '#FFFFFF',
-                            100: '#fdf8f3',
-                            500: '#C18C5D',
-                            600: '#a6764d',
-                        },
-                        accent: {
-                            DEFAULT: '#E6DCCD', // Sand
-                            foreground: '#4A4A40',
-                        },
-                        timber: '#DED8CF', // Borders
-                        destructive: '#A85448', // Burnt Sienna
-                        muted: '#F0EBE5', // Stone
-                        'muted-foreground': '#78786C', // Dried Grass
-                    },
-                    boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(93, 112, 82, 0.15)', // Moss tinted
-                        'float': '0 10px 40px -10px rgba(193, 140, 93, 0.2)', // Clay tinted
-                        'hover': '0 20px 40px -10px rgba(93, 112, 82, 0.15)',
-                    },
-                    backgroundImage: {
-                        'noise': "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjQiLz48L3N2Zz4=')",
-                    }
-                }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px 15px 80px 15px; /* 底部增加 80px 避免被 LINE 工具列擋住 */
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-text-size-adjust: 100%; /* 禁止 iOS 自動調整字體大小 */
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.1);
+            width: 100%; /* 確保手機版寬度 */
+            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 手機版專用調整 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px; /* 手機版縮小內距 */
+            }
+            body {
+                padding-top: 20px;
+            }
+            h1 {
+                font-size: 18px;
+            }
+            header p {
+                font-size: 1.3em;
             }
         }
-    </script>
-    <style>
-        /* Base Texture & Typography */
-        body {
-            background-color: #FDFCF8;
-            color: #2C2C24;
-            font-family: 'Nunito', sans-serif;
-            position: relative;
-            -webkit-font-smoothing: antialiased;
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
         }
 
-        /* Noise Overlay */
-        .noise-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        h1 {
+            color: var(--text-sub);
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        header p {
+            font-weight: 700;
+            font-size: 1.5em;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .deadline-notice {
+            color: var(--error-color);
+            font-size: 0.95em;
+            margin-top: 8px;
+            font-weight: 600;
+            display: inline-block;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.95em;
+            color: var(--text-main);
+        }
+
+        /* 輸入框與下拉選單樣式 */
+        input, select {
             width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 50;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=');
-            opacity: 0.04;
-            mix-blend-mode: multiply;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px !important; /* 強制 16px 防止 iOS Zoom In */
+            box-sizing: border-box;
+            background-color: #f9fbfc;
+            color: #2c3e50 !important;
+            transition: all 0.3s ease;
+            -webkit-appearance: none; /* 移除 iOS 預設圓角 */
+            appearance: none;
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Fraunces', serif;
+        /* 針對 Select 增加一個自訂箭頭 */
+        select {
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232c3e50%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
         
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .animate-modal-in {
-            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        input:disabled, select:disabled, button:disabled {
+            background-color: #e0e0e0;
+            color: #a0a0a0 !important;
+            cursor: not-allowed;
+            border-color: #d0d0d0;
         }
 
-        /* Utilities */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        optgroup {
+            color: var(--accent-color);
+            font-weight: 700;
+        }
         
-        /* Organic Blob Utilities */
-        .blob-card-1 { border-radius: 2rem 3rem 2rem 2rem; }
-        .blob-card-2 { border-radius: 3rem 2rem 2.5rem 2rem; }
-        .blob-input { border-radius: 9999px; }
+        option {
+            color: #333;
+            padding: 5px;
+        }
 
-        input, textarea, select { font-size: 1rem !important; }
+        /* 按鈕式選項樣式 */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .option-btn {
+            padding: 12px 5px;
+            border: 1px solid var(--border-color);
+            background-color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-sub);
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .option-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background-color: #f4f9fd;
+        }
+        
+        .option-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 6px rgba(44, 62, 80, 0.2);
+        }
+
+        .price-display {
+            text-align: right;
+            font-size: 1.3em;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .price-display span:first-child {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.3s;
+            letter-spacing: 1px;
+            -webkit-appearance: none;
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        .submit-btn:disabled {
+            background: #95a5a6; /* 灰色 */
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            color: var(--text-sub);
+            font-size: 0.9em;
+        }
+        
+        .success-msg {
+            display: none;
+            text-align: center;
+            padding-top: 20px;
+        }
+        
+        .success-title {
+            color: var(--success-color);
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            margin: 8px 5px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .check-result-btn {
+            background-color: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2);
+        }
+        
+        .check-result-btn:hover {
+            background-color: #219150;
+            transform: translateY(-1px);
+        }
+
+        .reload-btn {
+            background-color: transparent;
+            border: 1px solid #bdc3c7;
+            color: #7f8c8d;
+        }
+        
+        .reload-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: #fff;
+        }
     </style>
 </head>
-<body class="selection:bg-secondary-100 selection:text-foreground pb-20">
-    <div class="noise-overlay"></div>
-    <div id="root"></div>
+<body>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { 
-            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3
-        } from 'https://esm.sh/lucide-react@0.344.0';
+<div class="container">
+    <header>
+        <h1>得正 OOLONG TEA PROJECT</h1>
+        <p>1/30(五)年會排演工作人員點餐</p>
+        <div class="deadline-notice">🕒 截止時間：2026/1/29 (四) 12:00</div>
+    </header>
+
+    <form id="orderForm">
+        <div class="form-group">
+            <label for="username">訂購人姓名</label>
+            <input type="text" id="username" placeholder="請輸入全名" required>
+        </div>
+
+        <div class="form-group">
+            <label for="drink">選擇飲品</label>
+            <select id="drink" required>
+                <option value="" disabled selected>請選擇飲品...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="topping">加入口感 (配料)</label>
+            <select id="topping">
+                <option value="無" data-price="0" selected>無</option>
+                
+                <optgroup label="+10元 配料">
+                    <option value="珍珠" data-price="10">珍珠 (+10元)</option>
+                    <option value="黃金珍珠" data-price="10">黃金珍珠 (+10元)</option>
+                    <option value="焙烏龍茶凍" data-price="10">焙烏龍茶凍 (+10元)</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>甜度</label>
+            <div class="options-grid" id="sugarOptions">
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">正常糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">少糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">半糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">微糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">二分糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">一分糖</button>
+                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">無糖</button>
+            </div>
+            <input type="hidden" id="sugar" required> 
+        </div>
+
+        <div class="form-group">
+            <label>冰塊</label>
+            <div class="options-grid" id="iceOptions">
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">正常冰</button>
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">少冰</button>
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">微冰</button>
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">去冰</button>
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">完全去冰</button>
+                <button type="button" class="option-btn" onclick="selectOption('ice', this)">熱飲</button>
+            </div>
+            <input type="hidden" id="ice" required> 
+        </div>
+
+        <div class="price-display">
+            <span>金額</span>
+            <span>NT$<span id="priceLabel">0</span></span>
+        </div>
+
+        <button type="submit" id="submitBtn" class="submit-btn">確認登記</button>
+        <div class="loading" id="loading">資料同步中，請稍候...</div>
+    </form>
+    
+    <div class="success-msg" id="successMsg">
+        <div class="success-title">✅ 登記完成</div>
         
-        // --- Firebase Config (Unchanged) ---
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        <div style="margin-top: 20px;">
+            <a href="https://docs.google.com/spreadsheets/d/1ZpzttgDqG8vcOMQ5iqo6ZL6l1nUvSWXcgE6iqfw3tE4/edit?usp=sharing" target="_blank" class="action-btn check-result-btn">
+                查看登記結果
+            </a>
+            <br>
+            <a href="https://graceyiyo-cloud.github.io/order3/" class="action-btn reload-btn">
+                幫其他人登記
+            </a>
+        </div>
+    </div>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
-            authDomain: "my-reading-tracker-58f69.firebaseapp.com",
-            projectId: "my-reading-tracker-58f69",
-            storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
-            messagingSenderId: "370802674969",
-            appId: "1:370802674969:web:efb1c045e0028925154988",
-            measurementId: "G-52EWLNG7ST"
-        };
+<script>
+    // ----------- 設定區域 -----------
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbxECKpWPU3Z7Lj16-OqZZAKrdwK9CYL2QrVf3cvZajXucSoYiIuKcIla1Bp6CoY6MHQ/exec"; 
+    const DEADLINE = new Date("2026-01-29T12:00:00"); // 設定截止時間：2026/01/29 中午12點
+    // ------------------------------
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = "my-reading-app"; 
-        const ESTIMATE_WORDS_PER_PAGE = 350;
+    // 菜單資料 (得正 OOLONG TEA PROJECT)
+    const menuData = {
+        "Original TEA (原茶)": {
+            "紅茶 (M)": 25,
+            "紅茶 (L)": 30,
+            "綠茶 (M)": 25,
+            "綠茶 (L)": 30,
+            "春烏龍 (M)": 30,
+            "春烏龍 (L)": 35,
+            "輕烏龍 (M)": 30,
+            "輕烏龍 (L)": 35,
+            "焙烏龍 (M)": 30,
+            "焙烏龍 (L)": 35
+        },
+        "Classic MILK TEA (奶茶)": {
+            "奶茶 (M)": 45,
+            "奶茶 (L)": 50,
+            "焙烏龍奶茶 (M)": 45,
+            "焙烏龍奶茶 (L)": 50,
+            "珍珠奶茶 (M)": 55,
+            "珍珠奶茶 (L)": 60,
+            "黃金珍珠奶綠 (M)": 55,
+            "黃金珍珠奶綠 (L)": 60,
+            "烘吉奶茶 (M)": 50
+        },
+        "Double FRUIT (鮮果)": {
+            "檸檬春烏龍 (M)": 55,
+            "檸檬春烏龍 (L)": 65,
+            "香橙春烏龍 (M)": 60,
+            "香橙春烏龍 (L)": 70,
+            "甘蔗春烏龍 (M)": 60,
+            "甘蔗春烏龍 (L)": 70,
+            "青梅春烏龍 (M)": 50,
+            "青梅春烏龍 (L)": 60,
+            "優酪春烏龍 (M)": 55,
+            "優酪春烏龍 (L)": 65,
+            "雙柚金烏龍 (M)": 55,
+            "雙柚金烏龍 (L)": 65
+        },
+        "Fresh MILK (鮮奶)": {
+            "紅茶鮮奶 (M)": 55,
+            "紅茶鮮奶 (L)": 65,
+            "輕烏龍鮮奶 (M)": 55,
+            "輕烏龍鮮奶 (L)": 65,
+            "焙烏龍鮮奶 (M)": 55,
+            "焙烏龍鮮奶 (L)": 65,
+            "烘吉鮮奶 (M)": 70
+        },
+        "Cheese MILK FOAM (奶蓋 - 固定少冰)": {
+            "芝士奶蓋春烏龍 (M)": 50,
+            "芝士奶蓋春烏龍 (L)": 60,
+            "芝士奶蓋焙烏龍 (M)": 50,
+            "芝士奶蓋焙烏龍 (L)": 60,
+            "芝士奶蓋阿華田 (M)": 55,
+            "芝士奶蓋阿華田 (L)": 65,
+            "芝士奶蓋烘吉茶 (M)": 55,
+            "芝士奶蓋烘吉茶 (L)": 65
+        }
+    };
 
-        const DEFAULT_CATEGORIES = [
-            "玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", 
-            "科幻", "懸疑", "推理", "驚悚", "恐怖", "冒險", "耽美 (BL)", "百合 (GL)", 
-            "穿越", "重生", "系統", "快穿", "無限流", "末世", "種田", "宅鬥", "宮鬥", 
-            "娛樂圈", "電競", "校園", "職場", "先婚後愛", "破鏡重圓", "青梅竹馬", 
-            "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
-        ];
+    // DOM 元素
+    const drinkSelect = document.getElementById('drink');
+    const toppingSelect = document.getElementById('topping');
+    const priceLabel = document.getElementById('priceLabel');
+    const form = document.getElementById('orderForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingDiv = document.getElementById('loading');
+    const successMsg = document.getElementById('successMsg');
+    const sugarInput = document.getElementById('sugar');
+    const iceInput = document.getElementById('ice');
 
-        // --- Component: Organic Category Picker ---
-        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const [filterText, setFilterText] = useState('');
+    // 初始化：載入飲品
+    Object.keys(menuData).forEach(category => {
+        const group = document.createElement('optgroup');
+        group.label = category;
+        Object.keys(menuData[category]).forEach(drink => {
+            const option = document.createElement('option');
+            option.value = drink;
+            option.textContent = drink + " ($" + menuData[category][drink] + ")";
+            option.dataset.price = menuData[category][drink];
+            group.appendChild(option);
+        });
+        drinkSelect.appendChild(group);
+    });
 
-            const filtered = useMemo(() => {
-                const term = filterText.toLowerCase();
-                return allCategories.filter(c => c.toLowerCase().includes(term));
-            }, [allCategories, filterText]);
-
-            return (
-                <div className="w-full">
-                    <div className="flex flex-wrap gap-2 items-center min-h-[44px] p-1 border-b border-timber/50">
-                        {selectedCategories.map(cat => (
-                            <span key={cat} className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-                                {cat}
-                                <X size={12} className="cursor-pointer hover:text-white/80" onClick={(e) => { e.stopPropagation(); onToggle(cat); }}/>
-                            </span>
-                        ))}
-                        <button 
-                            type="button" 
-                            onClick={() => setIsOpen(!isOpen)} 
-                            className={`text-xs font-medium flex items-center gap-1 px-3 py-1.5 rounded-full transition-all duration-300 ${isOpen ? 'bg-timber text-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-                        >
-                            <Plus size={12}/> {isOpen ? '收起' : '選擇分類'}
-                        </button>
-                    </div>
-
-                    {isOpen && (
-                        <div className="mt-3 p-4 bg-background/80 backdrop-blur-sm rounded-[1.5rem] border border-timber/50 shadow-soft animate-fade-in relative z-10">
-                            <input 
-                                type="text" 
-                                placeholder="搜尋或建立新分類..." 
-                                value={filterText}
-                                onChange={e => setFilterText(e.target.value)}
-                                className="w-full mb-4 p-3 bg-white/50 border border-timber/30 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground"
-                                autoFocus
-                            />
-                            
-                            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
-                                {filterText && !allCategories.includes(filterText) && (
-                                    <button 
-                                        type="button" 
-                                        onClick={() => { onAddNew(filterText); setFilterText(''); }}
-                                        className="bg-primary text-primary-foreground text-xs font-bold px-4 py-2 rounded-full hover:bg-primary-600 hover:scale-105 transition-all duration-300 shadow-sm flex items-center gap-1.5"
-                                    >
-                                        <Plus size={12}/> 建立「{filterText}」
-                                    </button>
-                                )}
-                                
-                                {filtered.map(cat => {
-                                    const isSelected = selectedCategories.includes(cat);
-                                    if (isSelected) return null;
-                                    return (
-                                        <div key={cat} className="group relative">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => onToggle(cat)} 
-                                                className="bg-white border border-timber/50 text-muted-foreground text-xs font-medium px-3 py-1.5 rounded-full hover:border-primary/50 hover:text-primary hover:bg-primary/5 hover:scale-105 transition-all duration-300"
-                                            >
-                                                {cat}
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => onDelete(cat, e)}
-                                                className="absolute -top-1.5 -right-1.5 bg-background text-muted-foreground hover:text-destructive rounded-full p-1 shadow-sm border border-timber opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-90 hover:scale-110"
-                                                title="刪除分類"
-                                            >
-                                                <X size={10} strokeWidth={3} />
-                                            </button>
-                                        </div>
-                                    )
-                                })}
-                                {filtered.length === 0 && !filterText && <span className="text-xs text-muted-foreground py-1 italic">無符合分類</span>}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        function ReadingTracker() {
-            const [user, setUser] = useState(null);
-            const [books, setBooks] = useState([]);
-            const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-            const [loading, setLoading] = useState(true);
-            const [customId, setCustomId] = useState('');
-            const [isLoginMode, setIsLoginMode] = useState(true);
-            const [isAuthChecking, setIsAuthChecking] = useState(true);
-            const [toast, setToast] = useState(null); 
-
-            // Search & Filter State
-            const [searchTerm, setSearchTerm] = useState('');
-
-            const [newBook, setNewBook] = useState({
-                title: '', author: '', wordCount: '', isWordCountManual: false,
-                addDate: new Date().toISOString().split('T')[0],
-                reviewUrl: '', synopsis: '', category: [] 
-            });
-            const [isSearching, setIsSearching] = useState(false);
-            const [activeBookId, setActiveBookId] = useState(null);
+    // 檢查截止時間函式
+    function checkDeadline() {
+        const now = new Date();
+        if (now > DEADLINE) {
+            // 停用所有輸入項
+            const inputs = document.querySelectorAll('input, select, button.option-btn');
+            inputs.forEach(el => el.disabled = true);
             
-            const [modalType, setModalType] = useState(null); 
-            const [modalData, setModalData] = useState({});
-            const [expandedBooks, setExpandedBooks] = useState({});
+            // 變更送出按鈕狀態
+            submitBtn.textContent = "已超過截止時間 (1/29 12:00)";
+            submitBtn.disabled = true;
+            return false; // 已過期
+        }
+        return true; // 未過期
+    }
 
-            useEffect(() => {
-                signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
-                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-                    if (currentUser) {
-                        setUser(currentUser);
-                        const savedId = localStorage.getItem('reading_tracker_custom_id');
-                        if (savedId) {
-                            setCustomId(savedId);
-                            setIsLoginMode(false);
-                        } else {
-                            setIsLoginMode(true);
-                        }
-                    }
-                    setIsAuthChecking(false);
-                });
-                return () => unsubscribe();
-            }, []);
+    // 頁面載入時先檢查一次
+    checkDeadline();
 
-            useEffect(() => {
-                if (!user || !customId) {
-                    setLoading(false);
-                    return;
-                }
-                setLoading(true);
-                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
-                
-                const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-                    const fetchedBooks = [];
-                    let fetchedCategories = [...DEFAULT_CATEGORIES];
+    // 處理按鈕點選 (甜度/冰塊)
+    window.selectOption = function(type, btnElement) {
+        // 如果已過期，不允許點選
+        if (!checkDeadline()) return;
 
-                    snapshot.docs.forEach(doc => {
-                        if (doc.id === 'settings') {
-                            if (doc.data().categories && Array.isArray(doc.data().categories)) {
-                                fetchedCategories = doc.data().categories;
-                            }
-                        } else {
-                            fetchedBooks.push({ id: doc.id, ...doc.data() });
-                        }
-                    });
-                    
-                    fetchedBooks.sort((a, b) => {
-                        const isReadingA = a.status === 'reading';
-                        const isReadingB = b.status === 'reading';
-                        if (isReadingA && !isReadingB) return -1;
-                        if (!isReadingA && isReadingB) return 1;
-                        return new Date(b.addDate) - new Date(a.addDate);
-                    });
-                    
-                    setBooks(fetchedBooks);
-                    setCategories(fetchedCategories);
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Error", error);
-                    setLoading(false);
-                    showToast("資料讀取失敗", "error");
-                });
-                return () => unsubscribe();
-            }, [user, customId]);
+        const container = document.getElementById(type + 'Options');
+        const buttons = container.getElementsByClassName('option-btn');
+        Array.from(buttons).forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+        document.getElementById(type).value = btnElement.innerText;
+    };
 
-            const showToast = (message, type = 'info') => {
-                setToast({ message, type });
-                setTimeout(() => setToast(null), 3000);
-            };
+    // 監聽價格變動
+    drinkSelect.addEventListener('change', updatePrice);
+    toppingSelect.addEventListener('change', updatePrice);
 
-            const handleLogin = (e) => {
-                e.preventDefault();
-                if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
-                localStorage.setItem('reading_tracker_custom_id', customId);
-                setIsLoginMode(false);
-            };
+    function updatePrice() {
+        let basePrice = 0;
+        let toppingPrice = 0;
 
-            const handleLogout = () => {
-                setModalType('logout');
-            };
-
-            const searchBookInfo = async () => {
-                if (!newBook.title) return;
-                setIsSearching(true);
-                try {
-                    const q = `intitle:${newBook.title}${newBook.author ? `+inauthor:${newBook.author}` : ''}`;
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
-                    const data = await res.json();
-                    if (data.items && data.items.length > 0) {
-                        const info = data.items[0].volumeInfo;
-                        setNewBook(prev => ({
-                            ...prev,
-                            author: prev.author || info.authors?.[0] || '',
-                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE,
-                            isWordCountManual: false,
-                            synopsis: info.description || ''
-                        }));
-                        showToast("找到書籍資料！");
-                    } else {
-                        showToast("找不到書籍資料", "error");
-                    }
-                } catch (error) {
-                    showToast("搜尋失敗", "error");
-                } finally {
-                    setIsSearching(false);
-                }
-            };
-
-            const addBook = async (e) => {
-                e.preventDefault();
-                if (!newBook.title || !customId) return;
-                try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), {
-                        ...newBook,
-                        status: 'reading',
-                        createdAt: serverTimestamp()
-                    });
-                    setNewBook({
-                        title: '', author: '', wordCount: '', isWordCountManual: false,
-                        addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: []
-                    });
-                    showToast("新增成功！");
-                } catch (error) {
-                    showToast("新增失敗", "error");
-                }
-            };
-
-            const updateCategoriesInDb = async (newCats) => {
-                try {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), {
-                        categories: newCats
-                    }, { merge: true });
-                } catch (err) {
-                    console.error("Failed to update categories", err);
-                    showToast("更新分類失敗", "error");
-                }
-            };
-
-            const addNewCategory = async (catName) => {
-                if (!catName.trim()) return;
-                const name = catName.trim();
-                if (categories.includes(name)) {
-                    showToast("分類已存在", "error");
-                    return;
-                }
-                const updatedCats = [...categories, name];
-                await updateCategoriesInDb(updatedCats);
-                showToast(`已新增分類「${name}」`);
-                return name; 
-            };
-
-            const handleDeleteCategory = async (catToDelete, e) => {
-                e.stopPropagation();
-                setModalData({ category: catToDelete });
-                setModalType('deleteCategory');
-            };
-
-            const toggleNewBookCategory = (cat) => {
-                setNewBook(prev => {
-                    const currentCats = Array.isArray(prev.category) ? prev.category : [];
-                    if (currentCats.includes(cat)) {
-                        return { ...prev, category: currentCats.filter(c => c !== cat) };
-                    } else {
-                        return { ...prev, category: [...currentCats, cat] };
-                    }
-                });
-            };
-            
-            const toggleEditBookCategory = (cat) => {
-                setModalData(prev => {
-                    const currentCats = Array.isArray(prev.category) ? prev.category : [];
-                    if (currentCats.includes(cat)) {
-                        return { ...prev, category: currentCats.filter(c => c !== cat) };
-                    } else {
-                        return { ...prev, category: [...currentCats, cat] };
-                    }
-                });
-            };
-
-            const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
-                 const newName = await addNewCategory(name);
-                 if(newName && targetStateSetter) {
-                     targetStateSetter(prev => ({
-                         ...prev,
-                         category: [...(prev.category || []), newName]
-                     }));
-                 }
-            };
-
-            const handleModalAction = async () => {
-                if (!modalType) return;
-                
-                try {
-                    if (modalType === 'logout') {
-                        localStorage.removeItem('reading_tracker_custom_id');
-                        setCustomId('');
-                        setBooks([]);
-                        setIsLoginMode(true);
-                        closeModal();
-                        return;
-                    }
-                    
-                    if (modalType === 'deleteCategory') {
-                        const catToDelete = modalData.category;
-                        const updatedCats = categories.filter(c => c !== catToDelete);
-                        await updateCategoriesInDb(updatedCats);
-                        showToast(`已刪除分類「${catToDelete}」`);
-                        closeModal();
-                        return;
-                    }
-
-                    if (!activeBookId) return;
-                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
-
-                    if (modalType === 'delete') {
-                        await deleteDoc(bookRef);
-                        showToast("已刪除書籍");
-                    } else if (modalType === 'edit') {
-                        await updateDoc(bookRef, {
-                            title: modalData.title,
-                            author: modalData.author,
-                            category: modalData.category,
-                            wordCount: modalData.wordCount,
-                            addDate: modalData.addDate,
-                            reviewUrl: modalData.reviewUrl,
-                            synopsis: modalData.synopsis
-                        });
-                        showToast("書籍資料已更新");
-                    } else {
-                        const updates = {};
-                        if (modalType === 'finish') {
-                            updates.status = 'finished';
-                            updates.finishDate = modalData.date;
-                            updates.rating = modalData.rating;
-                            updates.review = modalData.review || '';
-                            updates.dropChapter = null;
-                            updates.dropDate = null;
-                        } else if (modalType === 'drop') {
-                            updates.status = 'dropped';
-                            updates.dropChapter = modalData.chapter;
-                            updates.dropDate = modalData.date;
-                            updates.finishDate = null;
-                            updates.rating = null;
-                        } else if (modalType === 'reset') {
-                            updates.status = 'reading';
-                            updates.finishDate = null;
-                            updates.dropChapter = null;
-                            updates.dropDate = null;
-                            updates.rating = null;
-                            updates.review = null;
-                        }
-                        await updateDoc(bookRef, updates);
-                        showToast("狀態已更新");
-                    }
-                    closeModal();
-                } catch (error) {
-                    console.error("Action failed:", error);
-                    showToast("操作失敗，請稍後再試", "error");
-                }
-            };
-
-            const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
-
-            const openModal = (book, type, e) => {
-                if (e) e.stopPropagation();
-                setActiveBookId(book.id);
-                setModalType(type);
-                
-                if (type === 'edit') {
-                    setModalData({
-                        title: book.title || '',
-                        author: book.author || '',
-                        category: book.category || [],
-                        wordCount: book.wordCount || '',
-                        addDate: book.addDate || '',
-                        reviewUrl: book.reviewUrl || '',
-                        synopsis: book.synopsis || ''
-                    });
-                } else {
-                    setModalData({ 
-                        date: new Date().toISOString().split('T')[0], 
-                        chapter: type === 'drop' ? '' : undefined,
-                        rating: type === 'finish' ? 0 : undefined,
-                        review: type === 'finish' ? (book.review || '') : undefined
-                    });
-                }
-            };
-
-            const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
-
-            const activeBook = useMemo(() => {
-                return books.find(b => b.id === activeBookId);
-            }, [books, activeBookId]);
-
-            const filteredBooks = useMemo(() => {
-                if (!searchTerm.trim()) return books;
-                const term = searchTerm.toLowerCase();
-                return books.filter(b => {
-                    return (
-                        b.title?.toLowerCase().includes(term) ||
-                        b.author?.toLowerCase().includes(term) ||
-                        (b.category && b.category.some(c => c.toLowerCase().includes(term)))
-                    );
-                });
-            }, [books, searchTerm]);
-            
-            const stats = useMemo(() => {
-                const yearStats = {};
-                let totalFinished = 0, totalDropped = 0, totalReading = 0;
-                const activeYears = new Set();
-                books.forEach(b => {
-                    let y = null;
-                    if (b.status === 'reading') {
-                        totalReading++;
-                    } else if (b.status === 'finished' && b.finishDate) {
-                        y = new Date(b.finishDate).getFullYear();
-                        totalFinished++;
-                    } else if (b.status === 'dropped' && b.dropDate) {
-                        y = new Date(b.dropDate).getFullYear();
-                        totalDropped++;
-                    }
-                    if (y) {
-                        activeYears.add(y);
-                        if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
-                        if (b.status === 'finished') yearStats[y].finished++;
-                        if (b.status === 'dropped') yearStats[y].dropped++;
-                    }
-                });
-                return { 
-                    years: Array.from(activeYears).sort((a, b) => b - a), 
-                    data: yearStats, 
-                    total: { finished: totalFinished, dropped: totalDropped, reading: totalReading } 
-                };
-            }, [books]);
-
-            const StarRating = ({ rating, setRating, interactive = false }) => {
-                return (
-                    <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((index) => {
-                            const filled = rating >= index;
-                            const half = rating >= index - 0.5 && !filled;
-                            return (
-                                <div 
-                                    key={index} 
-                                    className={`relative ${interactive ? 'cursor-pointer transition-transform duration-300 active:scale-90 hover:scale-110' : ''}`}
-                                    onClick={(e) => {
-                                        if (interactive) {
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const width = rect.width;
-                                            const clickX = e.clientX - rect.left;
-                                            const isLeft = clickX < width / 2;
-                                            setRating(isLeft ? index - 0.5 : index);
-                                        }
-                                    }}
-                                >
-                                    <Star size={interactive ? 32 : 16} className="text-timber fill-transparent" strokeWidth={1.5}/>
-                                    <div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
-                                        <Star size={interactive ? 32 : 16} className="text-secondary fill-secondary border-none"/>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            };
-
-            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-background"><RefreshCw className="animate-spin text-primary" /></div>;
-
-            if (isLoginMode) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-                        {/* Blob Backgrounds */}
-                        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
-
-                        {toast && (
-                            <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-soft z-50 animate-fade-in text-white text-sm font-bold tracking-wide flex items-center gap-2 ${toast.type === 'error' ? 'bg-destructive' : 'bg-primary'}`}>
-                                {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
-                                {toast.message}
-                            </div>
-                        )}
-                        <div className="bg-white/70 p-10 rounded-[3rem] shadow-float border border-white/50 w-full max-w-md backdrop-blur-md relative z-10">
-                            <div className="flex justify-center mb-8 text-primary">
-                                <div className="p-4 bg-primary/10 rounded-full">
-                                    <BookOpen size={48} strokeWidth={1.5} />
-                                </div>
-                            </div>
-                            <h1 className="text-4xl font-bold text-center mb-2 text-foreground tracking-tight">雲端書櫃</h1>
-                            <p className="text-muted-foreground text-center mb-10 text-sm tracking-wide">輸入專屬 ID，開啟你的閱讀旅程。</p>
-                            <form onSubmit={handleLogin} className="space-y-6">
-                                <input 
-                                    value={customId} 
-                                    onChange={e=>setCustomId(e.target.value)} 
-                                    placeholder="例如: alex2026" 
-                                    className="w-full p-4 bg-white/50 border border-timber rounded-full text-center text-lg placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" 
-                                />
-                                <button type="submit" className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold flex justify-center gap-2 hover:scale-105 hover:shadow-hover transition-all duration-300">
-                                    <LogIn size={20} strokeWidth={2}/> 進入書櫃
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen relative">
-                    {toast && (
-                        <div className={`fixed top-24 md:top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-soft z-50 animate-fade-in text-white text-sm font-bold tracking-wide flex items-center gap-2 ${toast.type === 'error' ? 'bg-destructive' : 'bg-primary'}`}>
-                            {toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>}
-                            {toast.message}
-                        </div>
-                    )}
-
-                    <header className="sticky top-4 z-40 mx-auto max-w-3xl px-4 mb-8">
-                        <div className="bg-white/70 backdrop-blur-md rounded-full shadow-soft border border-white/40 px-6 py-3 flex justify-between items-center">
-                            <div className="flex items-center gap-3 text-foreground font-bold text-xl tracking-tight">
-                                <div className="bg-primary/10 p-2 rounded-full text-primary">
-                                    <BookOpen size={20} strokeWidth={2} />
-                                </div>
-                                <span className="font-serif">閱讀手帳</span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="hidden md:block text-xs font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full tracking-wide">
-                                    ID: {customId}
-                                </div>
-                                <button onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors p-2 hover:bg-destructive/10 rounded-full" title="登出">
-                                    <LogOut size={20} strokeWidth={2}/>
-                                </button>
-                            </div>
-                        </div>
-                    </header>
-
-                    <main className="max-w-4xl mx-auto px-4 pb-20 space-y-12">
-                        {/* 統計區塊 - Organic Blobs */}
-                        <section className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4 md:gap-8">
-                                <div className="bg-[#F6F5F0] p-6 md:p-8 blob-card-1 border border-timber/30 shadow-soft relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">
-                                    <div className="absolute -right-4 -top-4 text-timber/20 group-hover:text-timber/30 transition-colors duration-500"><Hourglass size={80}/></div>
-                                    <div className="text-sm text-muted-foreground font-medium mb-1 relative z-10">待讀清單</div>
-                                    <div className="text-4xl md:text-5xl font-bold text-foreground font-serif relative z-10">
-                                        {stats.total.reading} <span className="text-base font-sans font-normal text-muted-foreground">本</span>
-                                    </div>
-                                </div>
-                                <div className="bg-primary text-primary-foreground p-6 md:p-8 blob-card-2 shadow-soft relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">
-                                    <div className="absolute -right-4 -top-4 text-white/10 group-hover:text-white/20 transition-colors duration-500"><Trophy size={80}/></div>
-                                    <div className="text-sm text-primary-foreground/80 font-medium mb-1 relative z-10">已完食</div>
-                                    <div className="text-4xl md:text-5xl font-bold font-serif relative z-10">
-                                        {stats.total.finished} <span className="text-base font-sans font-normal text-primary-foreground/60">本</span>
-                                    </div>
-                                    {stats.total.dropped > 0 && <div className="text-xs text-primary-foreground/60 mt-2 relative z-10">另有 {stats.total.dropped} 本棄書</div>}
-                                </div>
-                            </div>
-                            
-                            {stats.years.length > 0 && (
-                                <div className="flex flex-wrap gap-4 justify-center">
-                                    {stats.years.map(y => (
-                                        <div key={y} className="bg-white/60 backdrop-blur-sm px-6 py-3 rounded-[2rem] border border-timber/30 flex items-center gap-4 shadow-sm hover:shadow-soft transition-all duration-300">
-                                            <span className="text-sm font-bold text-primary font-serif text-lg">{y}</span>
-                                            <div className="w-px h-6 bg-timber/50"></div>
-                                            <div className="flex gap-4 text-xs font-medium text-muted-foreground">
-                                                <span className="flex items-center gap-1"><CheckCircle size={12} className="text-primary"/> {stats.data[y].finished}</span>
-                                                <span className="flex items-center gap-1"><BookX size={12} className="text-destructive"/> {stats.data[y].dropped}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-
-                        {/* 新增書籍區塊 */}
-                        <section className="bg-white/40 backdrop-blur-sm rounded-[2.5rem] border border-white/60 p-6 md:p-10 shadow-float relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0"></div>
-                            
-                            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-foreground font-serif">
-                                <span className="bg-accent p-2 rounded-xl text-accent-foreground"><PenTool size={20} /></span>
-                                紀錄新書
-                            </h2>
-                            
-                            <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                                <div className="md:col-span-5">
-                                    <input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" required />
-                                </div>
-                                <div className="md:col-span-4">
-                                    <input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
-                                </div>
-                                <div className="md:col-span-3">
-                                    <button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-full text-primary-600 bg-secondary/10 hover:bg-secondary/20 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm font-bold disabled:opacity-50 py-3">
-                                        {isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" strokeWidth={2.5} />} 搜尋資訊
-                                    </button>
-                                </div>
-                                
-                                <div className="md:col-span-12 relative py-2">
-                                    <CategoryPicker 
-                                        selectedCategories={newBook.category} 
-                                        onToggle={toggleNewBookCategory} 
-                                        allCategories={categories}
-                                        onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)}
-                                        onDelete={handleDeleteCategory}
-                                    />
-                                </div>
-
-                                <div className="md:col-span-4 relative">
-                                    <input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
-                                    {!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-4 top-3.5 text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">估算</span>}
-                                </div>
-                                <div className="md:col-span-4">
-                                    <input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all text-muted-foreground" />
-                                </div>
-                                <div className="md:col-span-4">
-                                    <input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-3 px-5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70" />
-                                </div>
-                                
-                                <div className="md:col-span-12">
-                                    <textarea placeholder="寫下故事大綱或是當下的期待..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-5 bg-white rounded-[2rem] border border-timber focus:border-primary/50 outline-none h-32 placeholder:text-muted-foreground/70 resize-none text-base focus:shadow-soft transition-all" />
-                                </div>
-                                
-                                <div className="md:col-span-12 flex justify-end mt-2">
-                                    <button type="submit" className="w-full md:w-auto bg-primary text-primary-foreground px-10 py-3 rounded-full font-bold hover:bg-primary-600 hover:shadow-hover hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2">
-                                        <Plus size={20} strokeWidth={2.5} /> 加入書櫃
-                                    </button>
-                                </div>
-                            </form>
-                        </section>
-
-                        {/* 書單列表區塊 */}
-                        <section className="space-y-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
-                                <h2 className="text-2xl font-bold text-foreground font-serif flex items-center gap-2">
-                                    書單列表 {loading && <RefreshCw className="animate-spin text-muted-foreground w-4 h-4" />}
-                                </h2>
-                                
-                                <div className="w-full md:w-auto relative group">
-                                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="搜尋書名、作者..." 
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        className="w-full md:w-64 pl-10 pr-10 py-2.5 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm shadow-sm"
-                                    />
-                                    {searchTerm && (
-                                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                                            <X size={14} strokeWidth={3}/>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            {!loading && filteredBooks.length === 0 && (
-                                <div className="text-center py-20 text-muted-foreground bg-white/30 rounded-[3rem] border-2 border-dashed border-timber/50">
-                                    <BookOpen className="mx-auto mb-4 opacity-30 w-12 h-12" strokeWidth={1} />
-                                    <p className="font-serif italic text-lg opacity-70">
-                                        {books.length === 0 ? "書櫃空空如也，像是一張白紙。" : "沒有找到相關的書籍。"}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-1 gap-6">
-                                {filteredBooks.map((book, idx) => (
-                                    <div key={book.id} className={`group bg-[#FEFEFA] p-6 md:p-8 border border-timber/40 hover:border-primary/30 transition-all duration-500 animate-fade-in shadow-sm hover:shadow-hover relative overflow-hidden flex flex-col md:flex-row gap-6 md:gap-8 ${idx % 2 === 0 ? 'rounded-[2rem_3rem_2rem_2.5rem]' : 'rounded-[3rem_2rem_2.5rem_2rem]'}`}>
-                                        
-                                        {/* Status Indicator Stripe */}
-                                        <div className={`absolute left-0 top-0 bottom-0 w-2 ${book.status==='finished'?'bg-primary': book.status==='dropped'?'bg-destructive': 'bg-timber'}`}></div>
-
-                                        <div className="flex-1 pl-4 md:pl-0">
-                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-2">
-                                                <div>
-                                                    <div className="flex flex-wrap gap-2 items-center mb-2">
-                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${book.status==='finished'?'bg-primary/10 text-primary': book.status==='dropped'?'bg-destructive/10 text-destructive': 'bg-muted text-muted-foreground'}`}>
-                                                            {book.status==='finished'?'COMPLETED':book.status==='dropped'?'DROPPED':'READING'}
-                                                        </span>
-                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, i) => (
-                                                            <span key={i} className="text-[10px] text-foreground/70 bg-secondary/10 px-2 py-0.5 rounded-md">{cat}</span>
-                                                        ))}
-                                                    </div>
-                                                    <h3 className="font-serif font-bold text-2xl text-foreground leading-tight group-hover:text-primary transition-colors duration-300">{book.title}</h3>
-                                                </div>
-                                                {book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}
-                                            </div>
-                                            
-                                            <div className="text-sm text-muted-foreground space-y-4">
-                                                <div className="flex flex-wrap gap-4 md:gap-6 text-xs font-medium opacity-80 border-b border-timber/30 pb-3 border-dashed">
-                                                    <span className="flex items-center gap-1.5"><User size={14}/> {book.author||'佚名'}</span>
-                                                    <span className="flex items-center gap-1.5"><TrendingUp size={14}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()} 字` : '-'}</span>
-                                                    <span className="flex items-center gap-1.5"><Calendar size={14}/> {book.addDate}</span>
-                                                </div>
-
-                                                {book.status === 'finished' && (
-                                                    <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                                                        <p className="text-primary-600 flex items-center gap-2 text-sm font-bold mb-1"><CheckCircle size={16}/> 完食於 {book.finishDate}</p>
-                                                        {book.review && <p className="text-foreground/80 text-sm italic leading-relaxed pl-6 border-l-2 border-primary/20">{book.review}</p>}
-                                                    </div>
-                                                )}
-                                                
-                                                {book.status === 'dropped' && (
-                                                    <div className="bg-destructive/5 p-4 rounded-2xl border border-destructive/10 text-destructive">
-                                                        <p className="flex items-center gap-2 font-bold"><BookX size={16}/> <span>止步於第 {book.dropChapter} 章</span></p>
-                                                        {book.dropDate && <p className="text-xs opacity-75 mt-1 pl-6">{book.dropDate}</p>}
-                                                    </div>
-                                                )}
-
-                                                <div className="flex flex-wrap gap-4 pt-1">
-                                                    {book.reviewUrl && (
-                                                        <a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1.5 text-secondary hover:text-secondary-600 font-bold text-xs transition-colors hover:underline decoration-2 underline-offset-4">
-                                                            <LinkIcon size={14}/> 閱讀推薦
-                                                        </a>
-                                                    )}
-                                                    {book.synopsis && (
-                                                        <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors">
-                                                            <FileText size={14}/> {expandedBooks[book.id] ? '收起大綱' : '查看大綱'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                
-                                                {expandedBooks[book.id] && (
-                                                    <div className="text-sm text-foreground/80 leading-7 bg-white/50 p-4 rounded-2xl whitespace-pre-wrap animate-fade-in border border-timber/20">
-                                                        {book.synopsis}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-row md:flex-col gap-2 md:w-32 shrink-0 md:justify-center border-t md:border-t-0 md:border-l border-timber/30 pt-4 md:pt-0 md:pl-6">
-                                            {book.status === 'reading' ? (
-                                                <>
-                                                    <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-primary text-primary-foreground hover:bg-primary-600 rounded-full text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
-                                                        <CheckCircle size={16} /> 完食
-                                                    </button>
-                                                    <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-white text-destructive border border-destructive/30 hover:bg-destructive hover:text-white rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2">
-                                                        <BookX size={16} /> 棄書
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:flex-none py-2.5 px-4 bg-white text-muted-foreground hover:text-foreground border border-timber hover:border-foreground/30 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2">
-                                                    <RotateCcw size={16} /> 重讀
-                                                </button>
-                                            )}
-                                            
-                                            <div className="hidden md:block w-8 h-px bg-timber/50 mx-auto my-2"></div>
-
-                                            <div className="flex gap-2 justify-center">
-                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full transition-colors" title="編輯">
-                                                    <Edit3 size={18} strokeWidth={2} />
-                                                </button>
-                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="p-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors" title="刪除">
-                                                    <Trash2 size={18} strokeWidth={2} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Modals - Glassmorphism & Organic */}
-                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory') && (
-                            <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-4 md:p-6 transition-all" onClick={closeModal}>
-                                <div className="bg-[#FDFCF8] rounded-[2rem] w-full max-w-lg p-8 shadow-2xl border border-white animate-modal-in max-h-[85vh] overflow-y-auto no-scrollbar relative" onClick={e => e.stopPropagation()}>
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20"></div>
-                                    
-                                    <h3 className="text-2xl font-bold mb-6 text-center text-foreground font-serif">
-                                        {modalType === 'finish' && '紀錄完食日'}
-                                        {modalType === 'drop' && '紀錄棄書點'}
-                                        {modalType === 'reset' && '重設狀態'}
-                                        {modalType === 'delete' && '刪除書籍'}
-                                        {modalType === 'logout' && '登出確認'}
-                                        {modalType === 'deleteCategory' && '刪除分類'}
-                                        {modalType === 'edit' && '編輯書籍資料'}
-                                    </h3>
-
-                                    <div className="mb-8">
-                                        {modalType === 'edit' && (
-                                            <div className="space-y-4">
-                                                <input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
-                                                <input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
-                                                
-                                                <CategoryPicker 
-                                                    selectedCategories={modalData.category} 
-                                                    onToggle={toggleEditBookCategory} 
-                                                    allCategories={categories}
-                                                    onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)}
-                                                    onDelete={handleDeleteCategory}
-                                                />
-
-                                                <div className="flex gap-4">
-                                                    <input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-1/2 p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
-                                                    <input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-1/2 p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
-                                                </div>
-                                                <input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-3 bg-white border border-timber rounded-full outline-none focus:ring-2 focus:ring-primary/20 px-5" />
-                                                <textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-4 bg-white rounded-3xl border border-timber outline-none h-32 resize-none" />
-                                            </div>
-                                        )}
-                                        {modalType === 'finish' && (
-                                            <div className="bg-primary/5 p-6 rounded-3xl space-y-6">
-                                                <div>
-                                                    <label className="text-xs font-bold text-primary mb-2 block uppercase tracking-wider">完食日期</label>
-                                                    <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-white border border-timber rounded-full outline-none p-3 px-5 text-center text-foreground font-bold" />
-                                                </div>
-                                                <div className="flex flex-col items-center gap-3">
-                                                    <label className="text-xs font-bold text-primary uppercase tracking-wider">評分</label>
-                                                    <StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider"><MessageSquare size={12}/> 心得</label>
-                                                    <textarea 
-                                                        placeholder="寫點什麼紀錄一下心情..." 
-                                                        value={modalData.review} 
-                                                        onChange={e=>setModalData({...modalData, review:e.target.value})} 
-                                                        className="w-full p-4 bg-white rounded-2xl border border-timber focus:border-primary outline-none h-24 resize-none text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                        {modalType === 'drop' && (
-                                            <div className="bg-destructive/5 p-6 rounded-3xl space-y-5">
-                                                <div className="space-y-2"><label className="text-xs font-bold text-destructive block uppercase tracking-wider">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-white border border-destructive/20 rounded-full outline-none p-3 px-5 text-center text-foreground font-bold" /></div>
-                                                <div className="space-y-2"><label className="text-xs font-bold text-destructive block uppercase tracking-wider">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-white border border-destructive/20 rounded-full outline-none p-3 px-5 text-center placeholder-muted-foreground" /></div>
-                                            </div>
-                                        )}
-                                        {modalType === 'reset' && (
-                                            <div className="text-center p-4">
-                                                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <RotateCcw size={32} className="text-muted-foreground" />
-                                                </div>
-                                                <p className="mb-2 font-bold text-foreground text-lg font-serif">{activeBook?.title}</p>
-                                                <p className="text-sm text-muted-foreground">確定要將這本書重設為「未讀」嗎？</p>
-                                            </div>
-                                        )}
-                                        {modalType === 'delete' && (
-                                            <div className="text-center p-4">
-                                                <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Trash2 size={32} className="text-destructive" />
-                                                </div>
-                                                <p className="mb-2 font-bold text-foreground text-lg font-serif">{activeBook?.title}</p>
-                                                <p className="text-sm text-muted-foreground">確定要刪除這筆紀錄嗎？<br/>此動作無法復原。</p>
-                                            </div>
-                                        )}
-                                        {modalType === 'logout' && (
-                                            <div className="text-center p-4">
-                                                <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <LogOut size={32} className="text-accent-foreground" />
-                                                </div>
-                                                <p className="text-lg font-bold font-serif mb-2">確定要登出嗎？</p>
-                                                <p className="text-xs text-muted-foreground">下次需要重新輸入 ID 才能查看書櫃。</p>
-                                            </div>
-                                        )}
-                                        {modalType === 'deleteCategory' && (
-                                            <div className="text-center p-4">
-                                                <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <Trash2 size={32} className="text-destructive" />
-                                                </div>
-                                                <p className="mb-2 font-bold text-foreground text-lg">{modalData.category}</p>
-                                                <p className="text-sm text-muted-foreground">確定要刪除此分類嗎？</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                        <button onClick={closeModal} className="flex-1 py-3 text-muted-foreground hover:bg-muted rounded-full transition font-bold text-sm">取消</button>
-                                        <button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm font-bold
-                                            ${['finish', 'edit'].includes(modalType)?'bg-primary':
-                                            ['reset', 'logout'].includes(modalType)?'bg-foreground':
-                                            'bg-destructive'}`}>
-                                            確認
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-                </div>
-            );
+        const selectedDrinkOption = drinkSelect.options[drinkSelect.selectedIndex];
+        if (selectedDrinkOption && selectedDrinkOption.dataset.price) {
+            basePrice = parseInt(selectedDrinkOption.dataset.price);
         }
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<ReadingTracker />);
-    </script>
+        const selectedToppingOption = toppingSelect.options[toppingSelect.selectedIndex];
+        if (selectedToppingOption && selectedToppingOption.dataset.price) {
+            toppingPrice = parseInt(selectedToppingOption.dataset.price);
+        }
+
+        priceLabel.textContent = basePrice + toppingPrice;
+    }
+
+    // 送出表單
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // 再次檢查截止時間 (防止頁面停留太久跨過時間點)
+        if (!checkDeadline()) {
+            alert('很抱歉，已經超過截止時間 (2026/1/29 12:00)，無法再送出訂單。');
+            return;
+        }
+
+        // 驗證
+        if (!drinkSelect.value) { alert('請選擇飲品'); return; }
+        if (!sugarInput.value) { alert('請點選甜度'); return; }
+        if (!iceInput.value) { alert('請點選冰塊'); return; }
+        if (priceLabel.textContent === '0') { alert('金額異常'); return; }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '處理中...';
+        loadingDiv.style.display = 'block';
+
+        const data = {
+            name: document.getElementById('username').value,
+            drink: drinkSelect.value,
+            topping: toppingSelect.value,
+            sugar: sugarInput.value,
+            ice: iceInput.value,
+            price: priceLabel.textContent
+        };
+
+        // 使用 no-cors 模式
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: new URLSearchParams(data),
+            mode: 'no-cors'
+        })
+        .then(() => {
+            loadingDiv.style.display = 'none';
+            form.style.display = 'none';
+            successMsg.style.display = 'block';
+            window.scrollTo(0, 0); 
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('發生錯誤，但資料可能已送出，請檢查試算表。');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '確認登記';
+            loadingDiv.style.display = 'none';
+        });
+    });
+</script>
+
 </body>
 </html>
