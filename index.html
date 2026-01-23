@@ -2,414 +2,808 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1/30(五)年會排演工作人員點餐</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的網址管理器 (Sortable Categories)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
     <style>
-        :root {
-            /* 文青風配色：森林綠、暖焦糖、米白背景 */
-            --primary-color: #3d5a45;    /* 森林深綠 */
-            --accent-color: #a67c52;     /* 暖焦糖色 */
-            --bg-color: #f4f1ea;         /* 文青米色 */
-            --card-bg: #ffffff;          /* 純白卡片 */
-            --text-main: #4a4a4a;        /* 暖灰文字 */
-            --text-sub: #8c8c8c;         /* 淺灰文字 */
-            --border-color: #e0ddd5;     /* 淺米邊框 */
-            --success-color: #6b8e23;    /* 橄欖綠 */
-            --error-color: #bc5e5e;      /* 磚紅 */
-        }
-
+        /* 全域字體設定：嚴格使用無襯線體 */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px 15px 80px 15px;
-            color: var(--text-main);
-            line-height: 1.8;
-            -webkit-text-size-adjust: 100%;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: #f0e6d2;
+            background-image: radial-gradient(#d4c5a5 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #374151;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 20px; /* 增加圓角感 */
-            box-shadow: 0 15px 35px rgba(61, 90, 69, 0.08);
-            width: 100%;
-            box-sizing: border-box;
-            position: relative;
+        /* 復古陰影風格 */
+        .retro-shadow {
+            box-shadow: 4px 4px 0px 0px #374151;
+        }
+        .retro-shadow:active {
+            box-shadow: 2px 2px 0px 0px #374151;
+            transform: translate(2px, 2px);
         }
 
-        @media (max-width: 480px) {
-            .container { padding: 30px 20px; }
-            h1 { font-size: 18px; }
-            header p { font-size: 1.3em; }
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 35px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 25px;
-        }
-
-        h1 {
-            color: var(--accent-color);
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            font-weight: 500;
-            letter-spacing: 2px;
-        }
-        
-        header p {
-            font-weight: 700;
-            font-size: 1.4em;
-            margin: 0;
-            color: var(--primary-color);
-        }
-
-        .deadline-notice {
-            color: var(--error-color);
-            font-size: 0.9em;
-            margin-top: 12px;
-            font-weight: 500;
-            display: inline-block;
-            background: rgba(188, 94, 94, 0.08);
-            padding: 4px 16px;
-            border-radius: 30px;
-        }
-
-        .form-group { margin-bottom: 28px; }
-
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            font-size: 0.95em;
-            color: var(--primary-color);
-        }
-
-        input, select {
-            width: 100%;
-            padding: 14px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 16px !important;
-            box-sizing: border-box;
-            background-color: #fafaf8;
-            color: var(--text-main);
-            appearance: none;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, select:focus {
+        /* 輸入框聚焦樣式 */
+        .retro-input:focus {
             outline: none;
-            border-color: var(--accent-color);
             background-color: #fff;
-            box-shadow: 0 0 0 4px rgba(166, 124, 82, 0.1);
+            box-shadow: 4px 4px 0px 0px #ea580c;
+            border-color: #374151;
         }
 
-        select {
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a67c52%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px top 50%;
-            background-size: 12px auto;
+        .drag-handle {
+            cursor: grab;
+            color: #9ca3af;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .drag-handle:hover {
+            color: #ea580c;
         }
 
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+        /* 搜尋時停用拖曳 */
+        .drag-disabled .drag-handle {
+            cursor: not-allowed;
+            color: #e5e7eb;
+            pointer-events: none;
+        }
+
+        /* --- 連結列表 (垂直) 的拖曳定位線 --- */
+        ul .sortable-ghost {
+            opacity: 1 !important;
+            background-color: #ea580c !important; 
+            height: 4px !important;              
+            padding: 0 !important;
+            margin: 6px 0 !important;            
+            overflow: hidden !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        ul .sortable-ghost * {
+            display: none !important;
+        }
+
+        /* --- 分類篩選列 (橫向) 的拖曳定位線 --- */
+        #filter-bar .sortable-ghost {
+            opacity: 1 !important;
+            background-color: #ea580c !important; 
+            width: 4px !important;                
+            height: 32px !important;             
+            padding: 0 !important;
+            margin: 0 4px !important;            
+            overflow: hidden !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        .static-chip {
+            cursor: default;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f0e6d2;
+            border-top: 4px solid #374151;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
         
-        .option-btn {
-            padding: 12px 5px;
-            border: 1px solid var(--border-color);
+        .filter-chip {
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .filter-chip.active {
+            background-color: #374151;
+            color: #fff;
+            border-color: #374151;
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+        .filter-chip.inactive {
             background-color: #fff;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 15px;
-            color: var(--text-sub);
-            transition: all 0.25s;
-        }
-        
-        .option-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-            box-shadow: 0 5px 15px rgba(61, 90, 69, 0.2);
+            color: #374151;
         }
 
-        .option-btn:disabled {
-            background-color: #f5f5f5;
-            color: #ddd !important;
-            cursor: not-allowed;
-            border-color: #eee;
+        .tab-btn.active {
+            background-color: #374151;
+            color: #fffef0;
+            border-color: #374151;
         }
-
-        .price-display {
-            text-align: right;
-            font-size: 1.3em;
-            color: var(--accent-color);
-            font-weight: 700;
-            margin: 35px 0 30px 0;
-            padding-top: 25px;
-            border-top: 1px dashed var(--border-color); /* 虛線更有文青感 */
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .submit-btn {
-            width: 100%;
-            background: var(--primary-color);
-            color: white;
-            padding: 18px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            letter-spacing: 1.5px;
-            transition: all 0.3s;
-        }
-
-        .submit-btn:active { transform: scale(0.98); }
-
-        .submit-btn:disabled {
-            background: #d1d1d1;
-            cursor: not-allowed;
-        }
-
-        .success-msg { display: none; text-align: center; padding-top: 20px; }
-        .success-title { color: var(--primary-color); font-size: 1.6em; font-weight: 700; margin-bottom: 35px; }
-        
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .action-btn { 
-            display: inline-block; 
-            width: 80%;
-            max-width: 250px;
-            padding: 15px 20px; 
-            border-radius: 50px; 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.3s;
-        }
-        
-        .check-result-btn { 
-            background-color: var(--accent-color); 
-            color: white; 
-            box-shadow: 0 5px 15px rgba(166, 124, 82, 0.2);
-        }
-        
-        .others-btn { 
-            background-color: transparent; 
-            color: var(--text-sub); 
-            border: 1px solid var(--border-color);
+        .tab-btn {
+            background-color: #fffef0;
+            color: #374151;
         }
     </style>
 </head>
-<body>
+<body class="pb-20 min-h-screen flex flex-col items-center">
 
-<div class="container">
-    <header>
-        <h1>得正 OOLONG TEA PROJECT</h1>
-        <p>1/30(五)年會排演工作人員點餐</p>
-        <div class="deadline-notice" id="deadlineLabel">🕒 截止時間：2026/1/23 (五) 15:00</div>
-    </header>
-
-    <form id="orderForm">
-        <div class="form-group">
-            <label for="username">訂購人姓名</label>
-            <input type="text" id="username" placeholder="請輸入全名" required>
+    <div class="w-full max-w-lg px-4 py-6">
+        
+        <div class="text-center mb-6 border-b-4 border-gray-700 pb-3">
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight uppercase">
+                <i class="fa-solid fa-link mr-2 text-orange-600"></i>URL_MANAGER
+            </h1>
         </div>
 
-        <div class="form-group">
-            <label for="drink">選擇飲品</label>
-            <select id="drink" required>
-                <option value="" disabled selected>請選擇飲品...</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="topping">加入口感 (配料)</label>
-            <select id="topping">
-                <option value="無" data-price="0" selected>無</option>
-                <option value="珍珠" data-price="10">珍珠 (+10元)</option>
-                <option value="黃金珍珠" data-price="10">黃金珍珠 (+10元)</option>
-                <option value="焙烏龍茶凍" data-price="10">焙烏龍茶凍 (+10元)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>甜度</label>
-            <div class="options-grid" id="sugarOptions">
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">正常糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">少糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">半糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">微糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">二分糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">一分糖</button>
-                <button type="button" class="option-btn" onclick="selectOption('sugar', this)">無糖</button>
+        <div class="mb-6">
+            <div class="flex gap-2 mb-2">
+                <button onclick="switchTab('link')" id="tab-link" class="tab-btn active flex-1 py-2 font-bold border-2 border-gray-800 rounded-t-xl transition-colors text-sm">
+                    <i class="fa-solid fa-link mr-1"></i> 新增連結
+                </button>
+                <button onclick="switchTab('category')" id="tab-category" class="tab-btn flex-1 py-2 font-bold border-2 border-gray-800 rounded-t-xl transition-colors text-sm">
+                    <i class="fa-solid fa-folder-plus mr-1"></i> 新增分類
+                </button>
             </div>
-            <input type="hidden" id="sugar" required> 
-        </div>
 
-        <div class="form-group">
-            <label>冰塊 <span id="iceNote" style="color:var(--error-color); font-size:0.8em; display:none;"></span></label>
-            <div class="options-grid" id="iceOptions">
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">正常冰</button>
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">少冰</button>
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">微冰</button>
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">去冰</button>
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">完全去冰</button>
-                <button type="button" class="option-btn ice-opt" id="hotOpt" onclick="selectOption('ice', this)">熱飲</button>
+            <div class="bg-[#fffef0] p-4 border-2 border-gray-800 retro-shadow rounded-b-2xl rounded-tr-2xl relative z-10">
+                
+                <div id="panel-link" class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <select id="newLinkCat" class="retro-input w-1/3 px-3 py-2 border-2 border-gray-800 bg-white text-gray-800 text-sm rounded-xl font-bold">
+                            <option value="">未分類</option>
+                        </select>
+                        <input type="text" id="newDesc" placeholder="輸入標題" 
+                            class="retro-input w-2/3 px-3 py-2 border-2 border-gray-800 bg-white text-gray-800 placeholder-gray-400 text-sm rounded-xl">
+                    </div>
+                    
+                    <input type="url" id="newUrl" placeholder="輸入網址 (https://...)" 
+                        class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white text-gray-800 placeholder-gray-400 text-sm rounded-xl">
+                    
+                    <button onclick="addItem()" 
+                        class="w-full bg-orange-600 text-white py-2 border-2 border-gray-800 retro-shadow hover:bg-orange-500 hover:border-gray-800 transition-none font-bold tracking-widest mt-1 text-sm rounded-xl">
+                        新增連結 <i class="fa-solid fa-plus ml-1"></i>
+                    </button>
+                </div>
+
+                <div id="panel-category" class="hidden flex flex-col gap-3">
+                    <input type="text" id="newCatName" placeholder="輸入新分類名稱 (例如: 工作、音樂...)" 
+                        class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white text-gray-800 placeholder-gray-400 text-sm rounded-xl">
+                    
+                    <button onclick="addCategory()" 
+                        class="w-full bg-gray-800 text-white py-2 border-2 border-gray-800 retro-shadow hover:bg-gray-700 transition-none font-bold tracking-widest mt-1 text-sm rounded-xl">
+                        建立分類 <i class="fa-solid fa-folder ml-1"></i>
+                    </button>
+                </div>
             </div>
-            <input type="hidden" id="ice" required> 
         </div>
 
-        <div class="price-display">
-            <span>金額</span>
-            <span>NT$<span id="priceLabel">0</span></span>
+        <div class="mb-4">
+            <div class="flex overflow-x-auto gap-2 no-scrollbar pb-2 items-center" id="filter-bar"></div>
+            <div class="text-[10px] text-gray-400 text-center mt-1">
+                <i class="fa-solid fa-info-circle mr-1"></i>長按分類標籤可拖曳排序
+            </div>
         </div>
 
-        <button type="submit" id="submitBtn" class="submit-btn">確認登記</button>
-    </form>
-    
-    <div class="success-msg" id="successMsg">
-        <div class="success-title">✅ 登記完成</div>
-        <div class="btn-group">
-            <a href="https://docs.google.com/spreadsheets/d/1ZpzttgDqG8vcOMQ5iqo6ZL6l1nUvSWXcgE6iqfw3tE4/edit?usp=sharing" target="_blank" class="action-btn check-result-btn">查看登記結果</a>
-            <a href="https://graceyiyo-cloud.github.io/order3/" class="action-btn others-btn">幫其他人登記</a>
+        <div id="cat-toolbar" class="hidden mb-4 bg-orange-100 border-2 border-orange-300 rounded-xl p-3 flex items-center justify-between">
+            <div class="font-bold text-orange-800 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i>
+                <span id="current-cat-name-display">分類名稱</span>
+            </div>
+            <button onclick="openCatEditModal()" class="text-xs bg-white border border-orange-300 px-3 py-1 rounded-lg text-orange-700 hover:bg-orange-500 hover:text-white font-bold transition-colors">
+                <i class="fa-solid fa-gear mr-1"></i> 管理分類
+            </button>
+        </div>
+
+        <div class="mb-2 relative group">
+            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400 z-10 group-focus-within:text-orange-600"></i>
+            <input type="text" id="searchInput" placeholder="搜尋..." 
+                class="retro-input w-full pl-10 pr-4 py-2 border-2 border-gray-800 bg-white text-gray-800 placeholder-gray-400 text-sm rounded-xl font-bold">
+        </div>
+
+        <div id="loading" class="loading-spinner"></div>
+        
+        <div id="main-container" class="space-y-4 hidden pb-10"></div>
+
+        <p id="empty-msg" class="text-center text-gray-500 mt-8 hidden font-bold text-sm tracking-wide">
+            [ 無資料 ]
+        </p>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+        <div class="bg-[#fffef0] border-4 border-gray-800 p-6 w-full max-w-sm retro-shadow relative rounded-2xl">
+            <button onclick="closeEditModal()" class="absolute top-2 right-3 text-gray-800 hover:text-red-600 font-bold text-xl px-2">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
+            <h3 class="text-lg font-black text-gray-800 mb-4 border-b-2 border-gray-200 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> 編輯連結
+            </h3>
+            <input type="hidden" id="editKey">
+            
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-gray-600 text-xs font-bold mb-1">所屬分類</label>
+                    <select id="editCatId" class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white rounded-xl text-sm font-bold"></select>
+                </div>
+                <div>
+                    <label class="block text-gray-600 text-xs font-bold mb-1">標題描述</label>
+                    <input type="text" id="editDesc" class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-gray-600 text-xs font-bold mb-1">網址 URL</label>
+                    <input type="text" id="editUrl" class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white rounded-xl text-sm font-mono text-xs">
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3 pt-6">
+                <button onclick="deleteCurrentItem()" class="px-4 py-2 bg-red-50 text-red-600 border-2 border-red-200 hover:border-red-600 hover:bg-red-600 hover:text-white font-bold rounded-xl text-sm transition-all">
+                    刪除
+                </button>
+
+                <button onclick="saveEdit()" class="px-6 py-2 bg-gray-800 text-white border-2 border-gray-800 hover:bg-gray-700 hover:border-gray-700 font-bold rounded-xl text-sm shadow-md active:shadow-none active:translate-y-1">
+                    儲存更新
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbxECKpWPU3Z7Lj16-OqZZAKrdwK9CYL2QrVf3cvZajXucSoYiIuKcIla1Bp6CoY6MHQ/exec"; 
-    const DEADLINE = new Date("2026-01-23T15:00:00");
+    <div id="catEditModal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+        <div class="bg-[#fffef0] border-4 border-gray-800 p-6 w-full max-w-sm retro-shadow relative rounded-2xl">
+            <button onclick="closeCatModal()" class="absolute top-2 right-3 text-gray-800 hover:text-red-600 font-bold text-xl px-2">
+                <i class="fa-solid fa-times"></i>
+            </button>
 
-    const menuData = {
-        "Original TEA (原茶)": { "紅茶": 30, "綠茶": 30, "春烏龍": 35, "輕烏龍": 35, "焙烏龍": 35 },
-        "Classic MILK TEA (奶茶)": { "奶茶": 50, "焙烏龍奶茶": 50, "珍珠奶茶": 60, "黃金珍珠奶綠": 60, "烘吉奶茶(M)": 50 },
-        "Double FRUIT (鮮果)": { "檸檬春烏龍": 65, "香橙春烏龍": 70, "甘蔗春烏龍": 70, "青梅春烏龍": 60, "優酪春烏龍": 65, "雙柚金烏龍": 65 },
-        "Fresh MILK (鮮奶)": { "紅茶鮮奶": 65, "輕烏龍鮮奶": 65, "焙烏龍鮮奶": 65, "烘吉鮮奶(M)": 70 },
-        "Cheese MILK FOAM (奶蓋)": { "芝士奶蓋春烏龍": 60, "芝士奶蓋焙烏龍": 60, "芝士奶蓋阿華田": 65, "芝士奶蓋烘吉茶": 65 }
-    };
+            <h3 class="text-lg font-black text-gray-800 mb-4 border-b-2 border-gray-200 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> 編輯分類
+            </h3>
+            <input type="hidden" id="editCatKey">
+            
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-gray-600 text-xs font-bold mb-1">分類名稱</label>
+                    <input type="text" id="editCatNameInput" class="retro-input w-full px-3 py-2 border-2 border-gray-800 bg-white rounded-xl text-sm font-bold">
+                </div>
+                <div class="bg-orange-50 p-3 rounded-lg border border-orange-200 text-xs text-orange-800">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> 注意：如果刪除分類，該分類下的連結將會變成「未分類」。
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3 pt-6">
+                <button onclick="deleteCurrentCategory()" class="px-4 py-2 bg-red-50 text-red-600 border-2 border-red-200 hover:border-red-600 hover:bg-red-600 hover:text-white font-bold rounded-xl text-sm transition-all">
+                    刪除分類
+                </button>
 
-    const drinkSelect = document.getElementById('drink');
-    const toppingSelect = document.getElementById('topping');
-    const priceLabel = document.getElementById('priceLabel');
-    const submitBtn = document.getElementById('submitBtn');
-    const sugarInput = document.getElementById('sugar');
-    const iceInput = document.getElementById('ice');
+                <button onclick="saveCatEdit()" class="px-6 py-2 bg-gray-800 text-white border-2 border-gray-800 hover:bg-gray-700 font-bold rounded-xl text-sm shadow-md active:shadow-none active:translate-y-1">
+                    儲存
+                </button>
+            </div>
+        </div>
+    </div>
 
-    Object.keys(menuData).forEach(cat => {
-        const gp = document.createElement('optgroup');
-        gp.label = cat;
-        Object.keys(menuData[cat]).forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d;
-            opt.textContent = d + " ($" + menuData[cat][d] + ")";
-            opt.dataset.price = menuData[cat][d];
-            opt.dataset.category = cat;
-            gp.appendChild(opt);
-        });
-        drinkSelect.appendChild(gp);
-    });
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    function checkDeadline() {
-        if (new Date() > DEADLINE) {
-            document.querySelectorAll('input, select, .option-btn').forEach(el => el.disabled = true);
-            submitBtn.textContent = "訂餐時間已截止，若需要加點請找宇均";
-            submitBtn.style.background = "#bc5e5e";
-            return false;
-        }
-        return true;
-    }
-    checkDeadline();
-
-    window.selectOption = function(type, btn) {
-        if (!checkDeadline()) return;
-        const container = document.getElementById(type + 'Options');
-        Array.from(container.getElementsByClassName('option-btn')).forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(type).value = btn.innerText;
-    };
-
-    drinkSelect.addEventListener('change', function() {
-        const opt = this.options[this.selectedIndex];
-        const cat = opt.dataset.category;
-        const isCheese = cat === "Cheese MILK FOAM (奶蓋)";
-        const isFruit = cat === "Double FRUIT (鮮果)";
-        const iceBtns = document.querySelectorAll('.ice-opt');
-        const iceNote = document.getElementById('iceNote');
-        const hotOpt = document.getElementById('hotOpt');
-
-        iceBtns.forEach(btn => btn.disabled = false);
-        iceNote.style.display = "none";
-
-        if (isCheese) {
-            iceBtns.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.innerText === "少冰") {
-                    btn.classList.add('active');
-                    iceInput.value = "少冰";
-                } else {
-                    btn.disabled = true;
-                }
-            });
-            iceNote.textContent = "(奶蓋固定少冰)";
-            iceNote.style.display = "inline";
-        } else if (isFruit) {
-            hotOpt.disabled = true;
-            if (iceInput.value === "熱飲") {
-                hotOpt.classList.remove('active');
-                iceInput.value = "";
-            }
-            iceNote.textContent = "(鮮果僅限冷飲)";
-            iceNote.style.display = "inline";
-        }
-        updatePrice();
-    });
-
-    toppingSelect.addEventListener('change', updatePrice);
-
-    function updatePrice() {
-        const dPrice = parseInt(drinkSelect.options[drinkSelect.selectedIndex]?.dataset.price || 0);
-        const tPrice = parseInt(toppingSelect.options[toppingSelect.selectedIndex]?.dataset.price || 0);
-        priceLabel.textContent = dPrice + tPrice;
-    }
-
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!checkDeadline()) return;
-        if (!sugarInput.value || !iceInput.value) { alert('請選擇甜度與冰塊'); return; }
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = '傳送中...';
-
-        const data = {
-            name: document.getElementById('username').value,
-            drink: drinkSelect.value,
-            topping: toppingSelect.value,
-            sugar: sugarInput.value,
-            ice: iceInput.value,
-            price: priceLabel.textContent
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
+            authDomain: "url-sorting.firebaseapp.com",
+            projectId: "url-sorting",
+            storageBucket: "url-sorting.firebasestorage.app",
+            messagingSenderId: "576779796443",
+            appId: "1:576779796443:web:6f3026b1cc926619e0f1fe",
+            databaseURL: "https://url-sorting-default-rtdb.firebaseio.com"
         };
 
-        fetch(SCRIPT_URL, { method: 'POST', body: new URLSearchParams(data), mode: 'no-cors' })
-        .then(() => {
-            document.getElementById('orderForm').style.display = 'none';
-            document.getElementById('successMsg').style.display = 'block';
-            window.scrollTo(0, 0);
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let state = {
+            links: [],
+            categories: [],
+            currentFilter: 'all'
+        };
+        
+        let linkSortables = [];
+        let catSortable = null;
+
+        // --- 工具：自動加上外部瀏覽器參數 ---
+        function appendExternalBrowserParam(url) {
+            if (!url) return url;
+            const param = "openExternalBrowser=1";
+            if (url.includes(param)) return url;
+            
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}${param}`;
+        }
+
+        function initDataListeners() {
+            onValue(ref(db, 'links'), (snapshot) => {
+                const data = snapshot.val();
+                state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
+                
+                renderFilterBar();
+                checkAndRender();
+            });
+
+            onValue(ref(db, 'categories'), (snapshot) => {
+                const data = snapshot.val();
+                state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+                
+                if (state.currentFilter !== 'all' && state.currentFilter !== 'uncategorized') {
+                    const exists = state.categories.find(c => c.id === state.currentFilter);
+                    if (!exists) state.currentFilter = 'all';
+                }
+
+                updateCategoryDropdowns();
+                renderFilterBar();
+                checkAndRender();
+            });
+        }
+
+        function renderFilterBar() {
+            const bar = document.getElementById('filter-bar');
+            bar.innerHTML = '';
+            
+            if(catSortable) {
+                catSortable.destroy();
+                catSortable = null;
+            }
+
+            const allBtn = createFilterChip('全部', 'all');
+            allBtn.classList.add('static-chip');
+            bar.appendChild(allBtn);
+
+            state.categories.forEach(cat => {
+                const catBtn = createFilterChip(cat.name, cat.id);
+                catBtn.dataset.catId = cat.id;
+                bar.appendChild(catBtn);
+            });
+
+            const hasUncategorized = state.links.some(l => !l.categoryId || !state.categories.find(c => c.id === l.categoryId));
+            if (hasUncategorized) {
+                const uncatBtn = createFilterChip('未分類', 'uncategorized');
+                uncatBtn.classList.add('static-chip');
+                bar.appendChild(uncatBtn);
+            }
+
+            catSortable = Sortable.create(bar, {
+                animation: 150,
+                filter: '.static-chip',
+                direction: 'horizontal',
+                ghostClass: 'sortable-ghost',
+                onMove: function (evt) {
+                    return !evt.related.classList.contains('static-chip');
+                },
+                onEnd: function (evt) {
+                    const items = Array.from(bar.children);
+                    const updates = {};
+                    let orderIndex = 0;
+                    
+                    items.forEach((item) => {
+                        if (item.dataset.catId) {
+                            updates[`categories/${item.dataset.catId}/order`] = orderIndex;
+                            orderIndex++;
+                        }
+                    });
+
+                    if(Object.keys(updates).length > 0) {
+                        update(ref(db), updates);
+                    }
+                }
+            });
+        }
+
+        function createFilterChip(text, filterId) {
+            const btn = document.createElement('button');
+            const isActive = state.currentFilter === filterId;
+            btn.className = `filter-chip border-2 border-gray-800 px-4 py-1.5 rounded-full font-bold text-sm select-none ${isActive ? 'active shadow-none' : 'inactive retro-shadow hover:bg-gray-100'}`;
+            btn.textContent = text;
+            btn.onclick = () => {
+                state.currentFilter = filterId;
+                renderFilterBar();
+                checkAndRender();
+                
+                const catSelect = document.getElementById('newLinkCat');
+                if (filterId === 'all' || filterId === 'uncategorized') {
+                    catSelect.value = "";
+                } else {
+                    catSelect.value = filterId;
+                }
+            };
+            return btn;
+        }
+
+        function checkAndRender() {
+            const loadingEl = document.getElementById('loading');
+            const container = document.getElementById('main-container');
+            const searchVal = document.getElementById('searchInput').value;
+            const catToolbar = document.getElementById('cat-toolbar');
+            
+            loadingEl.style.display = 'none';
+            container.classList.remove('hidden');
+
+            if (state.currentFilter !== 'all' && state.currentFilter !== 'uncategorized') {
+                const currentCat = state.categories.find(c => c.id === state.currentFilter);
+                if (currentCat) {
+                    catToolbar.classList.remove('hidden');
+                    document.getElementById('current-cat-name-display').textContent = currentCat.name;
+                    document.getElementById('editCatKey').value = currentCat.id; 
+                } else {
+                    catToolbar.classList.add('hidden');
+                }
+            } else {
+                catToolbar.classList.add('hidden');
+            }
+            
+            renderMain(searchVal);
+        }
+
+        function renderMain(filterText = '') {
+            const container = document.getElementById('main-container');
+            container.innerHTML = '';
+            
+            linkSortables.forEach(s => s.destroy());
+            linkSortables = [];
+
+            const isSearching = filterText.length > 0;
+            const term = filterText.toLowerCase();
+            let hasData = false;
+
+            if (state.currentFilter === 'all') {
+                state.categories.forEach(cat => {
+                    const links = state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term));
+                    if (links.length > 0) {
+                        renderCategoryBlock(container, cat, links, isSearching, false);
+                        hasData = true;
+                    }
+                });
+                
+                const uncatLinks = state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term));
+                if (uncatLinks.length > 0) {
+                    renderCategoryBlock(container, { id: 'uncategorized', name: '未分類' }, uncatLinks, isSearching, true);
+                    hasData = true;
+                }
+
+            } else if (state.currentFilter === 'uncategorized') {
+                const links = state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term));
+                if (links.length > 0 || !isSearching) {
+                    renderCategoryBlock(container, { id: 'uncategorized', name: '未分類' }, links, isSearching, true);
+                    hasData = true;
+                }
+            } else {
+                const cat = state.categories.find(c => c.id === state.currentFilter);
+                if (cat) {
+                    const links = state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term));
+                    renderCategoryBlock(container, cat, links, isSearching, false);
+                    hasData = true;
+                }
+            }
+
+            const emptyMsg = document.getElementById('empty-msg');
+            if (!hasData) {
+                emptyMsg.classList.remove('hidden');
+                emptyMsg.textContent = isSearching ? "[ 找不到符合的結果 ]" : "[ 暫無資料 ]";
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+        }
+
+        function matchFilter(item, term) {
+            if (!term) return true;
+            return (item.desc && item.desc.toLowerCase().includes(term)) || 
+                   (item.url && item.url.toLowerCase().includes(term));
+        }
+
+        function renderCategoryBlock(container, cat, links, isSearching, isUncategorized) {
+            const section = document.createElement('div');
+            section.className = `transition-all duration-300 ${isSearching ? 'drag-disabled' : ''}`;
+            section.dataset.catId = cat.id;
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-2 min-h-[10px]'; 
+            ul.dataset.catId = cat.id; 
+
+            links.forEach(link => {
+                // 現有資料修正：確保渲染出的連結包含 openExternalBrowser=1
+                const finalUrl = appendExternalBrowserParam(link.url);
+                
+                const li = document.createElement('li');
+                li.className = `bg-white p-2 border-2 border-gray-800 retro-shadow flex items-stretch gap-2 rounded-xl relative hover:translate-y-[-2px] transition-transform ${isSearching ? 'drag-disabled' : ''}`;
+                li.dataset.id = link.id;
+                
+                let catTagHtml = '';
+                if (state.currentFilter === 'all' && !isUncategorized) {
+                    catTagHtml = `<span class="inline-block text-[10px] leading-none bg-gray-200 text-gray-500 px-1.5 py-1 rounded ml-2 align-middle font-bold">${escapeHtml(cat.name)}</span>`;
+                }
+
+                li.innerHTML = `
+                    <div class="drag-handle p-1 pr-2 border-r-2 border-gray-100 flex items-center justify-center">
+                        <i class="fa-solid ${isSearching ? 'fa-ban text-gray-200' : 'fa-grip-vertical'}"></i>
+                    </div>
+                    
+                    <div class="flex-grow min-w-0 flex flex-col justify-center py-1">
+                        <div class="flex items-center">
+                            <div class="font-bold text-gray-800 truncate text-sm leading-tight">${escapeHtml(link.desc)}</div>
+                            ${catTagHtml}
+                        </div>
+                        <div class="text-[10px] text-gray-400 truncate mt-0.5 font-mono">
+                            <a href="${finalUrl}" target="_blank" class="hover:text-orange-600 hover:underline decoration-2 underline-offset-2 transition-colors">
+                                ${escapeHtml(finalUrl)}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1 pl-1 justify-center border-l-2 border-gray-100">
+                        <button onclick="copyToClipboard(this, '${escapeHtml(link.desc)}', '${escapeHtml(finalUrl)}')" 
+                            class="w-7 h-7 flex items-center justify-center text-[10px] text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors" title="複製">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                        
+                        <button onclick="openEditModal('${link.id}', '${escapeHtml(link.desc)}', '${escapeHtml(link.url)}', '${link.categoryId || ''}')" 
+                            class="w-7 h-7 flex items-center justify-center text-[10px] text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors" title="編輯">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+
+            section.appendChild(ul);
+            container.appendChild(section);
+
+            if (!isSearching) {
+                const sortable = Sortable.create(ul, {
+                    group: 'shared-links',
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) {
+                        const itemEl = evt.item;
+                        const newCatId = evt.to.dataset.catId; 
+                        const linkId = itemEl.dataset.id;
+                        
+                        if (newCatId === undefined) return;
+
+                        const updates = {};
+                        const finalCatId = newCatId === 'uncategorized' ? null : newCatId;
+                        updates[`links/${linkId}/categoryId`] = finalCatId;
+                        
+                        const siblings = Array.from(evt.to.children);
+                        siblings.forEach((child, index) => {
+                            if (child.dataset.id) {
+                                updates[`links/${child.dataset.id}/order`] = index;
+                            }
+                        });
+
+                        update(ref(db), updates);
+                    }
+                });
+                linkSortables.push(sortable);
+            }
+        }
+
+        function updateCategoryDropdowns() {
+            const createSelect = document.getElementById('newLinkCat');
+            const editSelect = document.getElementById('editCatId');
+            
+            let options = '<option value="">未分類</option>';
+            state.categories.forEach(cat => {
+                options += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+
+            const currentCreateVal = createSelect.value;
+            createSelect.innerHTML = options;
+            
+            if (state.currentFilter !== 'all' && state.currentFilter !== 'uncategorized') {
+                createSelect.value = state.currentFilter;
+            } else {
+                createSelect.value = currentCreateVal || ""; 
+            }
+
+            editSelect.innerHTML = options;
+        }
+
+        window.addItem = function() {
+            const descInput = document.getElementById('newDesc');
+            const urlInput = document.getElementById('newUrl');
+            const catSelect = document.getElementById('newLinkCat');
+            
+            const desc = descInput.value.trim();
+            let url = urlInput.value.trim();
+            const catId = catSelect.value;
+
+            if (!desc || !url) {
+                alert('請輸入標題和網址');
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            // 新增時自動加上參數
+            url = appendExternalBrowserParam(url);
+
+            const existingInCat = state.links.filter(l => l.categoryId === (catId || undefined));
+            const newOrder = existingInCat.length;
+
+            const newRef = push(ref(db, 'links'));
+            set(newRef, {
+                desc: desc,
+                url: url,
+                categoryId: catId || null,
+                order: newOrder,
+                timestamp: Date.now()
+            }).then(() => {
+                descInput.value = '';
+                urlInput.value = '';
+            });
+        };
+
+        window.addCategory = function() {
+            const nameInput = document.getElementById('newCatName');
+            const name = nameInput.value.trim();
+            
+            if(!name) return;
+
+            const newOrder = state.categories.length;
+            const newRef = push(ref(db, 'categories'));
+            set(newRef, {
+                name: name,
+                order: newOrder
+            }).then(() => {
+                nameInput.value = '';
+                window.switchTab('link'); 
+            });
+        };
+
+        window.deleteCurrentItem = function() {
+            const key = document.getElementById('editKey').value;
+            if (confirm('確定要刪除這個連結嗎？')) {
+                remove(ref(db, 'links/' + key)).then(() => closeEditModal());
+            }
+        };
+
+        window.saveEdit = function() {
+            const key = document.getElementById('editKey').value;
+            const desc = document.getElementById('editDesc').value.trim();
+            let url = document.getElementById('editUrl').value.trim();
+            const catId = document.getElementById('editCatId').value;
+
+            if (!desc || !url) return;
+
+            // 儲存更新時也確保有參數
+            url = appendExternalBrowserParam(url);
+
+            update(ref(db, 'links/' + key), {
+                desc: desc,
+                url: url,
+                categoryId: catId || null
+            }).then(() => closeEditModal());
+        };
+
+        window.openCatEditModal = function() {
+            const catId = state.currentFilter;
+            const cat = state.categories.find(c => c.id === catId);
+            if (!cat) return;
+
+            document.getElementById('editCatKey').value = cat.id;
+            document.getElementById('editCatNameInput').value = cat.name;
+            document.getElementById('catEditModal').classList.remove('hidden');
+        };
+
+        window.deleteCurrentCategory = function() {
+            const key = document.getElementById('editCatKey').value;
+            if(!key) return;
+            
+            if (confirm('確定刪除此分類？\n注意：該分類下的所有連結將會變成「未分類」。')) {
+                const linksToUpdate = state.links.filter(l => l.categoryId === key);
+                const updates = {};
+                
+                linksToUpdate.forEach(l => {
+                    updates[`links/${l.id}/categoryId`] = null;
+                });
+                
+                updates[`categories/${key}`] = null;
+
+                update(ref(db), updates).then(() => {
+                    closeCatModal();
+                    state.currentFilter = 'all'; 
+                });
+            }
+        };
+
+        window.saveCatEdit = function() {
+            const key = document.getElementById('editCatKey').value;
+            const name = document.getElementById('editCatNameInput').value.trim();
+            
+            if(!name) return;
+
+            update(ref(db, 'categories/' + key), {
+                name: name
+            }).then(() => closeCatModal());
+        };
+
+        window.switchTab = function(tab) {
+            const linkPanel = document.getElementById('panel-link');
+            const catPanel = document.getElementById('panel-category');
+            const linkBtn = document.getElementById('tab-link');
+            const catBtn = document.getElementById('tab-category');
+
+            if(tab === 'link') {
+                linkPanel.classList.remove('hidden');
+                catPanel.classList.add('hidden');
+                linkBtn.classList.add('active');
+                catBtn.classList.remove('active');
+            } else {
+                linkPanel.classList.add('hidden');
+                catPanel.classList.remove('hidden');
+                linkBtn.classList.remove('active');
+                catBtn.classList.add('active');
+            }
+        };
+
+        window.openEditModal = function(key, desc, url, catId) {
+            document.getElementById('editKey').value = key;
+            document.getElementById('editDesc').value = desc;
+            document.getElementById('editUrl').value = url;
+            document.getElementById('editCatId').value = catId || "";
+            document.getElementById('editModal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('editModal').classList.add('hidden');
+        };
+
+        window.closeCatModal = function() {
+            document.getElementById('catEditModal').classList.add('hidden');
+        };
+
+        window.copyToClipboard = function(btnElement, desc, url) {
+            const textToCopy = `${desc} - ${url}`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalIcon = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fa-solid fa-check"></i>';
+                btnElement.classList.add('text-green-600', 'bg-green-100');
+                setTimeout(() => {
+                    btnElement.innerHTML = originalIcon;
+                    btnElement.classList.remove('text-green-600', 'bg-green-100');
+                }, 1000);
+            });
+        };
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderMain(e.target.value);
         });
-    });
-</script>
+
+        document.getElementById('newDesc').addEventListener('keydown', (e) => e.key === 'Enter' && window.addItem());
+        document.getElementById('newUrl').addEventListener('keydown', (e) => e.key === 'Enter' && window.addItem());
+        document.getElementById('newCatName').addEventListener('keydown', (e) => e.key === 'Enter' && window.addCategory());
+
+        function escapeHtml(text) {
+            if (!text) return text;
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        initDataListeners();
+
+    </script>
 </body>
 </html>
