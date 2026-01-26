@@ -377,7 +377,7 @@
                                                 
                                                 <div className="space-y-2 mt-4">
                                                     {Object.entries(exp.splits).map(([name, amt]) => (
-                                                        <div key={name} className="bg-[#fdfaf5] px-4 py-4 rounded-[1.2rem] border border-[#e5e1d8]/80 flex items-center justify-between">
+                                                        <div key={name} className="bg-[#fdfaf5] px-4 py-2.5 rounded-[1.2rem] border border-[#e5e1d8]/80 flex items-center justify-between">
                                                             <div className="text-[#7a746a] font-black text-base">{name}</div>
                                                             <div className="text-right">
                                                                 <div className="text-[#5c6b53] font-black text-lg">{exp.currency} {formatNum(amt)}</div>
@@ -407,7 +407,8 @@
                                                     <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black">應付者</span>
                                                     <div className="text-base font-black text-[#4a4a4a] bg-[#fdfaf5] px-4 py-2 rounded-xl border min-w-[100px] text-center">{t.from}</div>
                                                 </div>
-                                                <Icon name="arrow-right" className="text-[#5c6b53] animate-pulse rotate-90 sm:rotate-0 mt-4 sm:mt-0" />
+                                                {/* 箭頭樣式調整：手機版朝右，電腦版置中下移一點 */}
+                                                <Icon name="arrow-right" className="text-[#5c6b53] animate-pulse mt-4 sm:mt-6" />
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black">應收者</span>
                                                     <div className="text-base font-black text-white bg-[#5c6b53] px-4 py-2 rounded-xl border border-[#5c6b53] min-w-[100px] text-center">{t.to}</div>
