@@ -293,7 +293,7 @@
                             <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" /> 紀錄一筆支出</h2>
                             <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐..." className="w-full px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl" />
                             <div className="flex gap-2">
-                                <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[50%] px-1 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-center text-sm outline-none">
+                                <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[33.33%] px-1 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-center text-sm outline-none">
                                     {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                                 </select>
                                 <input type="text" value={form.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setForm({...form, amount: e.target.value})} placeholder="金額" className="flex-1 px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-right font-black" />
@@ -467,7 +467,7 @@
                             <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center">
                                 <h3 className="text-xl font-black text-red-500 mb-4">全部清除？</h3>
                                 <button onClick={() => { updateCloud({ members: [], expenses: [], paymentInfo: {} }); setShowClearConfirm(false); showToast("已清除"); }} className="w-full py-4 bg-red-500 text-white rounded-2xl mb-2">確認清除</button>
-                                <button onClick={() => setShowClearConfirm(false)} className="w-full py-3 text-[#a8a297]">取消</button>
+                                <button onClick={() => setShowClearConfirm(false)} className="text-[#a8a297] py-2">取消</button>
                             </div>
                         </div>
                     )}
