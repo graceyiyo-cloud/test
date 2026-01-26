@@ -266,7 +266,6 @@
             const copyToClipboard = () => {
                 let text = `【${tripId} 旅遊結算】\n━━━━\n\n`;
 
-                // 1. 預付人明細
                 const payers = [...new Set(expenses.map(e => e.payer))];
                 payers.forEach(p => {
                     const pExpenses = expenses.filter(e => e.payer === p);
@@ -280,7 +279,6 @@
 
                 text += `━━━━\n\n`;
 
-                // 2. 每位成員分攤明細
                 members.forEach(m => {
                     text += `［${m}］\n`;
                     let memberTotalTWD = 0;
@@ -298,7 +296,12 @@
 
                 text += `━━━━\n【最終收付】(建議以台幣結算)\n`;
                 settlement.transactions.forEach(t => {
-                    text += `◆ ${t.from} → ${t.to}：TWD ${formatNum(t.amount)}\n`;
+                    // 最終收付顯示外幣與台幣金額
+                    const amtStr = settlement.primaryCode === 'TWD' 
+                        ? `TWD ${formatNum(t.amount)}` 
+                        : `${settlement.primaryCode} ${formatNum(t.amount / settlement.primaryRate)} (TWD ${formatNum(t.amount)})`;
+                    
+                    text += `◆ ${t.from} → ${t.to}：${amtStr}\n`;
                     if (paymentInfo[t.to]) text += `   (收款資訊：${paymentInfo[t.to]})\n`;
                 });
 
