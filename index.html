@@ -203,9 +203,11 @@
                 const lastSplit = totalAmount - (baseSplit * (count - 1));
                 const splits = {};
                 participants.forEach((name, index) => { splits[name] = index === count - 1 ? lastSplit : baseSplit; });
+                
+                // 設定完整日期顯示包含年份
                 const newExpense = {
                     id: Date.now(), item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
-                    payer, splits, timestamp: new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    payer, splits, timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(/\//g, '/')
                 };
                 updateCloud({ expenses: [...expenses, newExpense] });
                 setForm({ ...form, item: '', amount: '', participants: [] });
@@ -337,7 +339,7 @@
                             )}
                         </section>
 
-                        {/* 3. 支出明細 - 調整順序為順序排列 */}
+                        {/* 3. 支出明細 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold text-[#5c6b53]">支出明細</h2>
@@ -351,11 +353,8 @@
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-lg font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
+                                                    {/* 日期改為 YYYY/MM/DD 格式 */}
                                                     <span className="text-[10px] text-[#a8a297] bg-[#fdfaf5] px-2 py-0.5 rounded border">{exp.timestamp}</span>
-                                                </div>
-                                                {/* 顯示當下抓取的即期匯率 */}
-                                                <div className="text-[10px] text-[#5c6b53] mt-1 bg-[#fdfaf5] px-2 py-0.5 rounded border border-[#e5e1d8] inline-block font-black">
-                                                    匯率：1 {exp.currency} = {exp.rate} TWD
                                                 </div>
                                                 <div className="text-sm text-[#7a746a] mt-2 font-bold leading-snug">
                                                     <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了 <span className="text-[#5c6b53] text-base font-black">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(exp.amount)}</span>
@@ -373,7 +372,13 @@
                                                     ))}
                                                 </div>
                                             </div>
-                                            <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500 p-1"><Icon name="trash" className="w-5 h-5" /></button>
+                                            {/* 匯率顯示調整至刪除按鈕旁邊 */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-[10px] text-[#5c6b53] bg-[#fdfaf5] px-2 py-1 rounded border border-[#e5e1d8] font-black">
+                                                    匯率：{exp.rate}
+                                                </div>
+                                                <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500 p-1"><Icon name="trash" className="w-5 h-5" /></button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
