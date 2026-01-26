@@ -337,21 +337,25 @@
                             )}
                         </section>
 
-                        {/* 3. 支出明細 */}
+                        {/* 3. 支出明細 - 調整順序為順序排列 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold text-[#5c6b53]">支出明細</h2>
                                 <button onClick={() => setShowClearConfirm(true)} className="text-xs text-[#a8a297] hover:text-red-500">清除全部</button>
                             </div>
                             <div className="bg-white rounded-2xl border border-[#e5e1d8] p-4 space-y-6 shadow-sm min-h-[120px]">
-                                {expenses.length === 0 ? <p className="py-12 text-center text-[#a8a297]">目前尚無紀錄</p> : expenses.slice().reverse().map(exp => (
+                                {expenses.length === 0 ? <p className="py-12 text-center text-[#a8a297]">目前尚無紀錄</p> : expenses.map((exp, idx) => (
                                     <div key={exp.id} className="relative pl-6 border-l-4 border-[#5c6b53]/20 pb-3">
                                         <div className="absolute left-[-10px] top-1.5 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-lg font-black text-[#4a4a4a]">{exp.item}</span>
+                                                    <span className="text-lg font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
                                                     <span className="text-[10px] text-[#a8a297] bg-[#fdfaf5] px-2 py-0.5 rounded border">{exp.timestamp}</span>
+                                                </div>
+                                                {/* 顯示當下抓取的即期匯率 */}
+                                                <div className="text-[10px] text-[#5c6b53] mt-1 bg-[#fdfaf5] px-2 py-0.5 rounded border border-[#e5e1d8] inline-block font-black">
+                                                    匯率：1 {exp.currency} = {exp.rate} TWD
                                                 </div>
                                                 <div className="text-sm text-[#7a746a] mt-2 font-bold leading-snug">
                                                     <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了 <span className="text-[#5c6b53] text-base font-black">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(exp.amount)}</span>
@@ -385,7 +389,6 @@
                             <div className="space-y-4">
                                 {settlement.transactions.map((t, i) => (
                                     <div key={i} className="bg-white rounded-[2rem] border border-[#e5e1d8] overflow-hidden shadow-md">
-                                        {/* 上方：結算結論 */}
                                         <div className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                                             <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto justify-center">
                                                 <div className="flex flex-col items-center">
@@ -408,8 +411,6 @@
                                                 )}
                                             </div>
                                         </div>
-                                        
-                                        {/* 下方：匯款資訊 (移動到結論下方) */}
                                         {paymentInfo[t.to] ? (
                                             <div className="bg-[#f3f0e9]/50 border-t border-[#e5e1d8] p-4">
                                                 <div className="flex items-start gap-2 text-xs text-[#8d775f]">
@@ -439,7 +440,7 @@
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
                             <div className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl scale-up-center">
                                 <h3 className="text-lg font-black text-[#5c6b53] mb-4">設定 {editingPayment} 的收款資訊</h3>
-                                <textarea value={tempPaymentText} onChange={e => setTempPaymentText(e.target.value)} placeholder="銀行代碼、帳號、分行名稱等..." className="w-full h-32 p-4 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-sm outline-none focus:border-[#5c6b53]" />
+                                <textarea value={tempPaymentText} onChange={e => setTempPaymentText(e.target.value)} placeholder="銀行代碼、帳號等..." className="w-full h-32 p-4 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-sm outline-none focus:border-[#5c6b53]" />
                                 <div className="flex gap-3 mt-6">
                                     <button onClick={() => { updateCloud({ paymentInfo: { ...paymentInfo, [editingPayment]: tempPaymentText } }); setEditingPayment(null); showToast("已儲存"); }} className="flex-1 py-3 bg-[#5c6b53] text-white rounded-xl">儲存</button>
                                     <button onClick={() => setEditingPayment(null)} className="flex-1 py-3 bg-[#f3f0e9] text-[#a8a297] rounded-xl">取消</button>
