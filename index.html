@@ -264,11 +264,44 @@
             }, [expenses, members, rates]);
 
             const copyToClipboard = () => {
-                let text = `【${tripId} 旅遊結算】\n━━━━\n`;
+                let text = `【${tripId} 旅遊結算】\n━━━━\n\n`;
+
+                // 1. 預付人明細
+                const payers = [...new Set(expenses.map(e => e.payer))];
+                payers.forEach(p => {
+                    const pExpenses = expenses.filter(e => e.payer === p);
+                    const totalTWD = pExpenses.reduce((sum, e) => sum + (e.amount * e.rate), 0);
+                    const detail = pExpenses.map(e => {
+                        const amtStr = e.currency === 'TWD' ? `TWD ${formatNum(e.amount)}` : `${e.currency} ${formatNum(e.amount)} (TWD ${formatNum(e.amount * e.rate)})`;
+                        return `${e.item} ${amtStr}`;
+                    }).join(' + ');
+                    text += `${p} 預付：${detail} = 總共預付 TWD ${formatNum(totalTWD)}\n`;
+                });
+
+                text += `━━━━\n\n`;
+
+                // 2. 每位成員分攤明細
+                members.forEach(m => {
+                    text += `［${m}］\n`;
+                    let memberTotalTWD = 0;
+                    expenses.forEach(e => {
+                        if (e.splits[m]) {
+                            const splitAmt = e.splits[m];
+                            const splitTWD = splitAmt * e.rate;
+                            memberTotalTWD += splitTWD;
+                            const amtStr = e.currency === 'TWD' ? `TWD ${formatNum(splitAmt)}` : `${e.currency} ${formatNum(splitAmt)} (TWD ${formatNum(splitTWD)})`;
+                            text += ` - ${e.item}：${amtStr}\n`;
+                        }
+                    });
+                    text += ` 總計分攤：TWD ${formatNum(memberTotalTWD)}\n\n`;
+                });
+
+                text += `━━━━\n【最終收付】(建議以台幣結算)\n`;
                 settlement.transactions.forEach(t => {
                     text += `◆ ${t.from} → ${t.to}：TWD ${formatNum(t.amount)}\n`;
-                    if (paymentInfo[t.to]) text += `    (收款資訊：${paymentInfo[t.to]})\n`;
+                    if (paymentInfo[t.to]) text += `   (收款資訊：${paymentInfo[t.to]})\n`;
                 });
+
                 const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
                 showToast("已複製結算清單");
             };
@@ -366,10 +399,8 @@
                                                 <div className="flex items-start justify-between mb-2">
                                                     <div>
                                                         <div className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</div>
-                                                        {/* 日期時間改到名稱下方 */}
                                                         <div className="text-[10px] text-[#a8a297] font-bold mt-1">{exp.timestamp}</div>
                                                     </div>
-                                                    {/* 匯率與垃圾桶改到名稱右方並排 */}
                                                     <div className="flex items-center gap-3 ml-2 flex-shrink-0">
                                                         <div className="text-[10px] text-[#a8a297] font-bold">匯率：{exp.rate}</div>
                                                         <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500"><Icon name="trash-2" className="w-5 h-5" /></button>
