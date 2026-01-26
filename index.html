@@ -363,18 +363,20 @@
                                         <div className="absolute left-[-10px] top-1.5 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <span className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
-                                                    <span className="text-[10px] text-[#a8a297] font-bold">{exp.timestamp}</span>
-                                                    
-                                                    {/* 電腦版將匯率移到垃圾桶左邊 */}
-                                                    <div className="ml-auto flex items-center gap-3">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div>
+                                                        <div className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</div>
+                                                        {/* 日期時間改到名稱下方 */}
+                                                        <div className="text-[10px] text-[#a8a297] font-bold mt-1">{exp.timestamp}</div>
+                                                    </div>
+                                                    {/* 匯率與垃圾桶改到名稱右方並排 */}
+                                                    <div className="flex items-center gap-3 ml-2 flex-shrink-0">
                                                         <div className="text-[10px] text-[#a8a297] font-bold">匯率：{exp.rate}</div>
                                                         <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500"><Icon name="trash-2" className="w-5 h-5" /></button>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="text-sm text-[#7a746a] font-bold leading-snug mb-3">
+                                                <div className="text-sm text-[#7a746a] font-bold leading-snug mb-3 mt-4">
                                                     <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了 <br/>
                                                     <span className="text-[#5c6b53] text-xl font-black">{exp.currency} {formatNum(exp.amount)}</span>
                                                     {exp.currency !== 'TWD' && <span className="ml-2 text-xs text-[#5c6b53]/80 bg-[#5c6b53]/10 px-2 py-0.5 rounded-md whitespace-nowrap">≈ TWD {formatNum(exp.amount * exp.rate)}</span>}
