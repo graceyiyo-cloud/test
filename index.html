@@ -15,7 +15,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
 
     <style>
-        /* 強制所有元素使用 border-box，避免 Padding 導致寬度破表 */
         *, *::before, *::after { 
             box-sizing: border-box !important;
             font-weight: 700 !important; 
@@ -41,18 +40,15 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #5c6b53; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .scale-up-center { animation: scale-up-center 0.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) both; }
-        @keyframes scale-up-center { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* 解決 iOS/Chrome select 默認樣式問題 */
         select {
             -webkit-appearance: none;
-            -moz-appearance: none;
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a8a297' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 0.5rem center;
             background-size: 1em;
-            padding-right: 2rem !important;
+            padding-right: 1.5rem !important;
         }
     </style>
 </head>
@@ -148,7 +144,6 @@
             const [paymentInfo, setPaymentInfo] = useState({});
             const [expenses, setExpenses] = useState([]);
             const [rates, setRates] = useState({ TWD: 1 });
-            
             const [newMemberName, setNewMemberName] = useState('');
             const [editingPayment, setEditingPayment] = useState(null);
             const [tempPaymentText, setTempPaymentText] = useState('');
@@ -292,7 +287,6 @@
                     </header>
 
                     <main className="max-w-xl mx-auto p-4 space-y-5">
-                        {/* 1. 同行夥伴 */}
                         <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 shadow-sm overflow-hidden">
                             <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#8d775f]"><Icon name="users" /> 同行夥伴</h2>
                             <div className="flex gap-2 mb-4">
@@ -310,7 +304,6 @@
                             </div>
                         </section>
 
-                        {/* 2. 紀錄支出 */}
                         <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 shadow-sm space-y-4 overflow-hidden">
                             <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" /> 紀錄一筆支出</h2>
                             <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐..." className="w-full px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl" />
@@ -348,7 +341,6 @@
                             <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3 rounded-2xl font-black disabled:opacity-30 active:bg-[#4a5742]">紀錄並同步</button>
                         </section>
 
-                        {/* 累計看板 */}
                         <section className="bg-[#5c6b53] rounded-3xl p-6 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-2 relative shadow-xl text-white overflow-hidden">
                             <h3 className="text-xs text-white/60 font-black tracking-[0.3em] uppercase mb-1">Total Trip Expenditure</h3>
                             <div className="text-4xl font-black flex items-center justify-center gap-3">
@@ -360,7 +352,6 @@
                             )}
                         </section>
 
-                        {/* 3. 支出明細 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold text-[#5c6b53]">支出明細</h2>
@@ -372,31 +363,29 @@
                                         <div className="absolute left-[-10px] top-1.5 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-lg font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <span className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
                                                     <span className="text-[10px] text-[#a8a297] font-bold">{exp.timestamp}</span>
+                                                    <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500 ml-auto"><Icon name="trash-2" className="w-5 h-5" /></button>
                                                 </div>
-                                                <div className="text-sm text-[#7a746a] mt-2 font-bold leading-snug">
-                                                    <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了 <span className="text-[#5c6b53] text-base font-black">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(exp.amount)}</span>
+                                                <div className="text-xs text-[#a8a297] font-bold mb-2">匯率：{exp.rate}</div>
+                                                <div className="text-sm text-[#7a746a] font-bold leading-snug mb-3">
+                                                    <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付了 <br/>
+                                                    <span className="text-[#5c6b53] text-xl font-black">{exp.currency} {formatNum(exp.amount)}</span>
                                                     {exp.currency !== 'TWD' && <span className="ml-2 text-xs text-[#5c6b53]/80 bg-[#5c6b53]/10 px-2 py-0.5 rounded-md whitespace-nowrap">≈ TWD {formatNum(exp.amount * exp.rate)}</span>}
                                                 </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                                                
+                                                <div className="space-y-2 mt-4">
                                                     {Object.entries(exp.splits).map(([name, amt]) => (
-                                                        <div key={name} className="bg-[#fdfaf5] px-3 py-2 rounded-xl border border-[#e5e1d8]/60 text-sm flex items-center justify-between">
-                                                            <div className="text-[#a8a297] font-black text-xs">{name}</div>
+                                                        <div key={name} className="bg-[#fdfaf5] px-4 py-4 rounded-[1.2rem] border border-[#e5e1d8]/80 flex items-center justify-between">
+                                                            <div className="text-[#7a746a] font-black text-base">{name}</div>
                                                             <div className="text-right">
-                                                                <div className="text-[#5c6b53] font-black">{CURRENCIES.find(c => c.code === exp.currency)?.symbol} {formatNum(amt)}</div>
-                                                                {exp.currency !== 'TWD' && <div className="text-[10px] text-[#8d775f] font-black opacity-90">≈ TWD {formatNum(amt * exp.rate)}</div>}
+                                                                <div className="text-[#5c6b53] font-black text-lg">{exp.currency} {formatNum(amt)}</div>
+                                                                {exp.currency !== 'TWD' && <div className="text-xs text-[#a8a297] font-black mt-0.5">≈ TWD {formatNum(amt * exp.rate)}</div>}
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <div className="text-[10px] text-[#5c6b53] font-black">
-                                                    匯率：{exp.rate}
-                                                </div>
-                                                <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500 p-1"><Icon name="trash" className="w-5 h-5" /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -404,7 +393,6 @@
                             </div>
                         </section>
 
-                        {/* 4. 最終結算區塊 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold text-[#5c6b53]">最終結算結餘</h2>
@@ -459,7 +447,6 @@
                         </section>
                     </main>
 
-                    {/* 彈出視窗：編輯匯款資訊 */}
                     {editingPayment && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
                             <div className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl scale-up-center">
@@ -473,7 +460,6 @@
                         </div>
                     )}
 
-                    {/* Toast & 確認視窗 */}
                     {toast && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-8 py-3 rounded-2xl shadow-2xl z-[150] font-black text-sm animate-bounce">{toast}</div>}
                     {showLogoutConfirm && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
