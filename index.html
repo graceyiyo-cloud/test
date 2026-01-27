@@ -52,7 +52,6 @@
             padding-right: 1.5rem !important;
         }
 
-        /* 截圖時保持背景色 */
         .screenshot-target {
             background-color: #f9f7f2 !important;
         }
@@ -160,7 +159,6 @@
             const [toast, setToast] = useState(null);
             const [form, setForm] = useState({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
             
-            // 用於截圖的 Ref
             const settlementRef = useRef(null);
 
             useEffect(() => {
@@ -274,7 +272,6 @@
 
             const copyToClipboard = () => {
                 let text = `【${tripId} 旅遊結算】\n━━━━\n\n`;
-
                 const payers = [...new Set(expenses.map(e => e.payer))];
                 payers.forEach(p => {
                     const pExpenses = expenses.filter(e => e.payer === p);
@@ -285,9 +282,7 @@
                     }).join(' + ');
                     text += `${p} 預付：${detail} = 總共預付 TWD ${formatNum(totalTWD)}\n`;
                 });
-
                 text += `━━━━\n\n`;
-
                 members.forEach(m => {
                     text += `［${m}］\n`;
                     let memberTotalTWD = 0;
@@ -302,32 +297,36 @@
                     });
                     text += ` 總計分攤：TWD ${formatNum(memberTotalTWD)}\n\n`;
                 });
-
                 text += `━━━━\n【最終收付】(建議以台幣結算)\n`;
                 settlement.transactions.forEach(t => {
                     const amtStr = settlement.primaryCode === 'TWD' 
                         ? `TWD ${formatNum(t.amount)}` 
                         : `${settlement.primaryCode} ${formatNum(t.amount / settlement.primaryRate)} (TWD ${formatNum(t.amount)})`;
-                    
                     text += `◆ ${t.from} → ${t.to}：${amtStr}\n`;
                     if (paymentInfo[t.to]) text += `   (收款資訊：${paymentInfo[t.to]})\n`;
                 });
-
                 const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
                 showToast("已複製結算清單");
             };
 
-            // 複製截圖功能
             const copyAsImage = async () => {
                 if (!settlementRef.current) return;
                 showToast("正在生成截圖...");
                 
                 try {
+                    // 使用 onclone 解決文字移動問題：在克隆的 DOM 上進行操作，不影響原始顯示
                     const canvas = await html2canvas(settlementRef.current, {
                         backgroundColor: '#f9f7f2',
-                        scale: 2, // 提高畫質晰度
+                        scale: 2,
                         useCORS: true,
-                        logging: false
+                        logging: false,
+                        scrollX: 0,
+                        scrollY: -window.scrollY, // 修正捲動偏移造成的渲染問題
+                        onclone: (clonedDoc) => {
+                            // 確保克隆的元素在生成圖片時是靜止且正確定位的
+                            const el = clonedDoc.querySelector('.screenshot-target');
+                            if(el) el.style.transform = 'none';
+                        }
                     });
                     
                     canvas.toBlob(async (blob) => {
@@ -336,18 +335,16 @@
                             await navigator.clipboard.write(data);
                             showToast("截圖已複製到剪貼簿");
                         } catch (err) {
-                            // 某些瀏覽器不支援 ClipboardItem API 的備用方案
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = `${tripId}_結算.png`;
                             a.click();
-                            showToast("瀏覽器不支援複製圖片，已改為下載");
+                            showToast("不支援複製圖片，已改為下載");
                         }
                     });
                 } catch (e) {
                     showToast("生成截圖失敗");
-                    console.error(e);
                 }
             };
 
@@ -485,7 +482,6 @@
                                 </div>
                             </div>
                             
-                            {/* 用於截圖的包裝容器 */}
                             <div ref={settlementRef} className="screenshot-target space-y-4 py-2 px-1">
                                 {settlement.transactions.map((t, i) => (
                                     <div key={i} className="bg-white rounded-[2rem] border border-[#e5e1d8] overflow-hidden shadow-md">
