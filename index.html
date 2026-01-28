@@ -17,7 +17,7 @@
             -webkit-font-smoothing: antialiased;
             letter-spacing: 0.03em;
             font-weight: 700 !important;
-            line-height: 1.3; /* 全域行高調窄 */
+            line-height: 1.3;
         }
 
         *, *::before, *::after {
@@ -33,6 +33,17 @@
             outline: none;
             border-color: #5c6b53 !important;
             box-shadow: 0 0 0 4px rgba(92, 107, 83, 0.08);
+        }
+
+        /* 隱藏預設箭頭以優化手機版外觀 */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a8a297' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
         }
 
         ::placeholder {
@@ -51,7 +62,6 @@
             border-radius: 10px;
         }
         
-        /* Modal Animation */
         @keyframes scaleUp {
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
@@ -70,7 +80,7 @@
             return <i data-lucide={name} className={className}></i>;
         };
 
-        const APP_ID = 'travel-expense-splitter-v1'; // 保持此 ID 不變，資料就不會消失
+        const APP_ID = 'travel-expense-splitter-v1';
         const CURRENCIES = [
             { code: 'TWD', name: '台幣', symbol: 'TWD' },
             { code: 'USD', name: '美金', symbol: 'USD' },
@@ -87,18 +97,17 @@
 
         function App() {
             const [members, setMembers] = useState([]);
-            const [memberBankInfo, setMemberBankInfo] = useState({}); // { name: 'Bank Details' }
+            const [memberBankInfo, setMemberBankInfo] = useState({});
             const [newMemberName, setNewMemberName] = useState('');
             const [expenses, setExpenses] = useState([]);
             const [rates, setRates] = useState({ TWD: 1 });
             const [loadingRates, setLoadingRates] = useState(false);
             
-            // 狀態管理：編輯、確認視窗
             const [showClearConfirm, setShowClearConfirm] = useState(false);
             const [expenseToDelete, setExpenseToDelete] = useState(null);
             const [editingId, setEditingId] = useState(null);
             const [editForm, setEditForm] = useState(null);
-            const [bankModalMember, setBankModalMember] = useState(null); // 當前正在編輯匯款資料的成員
+            const [bankModalMember, setBankModalMember] = useState(null);
             const [tempBankInfo, setTempBankInfo] = useState('');
             
             const [toast, setToast] = useState(null);
@@ -159,7 +168,6 @@
                 const updatedBankInfo = { ...memberBankInfo };
                 delete updatedBankInfo[name];
                 setMemberBankInfo(updatedBankInfo);
-
                 if (form.payer === name) setForm({ ...form, payer: '' });
                 setForm(prev => ({ ...prev, participants: prev.participants.filter(p => p !== name) }));
             };
@@ -205,7 +213,6 @@
             const submitExpense = () => {
                 const { item, amount, currency, payer, participants } = form;
                 if (!item || !amount || !payer || participants.length === 0) return;
-                
                 const newExpense = {
                     id: Date.now(),
                     item, amount: parseFloat(amount), currency, rate: parseFloat(rates[currency] || 1),
@@ -231,7 +238,6 @@
             const saveEdit = () => {
                 const { item, amount, currency, payer, participants } = editForm;
                 if (!item || !amount || !payer || participants.length === 0) return;
-
                 setExpenses(expenses.map(e => e.id === editingId ? {
                     ...e,
                     item, amount: parseFloat(amount), currency, payer,
@@ -255,7 +261,6 @@
                 const balances = {}; 
                 let totalTWD = 0;
                 members.forEach(m => balances[m] = 0);
-
                 const currencyCounts = {};
                 expenses.forEach(e => {
                     if (e.currency !== 'TWD') {
@@ -264,45 +269,35 @@
                 });
                 const primaryCode = Object.keys(currencyCounts).reduce((a, b) => currencyCounts[a] > currencyCounts[b] ? a : b, null);
                 const primaryRate = primaryCode ? (rates[primaryCode] || 1) : 1;
-
                 expenses.forEach(exp => {
                     const amountTWD = exp.amount * exp.rate;
                     totalTWD += amountTWD;
-                    
                     balances[exp.payer] = (balances[exp.payer] || 0) + amountTWD;
-                    
                     Object.entries(exp.splits).forEach(([name, splitAmt]) => { 
                         balances[name] = (balances[name] || 0) - (splitAmt * exp.rate); 
                     });
                 });
-
                 const debtors = [], creditors = [];
                 Object.entries(balances).forEach(([name, bal]) => {
                     if (bal < -1) debtors.push({ name, amount: Math.abs(bal) });
                     else if (bal > 1) creditors.push({ name, amount: bal });
                 });
-
                 const transactions = [];
                 let dIdx = 0, cIdx = 0;
                 const td = JSON.parse(JSON.stringify(debtors)), tc = JSON.parse(JSON.stringify(creditors));
-                
                 while (dIdx < td.length && cIdx < tc.length) {
                     const amt = Math.min(td[dIdx].amount, tc[cIdx].amount);
                     if (amt > 0) transactions.push({ from: td[dIdx].name, to: tc[cIdx].name, amount: amt });
-                    
                     td[dIdx].amount -= amt; 
                     tc[cIdx].amount -= amt;
-                    
                     if (td[dIdx].amount <= 0.1) dIdx++;
                     if (tc[cIdx].amount <= 0.1) cIdx++;
                 }
-
                 return { totalTWD, transactions, primaryCode, primaryRate };
             }, [expenses, members, rates]);
 
             const copyToClipboard = () => {
                 let text = `【費用結算清單】\n`;
-                
                 let hasPrepaid = false;
                 members.forEach(m => {
                     const paidItems = expenses.filter(e => e.payer === m);
@@ -313,10 +308,8 @@
                             const sym = CURRENCIES.find(c => c.code === e.currency).symbol;
                             return `${e.item} ${sym}${formatNum(e.amount)}`;
                         }).join(' + ');
-                        
                         const totalPrepaidTWD = paidItems.reduce((sum, e) => sum + (e.amount * e.rate), 0);
                         text += `${itemsStr} = 總共預付 `;
-
                         if (settlement.primaryCode && settlement.primaryCode !== 'TWD') {
                             const approxForeign = totalPrepaidTWD / settlement.primaryRate;
                             const sym = CURRENCIES.find(c => c.code === settlement.primaryCode).symbol;
@@ -326,11 +319,8 @@
                         }
                     }
                 });
-                
                 if (hasPrepaid) text += `\n`;
-
                 text += `━━━━━━━━━━━━━━━\n\n`;
-
                 members.forEach(member => {
                     const involved = expenses.filter(e => e.splits[member] !== undefined);
                     if (involved.length > 0) {
@@ -369,7 +359,6 @@
 
             return (
                 <div className="min-h-screen pb-20 font-bold">
-                    {/* Header - Padding 減小 (p-6 -> p-3) */}
                     <header className="bg-white/90 backdrop-blur-md border-b border-[#e5e1d8] p-3 sticky top-0 z-40 flex justify-between items-center shadow-sm">
                         <div>
                             <h1 className="text-xl sm:text-2xl flex items-center gap-2 text-[#5c6b53] font-bold">
@@ -382,9 +371,7 @@
                         </button>
                     </header>
 
-                    {/* Main Container - space-y 減小 (10 -> 6) */}
                     <main className="max-w-xl mx-auto p-4 space-y-6">
-                        {/* 使用提示 - 更新文字 */}
                         <div className="bg-[#fdfaf5] border border-[#e5e1d8] p-4 rounded-2xl shadow-sm flex items-start gap-3">
                             <div className="bg-[#5c6b53]/10 p-1.5 rounded-full text-[#5c6b53] mt-0.5 shrink-0">
                                 <Icon name="info" className="w-4 h-4" />
@@ -394,7 +381,6 @@
                             </p>
                         </div>
 
-                        {/* 1. 同行夥伴 */}
                         <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 sm:p-5 shadow-sm flex flex-col">
                             <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-[#8d775f]">
                                 <Icon name="users" className="w-5 h-5"/> 同行夥伴
@@ -418,7 +404,6 @@
                             </div>
                         </section>
 
-                        {/* 2. 紀錄支出 */}
                         <section className="bg-white rounded-2xl border border-[#e5e1d8] p-5 shadow-sm space-y-5">
                             <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" className="w-5 h-5"/> 紀錄一筆支出</h2>
                             
@@ -426,7 +411,8 @@
                                 <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐、交通費、門票..." className="w-full px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl outline-none text-base" />
                                 
                                 <div className="flex gap-2">
-                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[35%] px-2 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-base outline-none appearance-none">
+                                    {/* 修正：幣別選擇框增加最小寬度，防止手機版擠壓 */}
+                                    <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="min-w-[110px] sm:w-[35%] px-3 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-base outline-none pr-8">
                                         {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                                     </select>
                                     <div className="relative flex-1">
@@ -467,10 +453,8 @@
                             <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3.5 rounded-2xl text-lg shadow-lg tracking-[0.4em] font-black disabled:opacity-30 active:scale-[0.98] transition-all">記錄這筆支出</button>
                         </section>
 
-                        {/* 累計看板 */}
                         <section className="bg-[#5c6b53] rounded-3xl p-6 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-1 relative shadow-xl text-white">
                             <h3 className="text-[10px] text-white/60 font-black tracking-[0.3em] uppercase mb-1">Total Trip Expenditure</h3>
-                            
                             <div className="text-4xl font-black flex items-center justify-center gap-2">
                                 <span className="text-sm opacity-50 tracking-normal">
                                     {settlement.primaryCode && settlement.primaryCode !== 'TWD' 
@@ -481,19 +465,16 @@
                                     ? settlement.totalTWD / settlement.primaryRate 
                                     : settlement.totalTWD)}
                             </div>
-                            
                             {settlement.primaryCode && settlement.primaryCode !== 'TWD' && (
                                 <div className="text-white/80 text-sm font-bold bg-white/10 px-3 py-1 rounded-lg mt-1 border border-white/20">
                                     ≈ TWD {formatNum(settlement.totalTWD)}
                                 </div>
                             )}
-
                             <div className="bg-white/20 border border-white/30 px-4 py-1.5 rounded-full flex items-center gap-2 text-xs font-black mt-3">
                                 <Icon name="list" className="w-3 h-3" /> 共 {expenses.length} 筆明細
                             </div>
                         </section>
 
-                        {/* 3. 支出明細 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="scroll-text" className="w-5 h-5"/> 支出明細</h2>
@@ -509,13 +490,12 @@
                                     return (
                                         <div key={exp.id} className="relative pl-6 border-l-4 border-[#5c6b53]/20 pb-2">
                                             <div className="absolute left-[-10px] top-1 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
-                                            
                                             {isEditing ? (
-                                                /* 編輯模式介面 */
                                                 <div className="space-y-4 bg-[#fdfaf5] p-4 rounded-2xl border border-[#5c6b53]/20">
                                                     <input type="text" value={editForm.item} onChange={e => setEditForm({...editForm, item: e.target.value})} className="w-full px-3 py-2 bg-white border border-[#e5e1d8] rounded-xl text-base" />
                                                     <div className="flex gap-2">
-                                                        <select value={editForm.currency} onChange={e => setEditForm({...editForm, currency: e.target.value})} className="w-1/3 px-2 py-2 bg-white border border-[#e5e1d8] rounded-xl text-sm">
+                                                        {/* 修正：編輯模式下的幣別選擇框也增加最小寬度與內距 */}
+                                                        <select value={editForm.currency} onChange={e => setEditForm({...editForm, currency: e.target.value})} className="min-w-[110px] sm:w-1/3 px-3 py-2 bg-white border border-[#e5e1d8] rounded-xl text-sm pr-8">
                                                             {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                                                         </select>
                                                         <input type="text" value={editForm.amount} onChange={e => /^\d*\.?\d*$/.test(e.target.value) && setEditForm({...editForm, amount: e.target.value})} className="flex-1 px-3 py-2 bg-white border border-[#e5e1d8] rounded-xl text-right font-black" />
@@ -538,7 +518,6 @@
                                                     </div>
                                                 </div>
                                             ) : (
-                                                /* 顯示模式介面 */
                                                 <>
                                                     <div className="flex justify-between items-start gap-2 mb-3">
                                                         <div className="flex-1">
@@ -561,8 +540,6 @@
                                                             <button onClick={() => setExpenseToDelete(exp.id)} className="text-[#e5e1d8] hover:text-red-500 transition-colors p-1"><Icon name="trash" className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
-                                                    
-                                                    {/* 分攤明細區塊 */}
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3">
                                                         {Object.entries(exp.splits).map(([name, amt]) => (
                                                             <div key={name} className="bg-[#fdfaf5] px-4 py-2 sm:p-4 rounded-xl border border-[#e5e1d8]/60 flex items-center justify-between shadow-sm hover:border-[#5c6b53]/30 transition-colors">
@@ -588,7 +565,6 @@
                             </div>
                         </section>
 
-                        {/* 4. 結算統計 */}
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold flex items-center gap-2 text-[#5c6b53]"><Icon name="check-circle-2" className="w-5 h-5"/> 最終結算</h2>
@@ -608,15 +584,12 @@
                                                         <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black tracking-widest">應付者</span>
                                                         <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#e5e1d8] w-full sm:min-w-[80px] text-center shadow-sm">{t.from}</div>
                                                     </div>
-                                                    
                                                     <Icon name="arrow-right" className="text-[#5c6b53] mt-1 sm:mt-5 animate-pulse rotate-90 sm:rotate-0 w-4 h-4" />
-                                                    
                                                     <div className="flex flex-col items-center w-full sm:w-auto">
                                                         <span className="text-[10px] text-[#a8a297] uppercase mb-1 font-black tracking-widest">應收者</span>
                                                         <div className="text-sm font-black text-[#4a4a4a] bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#e5e1d8] w-full sm:min-w-[80px] text-center shadow-sm">{t.to}</div>
                                                     </div>
                                                 </div>
-
                                                 <div className="text-center sm:text-right w-full sm:w-auto border-t sm:border-t-0 border-[#e5e1d8]/50 pt-2 sm:pt-0 mt-1 sm:mt-0 flex flex-col justify-center sm:items-end">
                                                     <div className="text-xl font-black text-[#5c6b53] whitespace-nowrap">
                                                         <span className="text-xs font-bold opacity-60 mr-1">
@@ -635,7 +608,6 @@
                                                     )}
                                                 </div>
                                             </div>
-                                            {/* 新增匯款資訊顯示 */}
                                             {memberBankInfo[t.to] && (
                                                 <div className="mt-2 pt-2 border-t border-dashed border-[#e5e1d8] flex items-start gap-2 text-xs text-[#8d775f]">
                                                     <Icon name="credit-card" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -653,7 +625,6 @@
                         </section>
                     </main>
 
-                    {/* 匯款資料編輯 Modal */}
                     {bankModalMember && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
                             <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] scale-up-center">
@@ -676,14 +647,12 @@
                         </div>
                     )}
 
-                    {/* Toast 訊息 */}
                     {toast && (
                         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#4a4a4a] text-white px-6 py-3 rounded-2xl shadow-2xl z-[150] font-black text-xs tracking-widest animate-bounce">
                             {toast}
                         </div>
                     )}
 
-                    {/* 單筆刪除確認視窗 */}
                     {expenseToDelete !== null && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
                             <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
@@ -697,7 +666,6 @@
                         </div>
                     )}
 
-                    {/* 全部清除確認視窗 */}
                     {showClearConfirm && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
                             <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-[#e5e1d8] text-center scale-up-center">
