@@ -181,6 +181,15 @@
                             <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-sm font-bold text-emerald-700" id="mNet">$0</p></div>
                         </div>
                     </div>
+
+                    <div id="unpaidSection" class="border-t border-amber-100 pt-4 bg-amber-50/30 -mx-5 px-5 pb-2 hidden">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-amber-600 text-[10px] font-bold uppercase tracking-widest">⚠️ 本月待收款明細</h3>
+                            <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
+                        </div>
+                        <div id="unpaidList" class="space-y-1 text-[11px] text-amber-800">
+                            </div>
+                    </div>
                 </div>
             </div>
 
@@ -190,9 +199,9 @@
                         <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址或機型內容..." class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100">
                     </div>
                     <div class="flex-[2] flex items-center gap-1">
-                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-xl transition-all">◀</button>
-                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-1.5 text-xs outline-none text-center">
-                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-xl transition-all">▶</button>
+                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-3 rounded-xl transition-all">◀</button>
+                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-3 text-sm outline-none text-center">
+                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-3 rounded-xl transition-all">▶</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 md:flex gap-2">
@@ -272,6 +281,14 @@
             filterRecords();
         };
 
+        // 新增：快速切換至待收款過濾
+        window.quickFilterUnpaid = () => {
+            document.getElementById('paymentFilter').value = 'unpaid';
+            filterRecords();
+            // 滾動到清單
+            document.getElementById('recordList').scrollIntoView({ behavior: 'smooth' });
+        };
+
         document.getElementById('recordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const record = {
@@ -319,6 +336,7 @@
             let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
             let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
             let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
+            let mUnpaidDetails = []; // 本月待收款清單
             
             const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
             const filterMonthName = mon ? mon.split('-')[1] : (new Date().getMonth() + 1).toString().padStart(2, '0');
@@ -351,6 +369,11 @@
                     mAc += (i.acCount || 0);
                     mWm += (i.wmCount || 0);
                     mWt += (i.wtCount || 0);
+                    
+                    // 收集本月待收款
+                    if (i.payment === 'unpaid') {
+                        mUnpaidDetails.push({ name: i.customerName, amount: i.totalAmount });
+                    }
                 }
                 
                 const searchStr = `${i.customerName} ${i.phone} ${i.address} ${i.acBrand} ${i.note}`.toLowerCase();
@@ -362,6 +385,21 @@
 
                 return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
             });
+
+            // 處理待收款明細顯示
+            const unpaidSection = document.getElementById('unpaidSection');
+            const unpaidList = document.getElementById('unpaidList');
+            if (mUnpaidDetails.length > 0) {
+                unpaidSection.classList.remove('hidden');
+                unpaidList.innerHTML = mUnpaidDetails.map(item => `
+                    <div class="flex justify-between border-b border-amber-100/50 py-1">
+                        <span>• ${item.name}</span>
+                        <span class="font-bold">$${item.amount.toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                unpaidSection.classList.add('hidden');
+            }
 
             const sorted = baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime));
 
@@ -400,7 +438,7 @@
                 let net = i.totalAmount - i.assistantPay;
                 let isComp = i.status === 'completed';
                 let isPaid = i.payment === 'paid';
-                let statusClass = i.status === 'completed' ? 'completed-row' : '';
+                let statusClass = isComp ? 'completed-row' : '';
 
                 const hasValidAddress = i.address && i.address.trim() !== "" && i.address !== "未提供地址";
                 const hasValidPhone = i.phone && i.phone.trim() !== "";
