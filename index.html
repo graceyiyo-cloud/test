@@ -42,41 +42,43 @@
 
         @media (max-width: 480px) {
             .container { padding: 30px 20px; }
-            h1 { font-size: 20px; }
-            header p { font-size: 1.2em; }
+            header p.main-title { font-size: 1.55em !important; }
         }
 
         header {
             text-align: center;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 25px;
+            padding-bottom: 20px;
         }
 
-        h1 {
+        /* 標題與行距縮小調整 */
+        header p { margin: 0; line-height: 1.4; }
+
+        header p.main-title {
+            font-weight: 800;
+            font-size: 1.7em;
             color: var(--primary-color);
-            margin: 0 0 10px 0;
-            font-size: 22px;
-            font-weight: 700;
-        }
-        
-        .sub-info {
-            font-weight: 500;
-            font-size: 1.1em;
-            margin: 5px 0;
-            color: var(--accent-color);
-            letter-spacing: 1px;
+            margin-bottom: 8px;
         }
 
         .deadline-notice {
             color: var(--error-color);
-            font-size: 0.9em;
-            margin: 12px 0;
+            font-size: 0.95em;
             font-weight: 500;
             display: inline-block;
             background: rgba(188, 94, 94, 0.08);
-            padding: 4px 16px;
+            padding: 2px 16px;
             border-radius: 30px;
+            margin-bottom: 8px;
+        }
+
+        h1.brand-name {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 0.95em; /* 與截止時間字體大小一致 */
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         .form-group { margin-bottom: 28px; }
@@ -216,9 +218,9 @@
 
 <div class="container">
     <header>
-        <p>2/5(四)年會總綵排人員點餐</p>
+        <p class="main-title">2/5(四)年會總綵排人員點餐</p>
         <div class="deadline-notice" id="deadlineLabel">🕒 截止時間：2026/02/04 (三) 12:00</div>
-        <h1 style="margin-top:10px;">飲料：微平方</h1>
+        <h1 class="brand-name">飲料：微平方</h1>
     </header>
 
     <form id="orderForm">
@@ -317,9 +319,7 @@
         "醇奶茶": { "沉韻奶紅": 50, "蕎麥奶綠": 50, "奶香烏龍": 50, "波霸/椰果奶茶": 50, "仙草凍奶茶": 50 }
     };
 
-    // 甜度固定名單
     const sugarFixedList = ["荔枝海塩愛生氣", "梅果愛生氣", "單純愛生氣", "激萃金萱", "激萃玫瑰鐵觀音", "激萃白桃紅", "古早味冬瓜茶", "格林紅茶", "冬瓜檸檬/金橘"];
-    // 冰量固定名單
     const iceFixedList = ["蜜桃愛生氣", "荔枝海塩愛生氣", "柚香愛生氣", "西西里美式愛生氣", "Honey愛生氣", "梅果愛生氣", "蘋果愛生氣", "蔓越莓愛生氣", "單純愛生氣", "激萃金萱", "激萃玫瑰鐵觀音", "激萃白桃紅"];
 
     const drinkSelect = document.getElementById('drink');
@@ -371,7 +371,6 @@
         const sugarFixedOpt = document.getElementById('sugarFixedOpt');
         const iceFixedOpt = document.getElementById('iceFixedOpt');
 
-        // Reset
         sugarBtns.forEach(btn => { if(btn.id !== "sugarFixedOpt") { btn.disabled = false; btn.classList.remove('active'); } });
         iceBtns.forEach(btn => { if(btn.id !== "iceFixedOpt") { btn.disabled = false; btn.classList.remove('active'); } });
         sugarFixedOpt.style.display = "none";
@@ -381,7 +380,6 @@
         sugarInput.value = "";
         iceInput.value = "";
 
-        // Check Sugar Fixed
         if (sugarFixedList.includes(drinkName)) {
             sugarBtns.forEach(btn => { if(btn.id !== "sugarFixedOpt") btn.disabled = true; });
             sugarFixedOpt.style.display = "inline-block";
@@ -391,7 +389,6 @@
             sugarNote.style.display = "inline";
         }
 
-        // Check Ice Fixed
         if (iceFixedList.includes(drinkName)) {
             iceBtns.forEach(btn => { if(btn.id !== "iceFixedOpt") btn.disabled = true; });
             iceFixedOpt.style.display = "inline-block";
