@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1/30(五)年會排演工作人員點餐</title>
+    <title>2/5(四)年會總綵排人員點餐</title>
     <style>
         :root {
             /* 文青風配色：森林綠、暖焦糖、米白背景 */
@@ -42,8 +42,8 @@
 
         @media (max-width: 480px) {
             .container { padding: 30px 20px; }
-            h1 { font-size: 18px; }
-            header p { font-size: 1.3em; }
+            h1 { font-size: 20px; }
+            header p { font-size: 1.2em; }
         }
 
         header {
@@ -54,24 +54,24 @@
         }
 
         h1 {
-            color: var(--accent-color);
+            color: var(--primary-color);
             margin: 0 0 10px 0;
-            font-size: 18px;
-            font-weight: 500;
-            letter-spacing: 2px;
+            font-size: 22px;
+            font-weight: 700;
         }
         
-        header p {
-            font-weight: 700;
-            font-size: 1.4em;
-            margin: 0;
-            color: var(--primary-color);
+        .sub-info {
+            font-weight: 500;
+            font-size: 1.1em;
+            margin: 5px 0;
+            color: var(--accent-color);
+            letter-spacing: 1px;
         }
 
         .deadline-notice {
             color: var(--error-color);
             font-size: 0.9em;
-            margin-top: 12px;
+            margin: 12px 0;
             font-weight: 500;
             display: inline-block;
             background: rgba(188, 94, 94, 0.08);
@@ -216,9 +216,9 @@
 
 <div class="container">
     <header>
-        <h1>微平方</h1>
-        <p>1/30(五)年會排演工作人員點餐</p>
+        <p>2/5(四)年會總綵排人員點餐</p>
         <div class="deadline-notice" id="deadlineLabel">🕒 截止時間：2026/02/04 (三) 12:00</div>
+        <h1 style="margin-top:10px;">飲料：微平方</h1>
     </header>
 
     <form id="orderForm">
@@ -254,7 +254,6 @@
                 <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">少糖</button>
                 <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">半糖</button>
                 <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">微糖</button>
-                <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">二分糖</button>
                 <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">一分糖</button>
                 <button type="button" class="option-btn sugar-opt" onclick="selectOption('sugar', this)">無糖</button>
                 <button type="button" class="option-btn sugar-opt" id="sugarFixedOpt" style="display:none;" onclick="selectOption('sugar', this)">甜度固定</button>
@@ -269,7 +268,6 @@
                 <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">少冰</button>
                 <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">微冰</button>
                 <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">去冰</button>
-                <button type="button" class="option-btn ice-opt" onclick="selectOption('ice', this)">完全去冰</button>
                 <button type="button" class="option-btn ice-opt" id="hotOpt" onclick="selectOption('ice', this)">熱飲</button>
                 <button type="button" class="option-btn ice-opt" id="iceFixedOpt" style="display:none;" onclick="selectOption('ice', this)">冰量固定</button>
             </div>
@@ -374,8 +372,8 @@
         const iceFixedOpt = document.getElementById('iceFixedOpt');
 
         // Reset
-        sugarBtns.forEach(btn => { btn.disabled = false; btn.classList.remove('active'); });
-        iceBtns.forEach(btn => { btn.disabled = false; btn.classList.remove('active'); });
+        sugarBtns.forEach(btn => { if(btn.id !== "sugarFixedOpt") { btn.disabled = false; btn.classList.remove('active'); } });
+        iceBtns.forEach(btn => { if(btn.id !== "iceFixedOpt") { btn.disabled = false; btn.classList.remove('active'); } });
         sugarFixedOpt.style.display = "none";
         iceFixedOpt.style.display = "none";
         sugarNote.style.display = "none";
