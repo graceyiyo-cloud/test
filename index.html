@@ -520,6 +520,7 @@
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 flex-wrap">
                                                                 <span className="text-lg font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</span>
+                                                                <span className="text-[10px] text-[#a8a297] tracking-widest">{exp.timestamp}</span>
                                                             </div>
                                                             <div className="text-sm text-[#7a746a] mt-1 font-bold leading-tight">
                                                                 <span className="text-[#5c6b53] font-black">{exp.payer}</span> 預付 <span className="text-[#5c6b53] font-black">{CURRENCIES.find(c => c.code === exp.currency).symbol} {formatNum(exp.amount)}</span>
@@ -632,7 +633,7 @@
                                 <textarea 
                                     value={tempBankInfo} 
                                     onChange={e => setTempBankInfo(e.target.value)}
-                                    placeholder="輸入銀行代碼、帳號或轉帳說明..."
+                                    placeholder="輸入銀行代碼、帳號 or 轉帳說明..."
                                     className="w-full h-32 p-4 bg-[#fdfaf5] border border-[#e5e1d8] rounded-2xl outline-none text-sm font-bold resize-none mb-6"
                                 />
                                 <div className="flex flex-col gap-3">
