@@ -190,9 +190,9 @@
                         <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址或機型內容..." class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100">
                     </div>
                     <div class="flex-[2] flex items-center gap-1">
-                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl transition-all">◀</button>
-                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center">
-                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl transition-all">▶</button>
+                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-xl transition-all">◀</button>
+                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-1.5 text-xs outline-none text-center">
+                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-xl transition-all">▶</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 md:flex gap-2">
@@ -400,7 +400,7 @@
                 let net = i.totalAmount - i.assistantPay;
                 let isComp = i.status === 'completed';
                 let isPaid = i.payment === 'paid';
-                let statusClass = isComp ? 'completed-row' : '';
+                let statusClass = i.status === 'completed' ? 'completed-row' : '';
 
                 const hasValidAddress = i.address && i.address.trim() !== "" && i.address !== "未提供地址";
                 const hasValidPhone = i.phone && i.phone.trim() !== "";
