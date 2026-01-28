@@ -6,14 +6,13 @@
     <title>旅遊費用分算 - 雲端版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com-react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         *, *::before, *::after { 
@@ -51,10 +50,6 @@
             background-size: 1em;
             padding-right: 1.5rem !important;
         }
-
-        .screenshot-target {
-            background-color: #f9f7f2 !important;
-        }
     </style>
 </head>
 <body>
@@ -78,7 +73,7 @@
         }
         const db = firebase.firestore();
 
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
         const Icon = ({ name, className = "w-5 h-5" }) => <i data-lucide={name} className={className}></i>;
 
         const CURRENCIES = [
@@ -157,9 +152,10 @@
             const [deleteTargetId, setDeleteTargetId] = useState(null);
             const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
             const [toast, setToast] = useState(null);
-            const [form, setForm] = useState({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
             
-            const settlementRef = useRef(null);
+            // 支出編輯相關狀態
+            const [editingExpenseId, setEditingExpenseId] = useState(null);
+            const [form, setForm] = useState({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
 
             useEffect(() => {
                 if (!tripId) return;
@@ -218,6 +214,24 @@
                 updateCloud({ members: newList, paymentInfo: newPayments });
             };
 
+            const startEditExpense = (exp) => {
+                setEditingExpenseId(exp.id);
+                setForm({
+                    item: exp.item,
+                    amount: exp.amount.toString(),
+                    currency: exp.currency,
+                    payer: exp.payer,
+                    participants: Object.keys(exp.splits)
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast("編輯模式：請在上方修改資料");
+            };
+
+            const cancelEdit = () => {
+                setEditingExpenseId(null);
+                setForm({ item: '', amount: '', currency: 'TWD', payer: '', participants: [] });
+            };
+
             const submitExpense = () => {
                 const { item, amount, currency, payer, participants } = form;
                 if (!item || !amount || !payer || participants.length === 0) return;
@@ -228,13 +242,32 @@
                 const splits = {};
                 participants.forEach((name, index) => { splits[name] = index === count - 1 ? lastSplit : baseSplit; });
                 
-                const newExpense = {
-                    id: Date.now(), item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
-                    payer, splits, timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(/\//g, '/')
-                };
-                updateCloud({ expenses: [...expenses, newExpense] });
+                if (editingExpenseId) {
+                    // 更新現有支出
+                    const updatedExpenses = expenses.map(e => {
+                        if (e.id === editingExpenseId) {
+                            return {
+                                ...e,
+                                item, amount: totalAmount, currency, 
+                                rate: parseFloat(rates[currency] || 1),
+                                payer, splits
+                            };
+                        }
+                        return e;
+                    });
+                    updateCloud({ expenses: updatedExpenses });
+                    setEditingExpenseId(null);
+                    showToast("支出已更新");
+                } else {
+                    // 新增支出
+                    const newExpense = {
+                        id: Date.now(), item, amount: totalAmount, currency, rate: parseFloat(rates[currency] || 1),
+                        payer, splits, timestamp: new Date().toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(/\//g, '/')
+                    };
+                    updateCloud({ expenses: [...expenses, newExpense] });
+                    showToast("支出已儲存");
+                }
                 setForm({ ...form, item: '', amount: '', participants: [] });
-                showToast("支出已儲存");
             };
 
             const settlement = useMemo(() => {
@@ -303,49 +336,10 @@
                         ? `TWD ${formatNum(t.amount)}` 
                         : `${settlement.primaryCode} ${formatNum(t.amount / settlement.primaryRate)} (TWD ${formatNum(t.amount)})`;
                     text += `◆ ${t.from} → ${t.to}：${amtStr}\n`;
-                    if (paymentInfo[t.to]) text += `   (收款資訊：${paymentInfo[t.to]})\n`;
+                    if (paymentInfo[t.to]) text += `    (收款資訊：${paymentInfo[t.to]})\n`;
                 });
                 const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
                 showToast("已複製結算清單");
-            };
-
-            const copyAsImage = async () => {
-                if (!settlementRef.current) return;
-                showToast("正在生成截圖...");
-                
-                try {
-                    // 使用 onclone 解決文字移動問題：在克隆的 DOM 上進行操作，不影響原始顯示
-                    const canvas = await html2canvas(settlementRef.current, {
-                        backgroundColor: '#f9f7f2',
-                        scale: 2,
-                        useCORS: true,
-                        logging: false,
-                        scrollX: 0,
-                        scrollY: -window.scrollY, // 修正捲動偏移造成的渲染問題
-                        onclone: (clonedDoc) => {
-                            // 確保克隆的元素在生成圖片時是靜止且正確定位的
-                            const el = clonedDoc.querySelector('.screenshot-target');
-                            if(el) el.style.transform = 'none';
-                        }
-                    });
-                    
-                    canvas.toBlob(async (blob) => {
-                        try {
-                            const data = [new ClipboardItem({ [blob.type]: blob })];
-                            await navigator.clipboard.write(data);
-                            showToast("截圖已複製到剪貼簿");
-                        } catch (err) {
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `${tripId}_結算.png`;
-                            a.click();
-                            showToast("不支援複製圖片，已改為下載");
-                        }
-                    });
-                } catch (e) {
-                    showToast("生成截圖失敗");
-                }
             };
 
             if (!tripId) return <LoginScreen onJoin={setTripId} />;
@@ -379,8 +373,11 @@
                             </div>
                         </section>
 
-                        <section className="bg-white rounded-2xl border border-[#e5e1d8] p-4 shadow-sm space-y-4 overflow-hidden">
-                            <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]"><Icon name="coffee" /> 紀錄一筆支出</h2>
+                        <section className={`bg-white rounded-2xl border p-4 shadow-sm space-y-4 overflow-hidden transition-colors duration-300 ${editingExpenseId ? 'border-blue-400 ring-2 ring-blue-100' : 'border-[#e5e1d8]'}`}>
+                            <h2 className="text-lg font-bold flex items-center gap-2 text-[#8d775f]">
+                                <Icon name={editingExpenseId ? "edit-3" : "coffee"} /> 
+                                {editingExpenseId ? "修改這筆支出" : "紀錄一筆支出"}
+                            </h2>
                             <input type="text" value={form.item} onChange={e => setForm({...form, item: e.target.value})} placeholder="例如：晚餐..." className="w-full px-4 py-2.5 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl" />
                             <div className="flex gap-2 w-full">
                                 <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-[35%] min-w-0 px-2 py-2 bg-[#fdfaf5] border border-[#e5e1d8] rounded-xl text-center text-sm outline-none">
@@ -413,7 +410,14 @@
                                     <button onClick={() => setForm({...form, participants: [...members]})} className="text-sm text-[#5c6b53] border-b border-[#5c6b53]">全選</button>
                                 </div>
                             </div>
-                            <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className="w-full bg-[#5c6b53] text-white py-3 rounded-2xl font-black disabled:opacity-30 active:bg-[#4a5742]">紀錄並同步</button>
+                            <div className="flex gap-2">
+                                {editingExpenseId && (
+                                    <button onClick={cancelEdit} className="flex-1 bg-[#f3f0e9] text-[#a8a297] py-3 rounded-2xl font-black">取消修改</button>
+                                )}
+                                <button onClick={submitExpense} disabled={!form.item || !form.amount || !form.payer || form.participants.length === 0} className={`flex-[2] py-3 rounded-2xl font-black text-white disabled:opacity-30 active:scale-95 transition-all ${editingExpenseId ? 'bg-blue-500' : 'bg-[#5c6b53]'}`}>
+                                    {editingExpenseId ? "更新支出並同步" : "紀錄並同步"}
+                                </button>
+                            </div>
                         </section>
 
                         <section className="bg-[#5c6b53] rounded-3xl p-6 border border-[#e5e1d8] flex flex-col justify-center items-center text-center gap-2 relative shadow-xl text-white overflow-hidden">
@@ -434,8 +438,8 @@
                             </div>
                             <div className="bg-white rounded-2xl border border-[#e5e1d8] p-4 space-y-6 shadow-sm min-h-[120px]">
                                 {expenses.length === 0 ? <p className="py-12 text-center text-[#a8a297]">目前尚無紀錄</p> : expenses.map((exp, idx) => (
-                                    <div key={exp.id} className="relative pl-6 border-l-4 border-[#5c6b53]/20 pb-3">
-                                        <div className="absolute left-[-10px] top-1.5 bg-[#5c6b53] rounded-full w-4 h-4 border-4 border-white shadow-sm" />
+                                    <div key={exp.id} className={`relative pl-6 border-l-4 pb-3 transition-colors ${editingExpenseId === exp.id ? 'border-blue-400 bg-blue-50/30' : 'border-[#5c6b53]/20'}`}>
+                                        <div className={`absolute left-[-10px] top-1.5 rounded-full w-4 h-4 border-4 border-white shadow-sm ${editingExpenseId === exp.id ? 'bg-blue-400' : 'bg-[#5c6b53]'}`} />
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between mb-2">
@@ -443,9 +447,9 @@
                                                         <div className="text-xl font-black text-[#4a4a4a]">{idx + 1}. {exp.item}</div>
                                                         <div className="text-[10px] text-[#a8a297] font-bold mt-1">{exp.timestamp}</div>
                                                     </div>
-                                                    <div className="flex items-center gap-3 ml-2 flex-shrink-0">
-                                                        <div className="text-[10px] text-[#a8a297] font-bold">匯率：{exp.rate}</div>
-                                                        <button onClick={() => setDeleteTargetId(exp.id)} className="text-[#e5e1d8] hover:text-red-500"><Icon name="trash-2" className="w-5 h-5" /></button>
+                                                    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                                                        <button onClick={() => startEditExpense(exp)} className={`p-1.5 rounded-lg ${editingExpenseId === exp.id ? 'text-blue-500 bg-blue-100' : 'text-[#a8a297] hover:bg-[#f3f0e9]'}`}><Icon name="edit-2" className="w-4 h-4" /></button>
+                                                        <button onClick={() => setDeleteTargetId(exp.id)} className="p-1.5 text-[#e5e1d8] hover:text-red-500 hover:bg-red-50"><Icon name="trash-2" className="w-4 h-4" /></button>
                                                     </div>
                                                 </div>
                                                 
@@ -474,15 +478,11 @@
                         </section>
 
                         <section className="space-y-4">
-                            <div className="flex flex-col gap-3 px-2">
+                            <div className="flex justify-between items-center px-2">
                                 <h2 className="text-lg font-bold text-[#5c6b53]">最終結算結餘</h2>
-                                <div className="flex gap-2">
-                                    <button onClick={copyToClipboard} className="flex-1 bg-[#5c6b53] text-white px-4 py-3 rounded-full text-xs shadow-lg flex items-center justify-center gap-2"><Icon name="copy" className="w-4 h-4" /> 複製文字</button>
-                                    <button onClick={copyAsImage} className="flex-1 bg-white border border-[#5c6b53] text-[#5c6b53] px-4 py-3 rounded-full text-xs shadow-lg flex items-center justify-center gap-2"><Icon name="image" className="w-4 h-4" /> 複製截圖</button>
-                                </div>
+                                <button onClick={copyToClipboard} className="bg-[#5c6b53] text-white px-5 py-3 rounded-full text-xs shadow-lg flex items-center gap-2"><Icon name="copy" className="w-4 h-4" /> 複製結算清單</button>
                             </div>
-                            
-                            <div ref={settlementRef} className="screenshot-target space-y-4 py-2 px-1">
+                            <div className="space-y-4">
                                 {settlement.transactions.map((t, i) => (
                                     <div key={i} className="bg-white rounded-[2rem] border border-[#e5e1d8] overflow-hidden shadow-md">
                                         <div className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
