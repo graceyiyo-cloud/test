@@ -42,7 +42,7 @@
 
         @media (max-width: 480px) {
             .container { padding: 30px 20px; }
-            header p.main-title { font-size: 1.4em !important; } /* 行動版同步縮小比例 */
+            header p.main-title { font-size: 1.4em !important; }
         }
 
         header {
@@ -54,7 +54,7 @@
 
         header p { margin: 0; line-height: 1.4; }
 
-        /* 主標題：縮小10% (從1.7em 降至約 1.53em) */
+        /* 主標題 */
         header p.main-title {
             font-weight: 800;
             font-size: 1.53em;
@@ -62,7 +62,7 @@
             margin-bottom: 6px;
         }
 
-        /* 截止時間：縮小10% (從0.95em 降至約 0.85em) */
+        /* 截止時間 */
         .deadline-notice {
             color: var(--error-color);
             font-size: 0.85em;
@@ -71,14 +71,15 @@
             background: rgba(188, 94, 94, 0.08);
             padding: 2px 14px;
             border-radius: 30px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
+        /* 飲料店名：字體大 25% (從 0.85em 調大至約 1.06em) */
         h1.brand-name {
             color: var(--accent-color);
             margin: 0;
-            font-size: 0.85em; /* 同步與截止時間一致 */
-            font-weight: 600;
+            font-size: 1.06em; 
+            font-weight: 700;
             letter-spacing: 1px;
         }
 
