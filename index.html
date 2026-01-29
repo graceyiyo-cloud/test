@@ -12,22 +12,23 @@
             theme: {
                 extend: {
                     colors: {
-                        paper: '#f2f0e9',
-                        ink: '#373a36',
-                        sub: '#6b705c',
+                        // 護眼配色方案：低飽和、低對比
+                        paper: '#f2f0e9', // 暖米色背景，減少藍光刺激
+                        ink: '#373a36',   // 深炭灰文字，比純黑更柔和
+                        sub: '#6b705c',   // 苔蘚綠灰，用於次要文字
                         wood: {
                             100: '#e9e7da',
-                            200: '#dad7cd',
-                            300: '#a3b18a',
-                            400: '#588157',
-                            500: '#3a5a40',
+                            200: '#dad7cd', // 橄欖灰
+                            300: '#a3b18a', // 鼠尾草綠
+                            400: '#588157', // 深綠
+                            500: '#3a5a40', // 森林綠
                             600: '#344e41',
                         },
                         sage: {
                             50: '#f0f4ef',
                             100: '#e0e9e1',
                             200: '#c5d5c5',
-                            500: '#84a59d',
+                            500: '#84a59d', // 低飽和綠
                             600: '#6b8a82',
                             text: '#4a5d5a'
                         },
@@ -35,7 +36,7 @@
                             50: '#f7f2f2',
                             100: '#ede0e0',
                             200: '#d9bfbf',
-                            500: '#b5838d',
+                            500: '#b5838d', // 乾燥玫瑰色，柔和的提醒
                             600: '#a0717a',
                             text: '#6d4c51'
                         },
@@ -49,7 +50,7 @@
                             text: '#4a4a40'
                         },
                         gold: { 
-                            400: '#d4a373',
+                            400: '#d4a373', // 琥珀色星星，比純金更護眼
                             500: '#bc8a5f',
                         }
                     }
@@ -76,7 +77,7 @@
 
         html {
             font-size: 90%;
-            background-color: #f2f0e9;
+            background-color: #f2f0e9; /* 防止閃爍 */
         }
 
         @media (max-width: 768px) {
@@ -101,6 +102,7 @@
             scrollbar-width: none;
         }
         
+        /* 柔和的陰影 */
         .soft-shadow {
             box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08);
         }
@@ -114,12 +116,12 @@
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, History, ChevronDown, ChevronUp
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3
         } from 'https://esm.sh/lucide-react@0.344.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
@@ -162,7 +164,7 @@
             return (
                 <div className="w-full">
                     <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
-                        {(Array.isArray(selectedCategories) ? selectedCategories : []).map(cat => (
+                        {selectedCategories.map(cat => (
                             <span key={cat} className="bg-wood-400 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
                                 {cat}
                                 <X size={12} className="cursor-pointer hover:text-wood-200" onClick={(e) => { e.stopPropagation(); onToggle(cat); }}/>
@@ -200,7 +202,7 @@
                                 )}
                                 
                                 {filtered.map(cat => {
-                                    const isSelected = Array.isArray(selectedCategories) && selectedCategories.includes(cat);
+                                    const isSelected = selectedCategories.includes(cat);
                                     if (isSelected) return null;
                                     return (
                                         <div key={cat} className="group relative">
@@ -241,11 +243,12 @@
             const [toast, setToast] = useState(null); 
 
             const [searchTerm, setSearchTerm] = useState('');
+            const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'reading', 'finished', 'dropped'
 
             const [newBook, setNewBook] = useState({
                 title: '', author: '', wordCount: '', isWordCountManual: false,
                 addDate: new Date().toISOString().split('T')[0],
-                reviewUrl: '', synopsis: '', category: [], readHistory: []
+                reviewUrl: '', synopsis: '', category: [] 
             });
             const [isSearching, setIsSearching] = useState(false);
             const [activeBookId, setActiveBookId] = useState(null);
@@ -253,7 +256,6 @@
             const [modalType, setModalType] = useState(null); 
             const [modalData, setModalData] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
-            const [expandedHistory, setExpandedHistory] = useState({});
 
             useEffect(() => {
                 signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
@@ -361,6 +363,7 @@
                 e.preventDefault();
                 if (!newBook.title || !customId) return;
 
+                // 檢查是否重複
                 const isDuplicate = books.some(b => 
                     b.title.trim() === newBook.title.trim() && 
                     (b.author || '').trim() === (newBook.author || '').trim()
@@ -379,12 +382,11 @@
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), {
                         ...newBook,
                         status: 'reading',
-                        readHistory: [],
                         createdAt: serverTimestamp()
                     });
                     setNewBook({
                         title: '', author: '', wordCount: '', isWordCountManual: false,
-                        addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], readHistory: []
+                        addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: []
                     });
                     showToast("新增成功！");
                 } catch (error) {
@@ -446,10 +448,10 @@
             const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
                  const newName = await addNewCategory(name);
                  if(newName && targetStateSetter) {
-                     targetStateSetter(prev => ({
-                         ...prev,
-                         category: [...(prev.category || []), newName]
-                     }));
+                    targetStateSetter(prev => ({
+                        ...prev,
+                        category: [...(prev.category || []), newName]
+                    }));
                  }
             };
 
@@ -479,7 +481,6 @@
                     }
                     if (!activeBookId) return;
                     const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, activeBookId);
-                    
                     if (modalType === 'delete') {
                         await deleteDoc(bookRef);
                         showToast("已刪除書籍");
@@ -498,24 +499,16 @@
                         const updates = {};
                         if (modalType === 'finish') {
                             updates.status = 'finished';
-                            updates.readHistory = arrayUnion({
-                                type: 'finished',
-                                date: modalData.date,
-                                rating: modalData.rating,
-                                review: modalData.review || '',
-                                timestamp: new Date().toISOString()
-                            });
+                            updates.finishDate = modalData.date;
+                            updates.rating = modalData.rating;
+                            updates.review = modalData.review || '';
                         } else if (modalType === 'drop') {
                             updates.status = 'dropped';
-                            updates.readHistory = arrayUnion({
-                                type: 'dropped',
-                                date: modalData.date,
-                                chapter: modalData.chapter,
-                                timestamp: new Date().toISOString()
-                            });
+                            updates.dropChapter = modalData.chapter;
+                            updates.dropDate = modalData.date;
                         } else if (modalType === 'reset') {
                             updates.status = 'reading';
-                            // 重設時不刪除歷史，只改變狀態
+                            updates.finishDate = null; updates.dropChapter = null; updates.dropDate = null; updates.rating = null; updates.review = null;
                         }
                         await updateDoc(bookRef, updates);
                         showToast("狀態已更新");
@@ -527,7 +520,6 @@
             };
 
             const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
-            const toggleHistory = (id) => setExpandedHistory(prev => ({...prev, [id]: !prev[id]}));
 
             const openModal = (book, type, e) => {
                 if (e) e.stopPropagation();
@@ -539,8 +531,8 @@
                     setModalData({ 
                         date: new Date().toISOString().split('T')[0], 
                         chapter: type === 'drop' ? '' : undefined,
-                        rating: type === 'finish' ? 5 : undefined,
-                        review: type === 'finish' ? '' : undefined
+                        rating: type === 'finish' ? 0 : undefined,
+                        review: type === 'finish' ? (book.review || '') : undefined
                     });
                 }
             };
@@ -550,37 +542,44 @@
             const activeBook = useMemo(() => books.find(b => b.id === activeBookId), [books, activeBookId]);
 
             const filteredBooks = useMemo(() => {
-                if (!searchTerm.trim()) return books;
-                const term = searchTerm.toLowerCase();
-                return books.filter(b => (
-                    b.title?.toLowerCase().includes(term) ||
-                    b.author?.toLowerCase().includes(term) ||
-                    (b.category && Array.isArray(b.category) && b.category.some(c => c.toLowerCase().includes(term)))
-                ));
-            }, [books, searchTerm]);
+                let list = books;
+                
+                // 狀態篩選
+                if (statusFilter !== 'all') {
+                    list = list.filter(b => b.status === statusFilter);
+                }
+
+                // 搜尋詞篩選
+                if (searchTerm.trim()) {
+                    const term = searchTerm.toLowerCase();
+                    list = list.filter(b => (
+                        b.title?.toLowerCase().includes(term) ||
+                        b.author?.toLowerCase().includes(term) ||
+                        (b.category && b.category.some(c => c.toLowerCase().includes(term)))
+                    ));
+                }
+                
+                return list;
+            }, [books, searchTerm, statusFilter]);
             
             const stats = useMemo(() => {
                 const yearStats = {};
                 let totalFinished = 0, totalDropped = 0, totalReading = 0;
                 const activeYears = new Set();
-                
                 books.forEach(b => {
+                    let y = null;
                     if (b.status === 'reading') totalReading++;
-                    
-                    const history = b.readHistory || [];
-                    history.forEach(record => {
-                        let y = new Date(record.date).getFullYear();
+                    else if (b.status === 'finished' && b.finishDate) {
+                        y = new Date(b.finishDate).getFullYear(); totalFinished++;
+                    } else if (b.status === 'dropped' && b.dropDate) {
+                        y = new Date(b.dropDate).getFullYear(); totalDropped++;
+                    }
+                    if (y) {
                         activeYears.add(y);
                         if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
-                        if (record.type === 'finished') {
-                            yearStats[y].finished++;
-                            totalFinished++;
-                        }
-                        if (record.type === 'dropped') {
-                            yearStats[y].dropped++;
-                            totalDropped++;
-                        }
-                    });
+                        if (b.status === 'finished') yearStats[y].finished++;
+                        if (b.status === 'dropped') yearStats[y].dropped++;
+                    }
                 });
                 return { 
                     years: Array.from(activeYears).sort((a, b) => b - a), 
@@ -663,18 +662,18 @@
                             <div className="grid grid-cols-2 gap-3 md:gap-4">
                                 <div className="bg-white/50 p-4 md:p-5 rounded-2xl border border-stone-200 flex flex-col justify-between relative overflow-hidden soft-shadow">
                                     <div className="absolute right-0 top-0 p-3 opacity-5 text-wood-500"><Hourglass size={40}/></div>
-                                    <div className="text-xs md:text-sm text-sub font-medium mb-1">正在閱讀</div>
+                                    <div className="text-xs md:text-sm text-sub font-medium mb-1">未讀</div>
                                     <div className="text-3xl md:text-4xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
                                         {stats.total.reading} <span className="text-xs md:text-sm font-normal text-stone-400">本</span>
                                     </div>
                                 </div>
                                 <div className="bg-sage-50 p-4 md:p-5 rounded-2xl border border-sage-100 flex flex-col justify-between relative overflow-hidden soft-shadow">
                                     <div className="absolute right-0 top-0 p-3 opacity-10 text-wood-500"><Trophy size={40}/></div>
-                                    <div className="text-xs md:text-sm text-wood-400 font-medium mb-1">累積完食次數</div>
+                                    <div className="text-xs md:text-sm text-wood-400 font-medium mb-1">生涯累積完食</div>
                                     <div className="text-3xl md:text-4xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
-                                        {stats.total.finished} <span className="text-xs md:text-sm font-normal text-sub">次</span>
+                                        {stats.total.finished} <span className="text-xs md:text-sm font-normal text-sub">本</span>
                                     </div>
-                                    {stats.total.dropped > 0 && <div className="text-[10px] md:text-xs text-dried-500 text-right mt-1">棄書 {stats.total.dropped} 次</div>}
+                                    {stats.total.dropped > 0 && <div className="text-[10px] md:text-xs text-dried-500 text-right mt-1">累積棄書 {stats.total.dropped}</div>}
                                 </div>
                             </div>
                             {stats.years.length > 0 && (
@@ -716,8 +715,29 @@
 
                         <section className="space-y-4">
                             <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2 px-2">
-                                <h2 className="text-lg md:text-xl font-bold text-ink">書單列表</h2>
-                                {loading && <RefreshCw className="animate-spin text-stone-400 w-4 h-4" />}
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-lg md:text-xl font-bold text-ink whitespace-nowrap">書單列表</h2>
+                                    {loading && <RefreshCw className="animate-spin text-stone-400 w-4 h-4" />}
+                                </div>
+
+                                {/* 狀態篩選按鈕 */}
+                                <div className="flex flex-wrap gap-1 md:gap-2">
+                                    {[
+                                        { id: 'all', label: '全部' },
+                                        { id: 'reading', label: '待讀' },
+                                        { id: 'finished', label: '已完食' },
+                                        { id: 'dropped', label: '棄書' }
+                                    ].map(btn => (
+                                        <button 
+                                            key={btn.id}
+                                            onClick={() => setStatusFilter(btn.id)}
+                                            className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-medium transition-all border ${statusFilter === btn.id ? 'bg-wood-400 text-white border-wood-500 shadow-sm' : 'bg-white/60 text-stone-500 border-stone-200 hover:border-wood-200'}`}
+                                        >
+                                            {btn.label}
+                                        </button>
+                                    ))}
+                                </div>
+
                                 <div className="flex-1 flex items-center gap-2 bg-white/60 px-3 py-2 rounded-xl border border-stone-200 soft-shadow">
                                     <Filter size={16} className="text-stone-400" />
                                     <input type="text" placeholder="搜尋書名、作者或分類..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none w-full text-sm text-ink placeholder-stone-300" />
@@ -728,103 +748,65 @@
                             {!loading && filteredBooks.length === 0 && (
                                 <div className="text-center py-10 text-stone-400 bg-white/30 rounded-2xl border border-dashed border-stone-200">
                                     <BookOpen className="mx-auto mb-2 opacity-30 w-10 h-10" />
-                                    <p className="text-sm">書櫃空蕩蕩，選個安靜的午後開始閱讀吧。</p>
+                                    <p className="text-sm">
+                                        {statusFilter === 'all' ? '書櫃空蕩蕩，選個安靜的午後開始閱讀吧。' : `沒有符合「${statusFilter === 'reading' ? '待讀' : statusFilter === 'finished' ? '已完食' : '棄書'}」的書籍。`}
+                                    </p>
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 gap-4 md:gap-6">
-                                {filteredBooks.map(book => {
-                                    const history = book.readHistory || [];
-                                    const latestFinish = [...history].reverse().find(h => h.type === 'finished');
-                                    const readCount = history.filter(h => h.type === 'finished').length;
-                                    
-                                    return (
-                                        <div key={book.id} className="group bg-white p-4 md:p-6 rounded-2xl border border-stone-200 hover:border-wood-200 transition-all duration-300 animate-fade-in soft-shadow flex flex-col md:flex-row gap-4 relative overflow-hidden">
-                                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-300'}`}></div>
-                                            <div className="flex-1 pl-3 md:pl-0 min-w-0">
-                                                <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex flex-wrap gap-2 items-center mb-1">
-                                                            {(Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
-                                                                <span key={idx} className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm">{cat}</span>
-                                                            ))}
-                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>
-                                                                {book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'閱讀中'}
-                                                            </span>
-                                                            {readCount > 1 && <span className="text-[10px] text-wood-500 bg-wood-50 px-2 py-0.5 rounded-full border border-wood-100">已讀 {readCount} 次</span>}
-                                                        </div>
-                                                        <h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed break-words">{book.title}</h3>
+                                {filteredBooks.map(book => (
+                                    <div key={book.id} className="group bg-white p-4 md:p-6 rounded-2xl border border-stone-200 hover:border-wood-200 transition-all duration-300 animate-fade-in soft-shadow flex flex-col md:flex-row gap-4 relative overflow-hidden">
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-300'}`}></div>
+                                        <div className="flex-1 pl-3 md:pl-0 min-w-0">
+                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap gap-2 items-center mb-1">
+                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
+                                                            <span key={idx} className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm">{cat}</span>
+                                                        ))}
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'待讀'}</span>
                                                     </div>
-                                                    <div className="shrink-0">
-                                                        {latestFinish && latestFinish.rating > 0 && <StarRating rating={latestFinish.rating} />}
-                                                    </div>
+                                                    <h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed break-words">{book.title}</h3>
                                                 </div>
-                                                <div className="text-sm text-sub space-y-2">
-                                                    <div className="flex flex-wrap gap-4 text-xs opacity-70">
-                                                        <span className="flex items-center gap-1"><User size={12}/> {book.author||'佚名'}</span>
-                                                        <span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
-                                                        <span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span>
-                                                    </div>
-
-                                                    {/* 歷史紀錄區域 */}
-                                                    {history.length > 0 && (
-                                                        <div className="mt-3 space-y-2">
-                                                            <button 
-                                                                onClick={() => toggleHistory(book.id)}
-                                                                className="flex items-center gap-1 text-xs text-wood-500 font-medium hover:text-wood-600 transition"
-                                                            >
-                                                                <History size={14}/> 閱讀紀錄 ({history.length})
-                                                                {expandedHistory[book.id] ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
-                                                            </button>
-                                                            
-                                                            {expandedHistory[book.id] && (
-                                                                <div className="space-y-3 pl-2 border-l-2 border-stone-100 ml-1.5 py-1">
-                                                                    {[...history].reverse().map((record, idx) => (
-                                                                        <div key={idx} className={`p-3 rounded-xl border ${record.type === 'finished' ? 'bg-sage-50/30 border-sage-100' : 'bg-dried-50/30 border-dried-100'}`}>
-                                                                            <div className="flex justify-between items-center mb-1">
-                                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${record.type === 'finished' ? 'text-sage-600 bg-sage-100' : 'text-dried-600 bg-dried-100'}`}>
-                                                                                    {record.type === 'finished' ? '完食' : '棄書'}
-                                                                                </span>
-                                                                                <span className="text-[10px] text-stone-400">{record.date}</span>
-                                                                            </div>
-                                                                            {record.type === 'finished' && (
-                                                                                <>
-                                                                                    <div className="mb-1"><StarRating rating={record.rating} /></div>
-                                                                                    {record.review && <p className="text-xs text-stone-600 italic leading-relaxed">「{record.review}」</p>}
-                                                                                </>
-                                                                            )}
-                                                                            {record.type === 'dropped' && (
-                                                                                <p className="text-xs text-stone-500">停留在：第 {record.chapter} 章</p>
-                                                                            )}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    {book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
-                                                    {book.synopsis && <div className="mt-2 pt-2 border-t border-stone-100 border-dashed"><button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition mb-1 py-1"><FileText size={12}/> {expandedBooks[book.id] ? '收起大綱' : '查看故事大綱'}</button>{expandedBooks[book.id] && <p className="text-xs text-sub leading-relaxed bg-stone-50/50 p-3 rounded-lg whitespace-pre-wrap">{book.synopsis}</p>}</div>}
+                                                <div className="shrink-0">
+                                                    {book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}
                                                 </div>
                                             </div>
-                                            <div className="flex flex-row md:flex-col gap-2 mt-3 pt-3 border-t border-stone-100 md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:w-32 shrink-0">
-                                                {book.status === 'reading' ? (
-                                                    <>
-                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:w-full py-2 px-3 bg-sage-100 text-sage-600 hover:bg-sage-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-sage-200"><CheckCircle size={14} /> 完食</button>
-                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:w-full py-2 px-3 bg-dried-100 text-dried-600 hover:bg-dried-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-dried-200"><BookX size={14} /> 棄書</button>
-                                                    </>
-                                                ) : (
-                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:w-full py-2 px-3 bg-wood-100 text-wood-600 hover:bg-wood-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-wood-200"><RotateCcw size={14} /> 再讀一遍</button>
-                                                )}
-                                                <div className="hidden md:block w-full h-px bg-stone-100 my-1"></div>
-                                                <div className="flex gap-2 flex-1 md:w-full">
-                                                    <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-lg transition flex items-center justify-center border border-stone-200" title="編輯"><Edit3 size={16} /></button>
-                                                    <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-stone-300 hover:text-dried-500 rounded-lg transition flex items-center justify-center border border-stone-200" title="刪除"><Trash2 size={16} /></button>
+                                            <div className="text-sm text-sub space-y-2">
+                                                <div className="flex flex-wrap gap-4 text-xs opacity-70">
+                                                    <span className="flex items-center gap-1"><User size={12}/> {book.author||'佚名'}</span>
+                                                    <span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
+                                                    <span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span>
                                                 </div>
+                                                {book.status === 'finished' && (
+                                                    <div className="mt-2 bg-sage-50/50 p-3 rounded-lg border border-sage-100">
+                                                        <p className="text-sage-text flex items-center gap-2 text-xs md:text-sm font-medium"><CheckCircle size={14}/> 完食於 {book.finishDate}</p>
+                                                        {book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5 whitespace-pre-wrap">{book.review}</p>}
+                                                    </div>
+                                                )}
+                                                {book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
+                                                {book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
+                                                {book.synopsis && <div className="mt-2 pt-2 border-t border-stone-100 border-dashed"><button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition mb-1 py-1"><FileText size={12}/> {expandedBooks[book.id] ? '收起大綱' : '查看故事大綱'}</button>{expandedBooks[book.id] && <p className="text-xs text-sub leading-relaxed bg-stone-50/50 p-3 rounded-lg whitespace-pre-wrap">{book.synopsis}</p>}</div>}
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                        <div className="flex flex-row md:flex-col gap-2 mt-3 pt-3 border-t border-stone-100 md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:w-32 shrink-0">
+                                            {book.status === 'reading' ? (
+                                                <>
+                                                   <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 md:w-full py-2 px-3 bg-sage-100 text-sage-600 hover:bg-sage-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-sage-200"><CheckCircle size={14} /> 完食</button>
+                                                   <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 md:w-full py-2 px-3 bg-dried-100 text-dried-600 hover:bg-dried-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-dried-200"><BookX size={14} /> 棄書</button>
+                                                </>
+                                            ) : (
+                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 md:w-full py-2 px-3 bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 border border-stone-200"><RotateCcw size={14} /> 重設</button>
+                                            )}
+                                            <div className="hidden md:block w-full h-px bg-stone-100 my-1"></div>
+                                            <div className="flex gap-2 flex-1 md:w-full">
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-lg transition flex items-center justify-center border border-stone-200" title="編輯"><Edit3 size={16} /></button>
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-stone-300 hover:text-dried-500 rounded-lg transition flex items-center justify-center border border-stone-200" title="刪除"><Trash2 size={16} /></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
 
@@ -833,7 +815,7 @@
                                 <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">
-                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重啟閱讀' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}
+                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}
                                     </h3>
                                     <div className="mb-6">
                                         {modalType === 'edit' && (
@@ -851,12 +833,12 @@
                                         )}
                                         {modalType === 'finish' && (
                                             <div className="bg-white/50 p-4 rounded-xl space-y-5 border border-stone-200">
-                                                <div className="space-y-1"><label className="text-xs text-sub block">完食日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div>
+                                                <input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" />
                                                 <div className="flex flex-col items-center gap-2">
-                                                    <label className="text-xs text-sub">本次評價</label>
+                                                    <label className="text-xs text-sub">給這本書一個評價吧</label>
                                                     <StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} />
                                                 </div>
-                                                <textarea placeholder="這次讀完有什麼新發現嗎？" value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-2 bg-white rounded-lg border border-stone-200 h-20 text-sm" />
+                                                <textarea placeholder="寫點什麼紀錄一下心情..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-2 bg-white rounded-lg border border-stone-200 h-20 text-sm" />
                                             </div>
                                         )}
                                         {modalType === 'drop' && (
@@ -876,9 +858,7 @@
                                         {['reset', 'delete', 'logout', 'deleteCategory'].includes(modalType) && (
                                             <div className="text-center p-4">
                                                 <p className="mb-2 font-bold text-ink">{modalData.category || activeBook?.title}</p>
-                                                <p className="text-sm text-sub">
-                                                    {modalType === 'reset' ? '這會將書籍狀態設回「閱讀中」，但會保留先前的閱讀紀錄。' : '確定執行此操作嗎？'}
-                                                </p>
+                                                <p className="text-sm text-sub">確定執行此操作嗎？</p>
                                             </div>
                                         )}
                                     </div>
