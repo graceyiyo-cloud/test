@@ -21,51 +21,31 @@
                 extend: {
                     colors: {
                         paper: { 50: '#F9F8F6', 100: '#F2EFE9', 200: '#E6E0D4', 300: '#D9D2C5' },
-                        ink: { 
-                            50: '#F0F4F3', 100: '#DEE6E4', 200: '#C1D0CD', 
-                            300: '#A3BAB6', 400: '#85A49F', 500: '#6B8179',
-                            600: '#53665F', 700: '#3E4D47', 800: '#2C3632', 900: '#1A201E' 
-                        },
-                        clay: { 
-                            100: '#FBECE8', 200: '#F3D1C6', 300: '#EAB6A4', 
-                            400: '#E29B82', 500: '#D49A89', 600: '#B87A68' 
-                        },
-                        stone: { 
-                            50: '#FAFAF9', 100: '#F5F5F4', 200: '#E7E5E4', 300: '#D6D3D1', 
-                            400: '#A8A29E', 500: '#78716C', 600: '#57534E',
-                            700: '#44403C', 800: '#292524', 850: '#1C1917'
-                        }
+                        ink: { 50: '#F0F4F3', 100: '#DEE6E4', 200: '#C1D0CD', 300: '#A3BAB6', 400: '#85A49F', 500: '#6B8179', 600: '#53665F', 700: '#3E4D47', 800: '#2C3632', 900: '#1A201E' },
+                        clay: { 100: '#FBECE8', 200: '#F3D1C6', 300: '#EAB6A4', 400: '#E29B82', 500: '#D49A89', 600: '#B87A68' },
+                        stone: { 50: '#FAFAF9', 100: '#F5F5F4', 200: '#E7E5E4', 300: '#D6D3D1', 400: '#A8A29E', 500: '#78716C', 600: '#57534E', 700: '#44403C', 800: '#292524', 850: '#1C1917' }
                     },
-                    animation: { 'bounce-slow': 'bounce 3s infinite' },
-                    fontSize: { 'xxs': '0.65rem' }
+                    animation: { 'bounce-slow': 'bounce 3s infinite' }
                 }
             }
         }
     </script>
 
     <style>
-        body { 
-            font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Varela Round", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #F9F8F6; color: #57534E; -webkit-tap-highlight-color: transparent; font-size: 15px; line-height: 1.4;
-        } 
-        .mobile-container { 
-            max-width: 600px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; background-color: #F9F8F6; position: relative; box-shadow: 0 0 40px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; padding-bottom: 90px; border-left: 1px solid #E6E0D4; border-right: 1px solid #E6E0D4; 
-        }
-        .input-label { display: block; font-size: 0.8rem; color: #78716C; margin-bottom: 4px; font-weight: 600; letter-spacing: 0.05em; }
-        .input-field { width: 100%; padding: 10px 12px; border: 1px solid #D6D3D1; border-radius: 12px; font-size: 0.95rem; transition: all 0.2s; -webkit-appearance: none; background: #fff; color: #44403C; }
-        .input-field:focus { border-color: #6B8179; outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(107, 129, 121, 0.1); } 
-        .btn-primary { background: linear-gradient(135deg, #6B8179 0%, #53665F 100%); color: #F9F8F6; padding: 10px; border-radius: 12px; width: 100%; font-weight: 500; text-align: center; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(107, 129, 121, 0.25); transition: all 0.2s; border: none; letter-spacing: 0.05em; }
-        .btn-secondary { background: white; color: #78716C; padding: 10px; border-radius: 12px; width: 100%; font-weight: 500; font-size: 0.95rem; text-align: center; border: 1px solid #D6D3D1; }
-        .card-soft { background: white; border-radius: 16px; border: 1px solid #F0F0F0; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.05); }
+        body { font-family: "Hiragino Maru Gothic ProN", -apple-system, sans-serif; background-color: #F9F8F6; color: #57534E; font-size: 15px; } 
+        .mobile-container { max-width: 600px; margin: 0 auto; min-height: 100vh; background-color: #F9F8F6; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.05); display: flex; flex-direction: column; padding-bottom: 90px; border-left: 1px solid #E6E0D4; border-right: 1px solid #E6E0D4; }
+        .input-label { display: block; font-size: 0.8rem; color: #78716C; margin-bottom: 4px; font-weight: 600; }
+        .input-field { width: 100%; padding: 10px 12px; border: 1px solid #D6D3D1; border-radius: 12px; transition: all 0.2s; background: #fff; }
+        .btn-primary { background: linear-gradient(135deg, #6B8179 0%, #53665F 100%); color: #F9F8F6; padding: 10px; border-radius: 12px; width: 100%; font-weight: 500; box-shadow: 0 4px 12px rgba(107,129,121,0.25); border: none; }
+        .card-soft { background: white; border-radius: 16px; border: 1px solid #F0F0F0; box-shadow: 0 4px 12px -4px rgba(0,0,0,0.05); }
         .loader { border: 3px solid #E6E0D4; border-radius: 50%; border-top: 3px solid #6B8179; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .header-solid { background: linear-gradient(120deg, #6B8179, #85A49F); box-shadow: 0 4px 20px -5px rgba(107, 129, 121, 0.3); padding: 16px; padding-bottom: 30px; min-height: 120px; border-radius: 0 0 1.5rem 1.5rem; }
+        .header-solid { background: linear-gradient(120deg, #6B8179, #85A49F); padding: 16px; padding-bottom: 30px; border-radius: 0 0 1.5rem 1.5rem; color: white; }
         .fab-container { position: fixed; bottom: 2rem; left: 0; right: 0; z-index: 50; pointer-events: none; display: flex; justify-content: center; }
-        .fab-wrapper { width: 100%; max-width: 600px; padding: 0 1.25rem; display: flex; justify-content: flex-end; }
-        .fab-btn { pointer-events: auto; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(135deg, #D49A89 0%, #B87A68 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 6px 15px rgba(184, 122, 104, 0.3); border: 3px solid #F9F8F6; transition: all 0.2s; }
+        .fab-btn { pointer-events: auto; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(135deg, #D49A89 0%, #B87A68 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 6px 15px rgba(184,122,104,0.3); border: 3px solid #F9F8F6; }
+        .calc-display { background: #FAFAF9; border-radius: 12px; padding: 12px; text-align: right; font-size: 1.5rem; font-family: monospace; font-weight: 600; border: 1px solid #E7E5E4; min-height: 3.5rem; display: flex; align-items: center; justify-content: flex-end; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .calc-btn { background: white; border: 1px solid #E7E5E4; border-radius: 12px; height: 48px; font-size: 1.2rem; font-weight: 500; color: #57534E; display: flex; align-items: center; justify-content: center; }
-        .calc-display { background: #FAFAF9; border-radius: 12px; padding: 12px; text-align: right; font-size: 1.5rem; font-family: monospace; font-weight: 600; color: #44403C; margin-bottom: 12px; border: 1px solid #E7E5E4; min-height: 3.5rem; display: flex; align-items: center; justify-content: flex-end; }
+        .calc-btn { background: white; border: 1px solid #E7E5E4; border-radius: 12px; height: 48px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -97,14 +77,14 @@
         const currencies = ["TWD", "JPY", "KRW", "USD", "EUR", "CNY", "THB", "VND"];
 
         const formatMoney = (amount, currency = 'TWD') => {
-            if (currency === 'TWD') return `NT$ ${new Intl.NumberFormat('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)}`;
-            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
+            if (currency === 'TWD') return `NT$ ${new Intl.NumberFormat('zh-TW').format(amount)}`;
+            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency }).format(amount);
         };
 
         const formatDateTime = (seconds) => {
             if (!seconds) return '';
-            const date = new Date(seconds * 1000);
-            return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            const d = new Date(seconds * 1000);
+            return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
         };
 
         const useDraggableScroll = (ref) => {
@@ -114,7 +94,7 @@
                 const onMouseDown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; };
                 const onMouseLeave = () => { isDown = false; };
                 const onMouseUp = () => { isDown = false; };
-                const onMouseMove = (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const walk = (x - startX) * 2; el.scrollLeft = scrollLeft - walk; };
+                const onMouseMove = (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; el.scrollLeft = scrollLeft - (x - startX); };
                 el.addEventListener('mousedown', onMouseDown); el.addEventListener('mouseleave', onMouseLeave); el.addEventListener('mouseup', onMouseUp); el.addEventListener('mousemove', onMouseMove);
                 return () => { el.removeEventListener('mousedown', onMouseDown); el.removeEventListener('mouseleave', onMouseLeave); el.removeEventListener('mouseup', onMouseUp); el.removeEventListener('mousemove', onMouseMove); };
             }, [ref]);
@@ -142,26 +122,26 @@
             const [categories, setCategories] = React.useState(defaultCategories);
 
             React.useEffect(() => {
-                auth.signInAnonymously().catch(e => console.error("Auth:", e));
+                auth.signInAnonymously().catch(e => console.error(e));
                 auth.onAuthStateChanged(u => setUser(u));
                 try {
-                    const history = JSON.parse(localStorage.getItem('login_history') || '[]');
-                    setLoginHistory(history);
-                } catch(e) { console.error("History Error", e); }
+                    const h = JSON.parse(localStorage.getItem('login_history') || '[]');
+                    setLoginHistory(h);
+                } catch(e) {}
             }, []);
 
             React.useEffect(() => {
                 if (!user || !tripId) return;
-                const settingsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId);
-                const unsubCats = settingsRef.onSnapshot(doc => {
+                const sRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId);
+                const unsubCats = sRef.onSnapshot(doc => {
                     if (doc.exists && doc.data().categories) {
                         setCategories(doc.data().categories);
                         localStorage.setItem(`categories_${tripId}`, JSON.stringify(doc.data().categories));
                     } else {
                         const saved = localStorage.getItem(`categories_${tripId}`);
-                        const cats = saved ? JSON.parse(saved) : defaultCategories;
-                        setCategories(cats);
-                        settingsRef.set({ categories: cats }, { merge: true });
+                        const c = saved ? JSON.parse(saved) : defaultCategories;
+                        setCategories(c);
+                        sRef.set({ categories: c }, { merge: true });
                     }
                 });
                 const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`);
@@ -172,26 +152,16 @@
             }, [user, tripId]);
 
             const showAlert = (msg, title = "提示") => setDialog({ show: true, type: 'alert', title, msg, onConfirm: () => setDialog(p => ({...p, show: false})) });
-            const showConfirm = (msg, onConfirm, title = "確認") => setDialog({ show: true, type: 'confirm', title, msg, onConfirm: () => { setDialog(p => ({...p, show: false})); setTimeout(onConfirm, 50); } });
-            const showPrompt = (msg, onConfirm, title = "輸入") => { setPromptValue(''); setDialog({ show: true, type: 'prompt', title, msg, onConfirm: (val) => { setDialog(p => ({...p, show: false})); setTimeout(() => onConfirm(val), 50); } }); };
+            const showConfirm = (msg, onConfirm) => setDialog({ show: true, type: 'confirm', title: '確認', msg, onConfirm: () => { setDialog(p => ({...p, show: false})); setTimeout(onConfirm, 50); } });
 
             const handleLogin = (code, key) => {
                 if (!code.trim()) return showAlert("請輸入代號");
-                const upperCode = code.toUpperCase().trim();
-                setTripId(upperCode);
+                const upper = code.toUpperCase().trim();
+                setTripId(upper);
                 if (key?.trim()) { setApiKey(key.trim()); localStorage.setItem('gemini_api_key', key.trim()); }
-                const newHistory = [upperCode, ...loginHistory.filter(h => h !== upperCode)].slice(0, 5);
-                setLoginHistory(newHistory);
-                localStorage.setItem('login_history', JSON.stringify(newHistory));
+                const h = [upper, ...loginHistory.filter(x => x !== upper)].slice(0, 5);
+                setLoginHistory(h); localStorage.setItem('login_history', JSON.stringify(h));
                 setView('list');
-            };
-
-            const handleDeleteHistory = (e, code) => { e.stopPropagation(); const next = loginHistory.filter(h => h !== code); setLoginHistory(next); localStorage.setItem('login_history', JSON.stringify(next)); };
-            const handleUpdateKey = (newKey) => { if (newKey?.trim()) { setApiKey(newKey.trim()); localStorage.setItem('gemini_api_key', newKey.trim()); return true; } return false; };
-
-            const saveCategoriesToDb = async (newCats) => {
-                setCategories(newCats); localStorage.setItem(`categories_${tripId}`, JSON.stringify(newCats));
-                if (tripId) try { await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId).set({ categories: newCats }, { merge: true }); } catch(e) {}
             };
 
             const filteredExpenses = React.useMemo(() => {
@@ -210,11 +180,10 @@
                         <div className="fixed inset-0 bg-stone-800/40 z-[3000] flex items-center justify-center p-4 backdrop-blur-sm">
                             <div className="bg-paper-50 rounded-2xl shadow-lg w-full max-w-xs p-5 text-center border-2 border-paper-200">
                                 <h3 className={`font-bold text-base mb-2 ${dialog.type === 'alert' ? 'text-ink-500' : 'text-clay-500'}`}>{dialog.title}</h3>
-                                <p className="text-stone-500 mb-5 text-sm whitespace-pre-line">{dialog.msg}</p>
-                                {dialog.type === 'prompt' && <input type="text" value={promptValue} onChange={e => setPromptValue(e.target.value)} className="w-full border-2 border-stone-200 rounded-xl p-2 mb-5 outline-none focus:border-ink-400" autoFocus />}
+                                <p className="text-stone-500 mb-5 text-sm">{dialog.msg}</p>
                                 <div className="flex gap-3 justify-center">
-                                    {dialog.type !== 'alert' && <button onClick={() => setDialog(p => ({...p, show: false}))} className="px-4 py-2 rounded-xl bg-stone-100 text-stone-600 font-medium text-sm flex-1">取消</button>}
-                                    <button onClick={() => dialog.type === 'prompt' ? dialog.onConfirm(promptValue) : dialog.onConfirm()} className="px-4 py-2 rounded-xl text-white font-medium text-sm flex-1 bg-ink-500">確定</button>
+                                    {dialog.type !== 'alert' && <button onClick={() => setDialog(p => ({...p, show: false}))} className="px-4 py-2 rounded-xl bg-stone-100 text-stone-600 text-sm flex-1">取消</button>}
+                                    <button onClick={dialog.onConfirm} className="px-4 py-2 rounded-xl text-white text-sm flex-1 bg-ink-500">確定</button>
                                 </div>
                             </div>
                         </div>
@@ -223,7 +192,7 @@
                     {showCalculator && <CalculatorModal initialValue={currentCalcValue} onConfirm={val => { calculatorCallback?.(val); setShowCalculator(false); }} onClose={() => setShowCalculator(false)} />}
 
                     {view === 'login' ? (
-                        <LoginView onLogin={handleLogin} handleDeleteHistory={handleDeleteHistory} defaultKey={apiKey} history={loginHistory} />
+                        <LoginView onLogin={handleLogin} handleDeleteHistory={(e, c) => { e.stopPropagation(); const next = loginHistory.filter(h => h !== c); setLoginHistory(next); localStorage.setItem('login_history', JSON.stringify(next)); }} defaultKey={apiKey} history={loginHistory} />
                     ) : (
                         <>
                             {view === 'list' && (
@@ -234,21 +203,21 @@
                                         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                                             <button onClick={() => setFilterCategory('All')} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${filterCategory === 'All' ? 'bg-ink-500 text-white' : 'bg-white border border-stone-200 text-stone-500'}`}>全部</button>
                                             {categories.map(c => <button key={c} onClick={() => setFilterCategory(c)} className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${filterCategory === c ? 'bg-ink-500 text-white' : 'bg-white border border-stone-200 text-stone-500'}`}>{c}</button>)}
-                                            <button onClick={() => setShowCatManager(true)} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-stone-400 border border-stone-200"><i className="fa-solid fa-gear text-xs"></i></button>
+                                            <button onClick={() => setShowCatManager(true)} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-stone-400 border border-stone-200 flex-shrink-0"><i className="fa-solid fa-gear text-xs"></i></button>
                                         </div>
                                     </div>
                                     <div className="p-3 pb-24">
                                         <ExpenseList expenses={filteredExpenses} onEdit={item => { setEditItem(item); setView('add'); }} onDelete={id => showConfirm("確定刪除？", () => db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`).doc(id).delete())} />
                                     </div>
-                                    <div className="fab-container"><div className="fab-wrapper"><button onClick={() => setView('add')} className="fab-btn"><i className="fa-solid fa-plus"></i></button></div></div>
+                                    <div className="fab-container"><div className="fab-wrapper w-full max-w-[600px] flex justify-end px-5"><button onClick={() => setView('add')} className="fab-btn"><i className="fa-solid fa-plus"></i></button></div></div>
                                 </>
                             )}
-                            {view === 'add' && <div className="p-3"><AddForm apiKey={apiKey} onUpdateKey={handleUpdateKey} categories={categories} onAddCategory={name => saveCategoriesToDb([...categories, name])} initialData={editItem} onSave={async d => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); if(d.id){ const {id, ...rest} = d; await ref.doc(id).update(rest); }else{ await ref.add({...d, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); } setView('list'); setEditItem(null); }catch(e){ showAlert(e.message); } }} onBatchSave={async items => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); await Promise.all(items.map(i => ref.add({...i, createdAt: firebase.firestore.FieldValue.serverTimestamp()}))); showAlert(`儲存 ${items.length} 筆`); setView('list'); }catch(e){ showAlert(e.message); } }} onCancel={() => { setView('list'); setEditItem(null); }} showAlert={showAlert} onOpenCalculator={(v, cb) => { setCurrentCalcValue(v); setCalculatorCallback(() => cb); setShowCalculator(true); }} /></div>}
+                            {view === 'add' && <div className="p-3"><AddForm apiKey={apiKey} categories={categories} onAddCategory={name => { const n = [...categories, name]; setCategories(n); localStorage.setItem(`categories_${tripId}`, JSON.stringify(n)); db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId).set({ categories: n }, { merge: true }); }} initialData={editItem} onSave={async d => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); if(d.id){ const {id,...rest}=d; await ref.doc(id).update(rest); }else{ await ref.add({...d, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); } setView('list'); setEditItem(null); }catch(e){ showAlert(e.message); } }} onBatchSave={async items => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); await Promise.all(items.map(i => ref.add({...i, createdAt: firebase.firestore.FieldValue.serverTimestamp()}))); setView('list'); }catch(e){ showAlert(e.message); } }} onCancel={() => { setView('list'); setEditItem(null); }} showAlert={showAlert} onOpenCalculator={(v, cb) => { setCurrentCalcValue(v); setCalculatorCallback(() => cb); setShowCalculator(true); }} /></div>}
                         </>
                     )}
                     {showAnalysis && <AnalysisModal expenses={expenses} apiKey={apiKey} onClose={() => setShowAnalysis(false)} />}
                     {showStats && <StatsModal expenses={expenses} onClose={() => setShowStats(false)} />}
-                    {showCatManager && <CategoryManagerModal categories={categories} onAdd={name => saveCategoriesToDb([...categories, name])} onEdit={(old, next) => saveCategoriesToDb(categories.map(c => c === old ? next : c))} onDelete={cat => showConfirm(`刪除 ${cat}？`, () => saveCategoriesToDb(categories.filter(c => c !== cat)))} onClose={() => setShowCatManager(false)} onReorder={saveCategoriesToDb} />}
+                    {showCatManager && <CategoryManagerModal categories={categories} onDelete={cat => showConfirm(`刪除 ${cat}？`, () => { const n = categories.filter(c => c !== cat); setCategories(n); db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId).set({ categories: n }, { merge: true }); })} onClose={() => setShowCatManager(false)} />}
                 </div>
             );
         };
@@ -256,31 +225,31 @@
         const LoginView = ({ onLogin, handleDeleteHistory, defaultKey, history }) => {
             const [code, setCode] = React.useState('');
             const [key, setKey] = React.useState(defaultKey || '');
-            const [keyStatus, setKeyStatus] = React.useState('none');
+            const [status, setStatus] = React.useState('none');
             
-            const checkApiKey = async () => {
+            const checkKey = async () => {
                 if (!key.trim()) return;
-                setKeyStatus('checking');
+                setStatus('checking');
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key.trim()}`, {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key.trim()}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
                     });
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error.message);
-                    setKeyStatus('valid'); setTimeout(() => setKeyStatus('none'), 3000);
-                } catch (e) { setKeyStatus('invalid'); console.error(e); }
+                    const d = await res.json();
+                    if (d.error) throw new Error();
+                    setStatus('valid'); setTimeout(() => setStatus('none'), 3000);
+                } catch (e) { setStatus('invalid'); }
             };
 
             return (
-                <div className="flex-grow flex flex-col items-center justify-center p-6 w-full">
+                <div className="flex-grow flex flex-col items-center justify-center p-6">
                     <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-xl w-full max-w-sm text-center">
                         <div className="text-5xl text-ink-400 mb-4 animate-bounce-slow inline-block"><i className="fa-solid fa-plane-departure text-clay-400"></i></div>
-                        <h1 className="text-2xl font-extrabold text-stone-700 mb-6">旅行記帳</h1>
+                        <h1 className="text-2xl font-extrabold text-stone-700 mb-6 tracking-tight">旅行記帳</h1>
                         <div className="text-left mb-5">
                             <label className="input-label">旅程代號</label>
-                            <input value={code} onChange={e => setCode(e.target.value)} className="input-field text-center font-bold" placeholder="例如：2026-TOKYO" />
+                            <input value={code} onChange={e => setCode(e.target.value)} className="input-field text-center font-bold" placeholder="例如：TOKYO-2026" />
                             <div className="mt-3 flex flex-wrap gap-2 justify-center">
                                 {history.map(h => (
                                     <div key={h} className="flex items-center bg-paper-100 rounded-full px-3 py-1 text-xs">
@@ -294,18 +263,11 @@
                             <label className="input-label">Gemini API Key</label>
                             <div className="relative flex items-center gap-2">
                                 <div className="relative flex-1">
-                                    <input type="password" value={key} onChange={e => {setKey(e.target.value); setKeyStatus('none');}} className="input-field text-sm pr-10" placeholder="貼上 API Key" />
-                                    {key && (
-                                        <button 
-                                            onClick={() => { setKey(''); setKeyStatus('none'); }} 
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
-                                        >
-                                            <i className="fa-solid fa-circle-xmark"></i>
-                                        </button>
-                                    )}
+                                    <input type="password" value={key} onChange={e => {setKey(e.target.value); setStatus('none');}} className="input-field text-sm pr-10" placeholder="貼上 API Key" />
+                                    {key && <button onClick={() => {setKey(''); setStatus('none');}} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500"><i className="fa-solid fa-circle-xmark"></i></button>}
                                 </div>
-                                <button onClick={checkApiKey} className={`w-10 h-[42px] rounded-xl border flex items-center justify-center transition-all ${keyStatus === 'valid' ? 'bg-green-50 text-green-500' : keyStatus === 'invalid' ? 'bg-red-50 text-red-500' : 'bg-white'}`}>
-                                    {keyStatus === 'checking' ? <div className="loader w-3 h-3"></div> : keyStatus === 'valid' ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-wifi"></i>}
+                                <button onClick={checkKey} className={`w-10 h-[42px] rounded-xl border flex items-center justify-center transition-all ${status === 'valid' ? 'bg-green-50 text-green-500' : status === 'invalid' ? 'bg-red-50 text-red-500' : 'bg-white'}`}>
+                                    {status === 'checking' ? <div className="loader w-3 h-3"></div> : status === 'valid' ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-wifi"></i>}
                                 </button>
                             </div>
                         </div>
@@ -326,15 +288,12 @@
                 });
                 return m;
             }, [expenses]);
-            const scrollRef = React.useRef(null);
-            useDraggableScroll(scrollRef);
+            const sRef = React.useRef(null);
+            useDraggableScroll(sRef);
             return (
-                <div className="header-solid text-white p-4 pb-8 rounded-b-3xl">
+                <div className="header-solid">
                     <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <span className="text-ink-100 text-[10px] font-bold opacity-80 uppercase tracking-widest">Project</span>
-                            <h2 className="font-extrabold text-lg">{tripId}</h2>
-                        </div>
+                        <div><span className="text-[10px] font-bold opacity-70 uppercase">Project</span><h2 className="font-extrabold text-lg">{tripId}</h2></div>
                         <div className="flex gap-1.5 bg-white/10 rounded-full p-1 backdrop-blur-md">
                             <button onClick={toggleSearch} className={`w-7 h-7 rounded-full flex items-center justify-center ${isSearchOpen ? 'bg-white text-ink-600' : ''}`}><i className="fa-solid fa-magnifying-glass text-xs"></i></button>
                             <button onClick={onStats} className="w-7 h-7 rounded-full flex items-center justify-center"><i className="fa-solid fa-chart-pie text-xs"></i></button>
@@ -342,15 +301,13 @@
                             <button onClick={onLogout} className="w-7 h-7 rounded-full flex items-center justify-center"><i className="fa-solid fa-arrow-right-from-bracket text-xs"></i></button>
                         </div>
                     </div>
-                    <div className="overflow-x-auto no-scrollbar" ref={scrollRef}>
-                        <div className="text-[10px] text-ink-100 mb-1">{filterCategory === 'All' ? '總花費' : `${filterCategory} 小計`}</div>
+                    <div className="overflow-x-auto no-scrollbar" ref={sRef}>
+                        <div className="text-[10px] opacity-70 mb-1">{filterCategory === 'All' ? '總花費' : `${filterCategory} 小計`}</div>
                         <div className="flex gap-4">
                             {Object.keys(totals).length === 0 ? <span className="text-xl font-bold">NT$ 0</span> : Object.entries(totals).map(([c, v]) => (
-                                <div key={c} className="flex-shrink-0">
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-xl font-bold">{c} {Number(v.amt).toLocaleString()}</span>
-                                        {c !== 'TWD' && <span className="text-xs text-ink-100 font-medium">≈ NT$ {Number(v.twd).toLocaleString()}</span>}
-                                    </div>
+                                <div key={c} className="flex-shrink-0 flex items-baseline gap-1.5">
+                                    <span className="text-xl font-bold">{c} {Math.round(v.amt).toLocaleString()}</span>
+                                    {c !== 'TWD' && <span className="text-xs opacity-70 font-medium">≈ NT$ {Math.round(v.twd).toLocaleString()}</span>}
                                 </div>
                             ))}
                         </div>
@@ -361,8 +318,8 @@
 
         const AddForm = ({ apiKey, categories, initialData, onSave, onBatchSave, onCancel, showAlert, onOpenCalculator }) => {
             const [form, setForm] = React.useState({ category: '飲食', item: '', currency: 'JPY', foreignAmount: '', exchangeRate: 0.22, twdAmount: '' });
-            const [scannedItems, setScannedItems] = React.useState([]);
-            const [selectedIndices, setSelectedIndices] = React.useState(new Set());
+            const [scanned, setScanned] = React.useState([]);
+            const [selected, setSelected] = React.useState(new Set());
             const [loading, setLoading] = React.useState(false);
             const fileRef = React.useRef(null);
 
@@ -378,15 +335,15 @@
 
             const handleScan = async (e) => {
                 const file = e.target.files[0]; if(!file) return;
-                if(!apiKey) { showAlert("請先設定 API Key"); return; }
+                if(!apiKey) return showAlert("請先設定 API Key");
                 setLoading(true);
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
                     const base64 = reader.result.split(',')[1];
-                    const prompt = `你是一個專業記帳助手。請辨識這張收據的消費細項，並翻譯成繁體中文。請務必回傳純 JSON 格式，結構如下：{ "store": "店名", "currency": "幣別", "items": [ { "name": "品名", "amount": 數字, "category": "分類" } ] }。分類請從以下選擇：${categories.join(',')}`;
+                    const prompt = `你是一個專業記帳助手。請辨識收據內容，翻譯成繁體中文並回傳純 JSON：{ "store": "店名", "currency": "幣別", "items": [ { "name": "品名", "amount": 數字, "category": "分類" } ] }。分類限選：${categories.join(',')}`;
                     try {
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: file.type, data: base64 } }] }] })
@@ -396,72 +353,38 @@
                         const text = data.candidates[0].content.parts[0].text;
                         const json = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
                         if(json.items) {
-                            setScannedItems(json.items.map(i => ({...i, name: i.name + (json.store ? ` @${json.store}` : '')})));
-                            setSelectedIndices(new Set(json.items.map((_, i) => i)));
+                            setScanned(json.items.map(i => ({...i, name: i.name + (json.store ? ` @${json.store}` : '')})));
+                            setSelected(new Set(json.items.map((_, i) => i)));
                         }
-                    } catch(err) { 
-                        let msg = err.message;
-                        if(msg.includes("API key expired")) msg = "API Key 已過期，請回到登入畫面更換新 Key。";
-                        showAlert(`辨識失敗\n原因：${msg}`, "錯誤"); 
-                    }
+                    } catch(err) { showAlert(`辨識失敗：${err.message}`); }
                     setLoading(false); e.target.value = '';
                 };
             };
 
             return (
-                <div className="card-soft p-4 pb-6">
-                    {loading && (
-                        <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl p-6 text-center w-full max-w-xs shadow-xl">
-                                <div className="loader mx-auto mb-4 border-t-ink-500"></div>
-                                <h3 className="font-bold text-lg text-stone-700">AI 辨識中...</h3>
-                                <p className="text-stone-400 text-xs leading-relaxed">分析影像中，請保持網路通暢</p>
-                            </div>
-                        </div>
-                    )}
-                    <h2 className="text-lg font-bold text-stone-700 mb-4 flex justify-between items-center">
-                        <span>{initialData ? '修改花費' : '新增花費'}</span>
-                        {!initialData && (
-                            <>
-                                <button type="button" onClick={() => fileRef.current.click()} className="text-xs bg-ink-500 text-white px-3 py-1.5 rounded-lg font-bold shadow-md active:scale-95 transition-all"><i className="fa-solid fa-camera mr-2"></i>拍收據</button>
-                                <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleScan} />
-                            </>
-                        )}
-                    </h2>
+                <div className="card-soft p-4">
+                    {loading && <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4"><div className="bg-white rounded-3xl p-6 text-center w-full max-w-xs shadow-xl"><div className="loader mx-auto mb-4 border-t-ink-500"></div><h3 className="font-bold">AI 辨識中...</h3></div></div>}
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold">{initialData ? '修改' : '新增'}花費</h2>{!initialData && <><button onClick={() => fileRef.current.click()} className="text-xs bg-ink-500 text-white px-3 py-1.5 rounded-lg font-bold"><i className="fa-solid fa-camera mr-2"></i>拍收據</button><input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleScan} /></>}</div>
 
-                    {scannedItems.length > 0 ? (
+                    {scanned.length > 0 ? (
                         <div className="space-y-3">
-                            {scannedItems.map((item, idx) => (
+                            {scanned.map((item, idx) => (
                                 <div key={idx} className="flex gap-2 items-start border-b border-stone-100 pb-2">
-                                    <input type="checkbox" checked={selectedIndices.has(idx)} onChange={() => { const s = new Set(selectedIndices); if(s.has(idx)) s.delete(idx); else s.add(idx); setSelectedIndices(s); }} className="mt-1" />
+                                    <input type="checkbox" checked={selected.has(idx)} onChange={() => { const s = new Set(selected); s.has(idx) ? s.delete(idx) : s.add(idx); setSelected(s); }} className="mt-1" />
                                     <div className="flex-1">
-                                        <input value={item.name} onChange={e => { const n = [...scannedItems]; n[idx].name = e.target.value; setScannedItems(n); }} className="text-sm font-bold w-full border-none p-0 focus:ring-0" />
-                                        <div className="flex justify-between mt-1">
-                                            <select value={item.category} onChange={e => { const n = [...scannedItems]; n[idx].category = e.target.value; setScannedItems(n); }} className="text-xxs text-stone-400 border-none p-0 focus:ring-0">{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
-                                            <span onClick={() => onOpenCalculator(item.amount, val => { const n = [...scannedItems]; n[idx].amount = val; setScannedItems(n); })} className="text-sm font-mono font-bold text-ink-600 cursor-pointer border-b border-ink-100">{item.amount}</span>
-                                        </div>
+                                        <input value={item.name} onChange={e => { const n = [...scanned]; n[idx].name = e.target.value; setScanned(n); }} className="text-sm font-bold w-full border-none p-0 focus:ring-0" />
+                                        <div className="flex justify-between mt-1"><select value={item.category} onChange={e => { const n = [...scanned]; n[idx].category = e.target.value; setScanned(n); }} className="text-xs text-stone-400 border-none p-0 focus:ring-0">{categories.map(c => <option key={c} value={c}>{c}</option>)}</select><span onClick={() => onOpenCalculator(item.amount, v => { const n = [...scanned]; n[idx].amount = v; setScanned(n); })} className="text-sm font-mono font-bold text-ink-600">{item.amount}</span></div>
                                     </div>
                                 </div>
                             ))}
-                            <div className="flex gap-2 mt-4">
-                                <button onClick={() => setScannedItems([])} className="btn-secondary flex-1">取消</button>
-                                <button onClick={() => onBatchSave(scannedItems.filter((_, i) => selectedIndices.has(i)).map(i => ({...i, item: i.name, currency: 'JPY', foreignAmount: i.amount, exchangeRate: 0.22, twdAmount: Math.round(i.amount * 0.22)})))} className="btn-primary flex-[2]">確認存入</button>
-                            </div>
+                            <div className="flex gap-2 mt-4"><button onClick={() => setScanned([])} className="btn-secondary flex-1">取消</button><button onClick={() => onBatchSave(scanned.filter((_, i) => selected.has(i)).map(i => ({...i, item: i.name, currency: 'JPY', foreignAmount: i.amount, exchangeRate: 0.22, twdAmount: Math.round(i.amount * 0.22)})))} className="btn-primary flex-[2]">確認存入</button></div>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div>
-                                <label className="input-label">分類</label>
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                                    {categories.map(c => <button key={c} onClick={() => setForm({...form, category: c})} className={`px-4 py-1.5 rounded-lg text-xs whitespace-nowrap border-2 transition-all ${form.category === c ? 'bg-ink-400 text-white border-ink-400 shadow-md' : 'bg-white text-stone-400 border-stone-100'}`}>{c}</button>)}
-                                </div>
-                            </div>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar">{categories.map(c => <button key={c} onClick={() => setForm({...form, category: c})} className={`px-4 py-1.5 rounded-lg text-xs whitespace-nowrap border-2 transition-all ${form.category === c ? 'bg-ink-400 text-white border-ink-400 shadow-md' : 'bg-white text-stone-400 border-stone-100'}`}>{c}</button>)}</div>
                             <input value={form.item} onChange={e => setForm({...form, item: e.target.value})} className="input-field" placeholder="品名" />
-                            <div className="grid grid-cols-3 gap-3">
-                                <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="input-field bg-white">{currencies.map(c => <option key={c} value={c}>{c}</option>)}</select>
-                                <input readOnly value={form.foreignAmount} onClick={() => onOpenCalculator(form.foreignAmount, v => setForm(p => ({...p, foreignAmount: v})))} className="input-field col-span-2 font-mono text-lg font-bold text-ink-600" placeholder="金額" />
-                            </div>
-                            {form.currency !== 'TWD' && <div className="bg-ink-50 p-3 rounded-xl flex justify-between items-center"><span className="text-xs text-stone-500">折合台幣 (匯率 {form.exchangeRate})</span><span className="text-lg font-bold text-ink-600">NT$ {form.twdAmount}</span></div>}
+                            <div className="grid grid-cols-3 gap-3"><select value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="input-field bg-white">{currencies.map(c => <option key={c} value={c}>{c}</option>)}</select><input readOnly value={form.foreignAmount} onClick={() => onOpenCalculator(form.foreignAmount, v => setForm(p => ({...p, foreignAmount: v})))} className="input-field col-span-2 font-mono text-lg font-bold text-ink-600" placeholder="金額" /></div>
+                            {form.currency !== 'TWD' && <div className="bg-ink-50 p-3 rounded-xl flex justify-between items-center"><span className="text-xs text-stone-500">折合台幣 ≈</span><span className="text-lg font-bold text-ink-600">NT$ {form.twdAmount}</span></div>}
                             <div className="flex gap-3 mt-6"><button onClick={onCancel} className="btn-secondary flex-1">取消</button><button onClick={() => onSave(form)} className="btn-primary flex-[2]">確認儲存</button></div>
                         </div>
                     )}
@@ -471,15 +394,12 @@
 
         const ExpenseList = ({ expenses, onEdit, onDelete }) => (
             <div className="space-y-3 pb-10">
-                {expenses.length === 0 ? <div className="text-center text-stone-300 py-16"><i className="fa-regular fa-folder-open text-4xl mb-3"></i><p>尚無紀錄</p></div> : expenses.map(item => (
+                {expenses.length === 0 ? <p className="text-center text-stone-300 py-10">尚無紀錄</p> : expenses.map(item => (
                     <div key={item.id} onClick={() => onEdit(item)} className="card-soft p-3 relative border-l-4 border-ink-300 active:scale-[0.98] transition-all">
                         <button onClick={e => { e.stopPropagation(); onDelete(item.id); }} className="absolute top-2 right-2 text-stone-300 hover:text-red-400 p-1"><i className="fa-solid fa-trash text-xs"></i></button>
-                        <div className="flex items-center gap-2 mb-1"><span className="bg-ink-50 text-ink-600 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{item.category}</span><span className="text-[10px] text-stone-400">{formatDateTime(item.createdAt?.seconds)}</span></div>
+                        <div className="flex items-center gap-2 mb-1"><span className="bg-ink-50 text-ink-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{item.category}</span><span className="text-[10px] text-stone-400">{formatDateTime(item.createdAt?.seconds)}</span></div>
                         <div className="text-stone-700 text-sm font-bold mb-1">{item.item}</div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-ink-600 font-mono font-bold">{item.currency} {Number(item.foreignAmount).toLocaleString()}</span>
-                            {item.currency !== 'TWD' && <span className="text-xxs text-stone-400 font-medium">≈ {formatMoney(item.twdAmount)}</span>}
-                        </div>
+                        <div className="flex items-baseline gap-2"><span className="text-ink-600 font-mono font-bold">{item.currency} {Number(item.foreignAmount).toLocaleString()}</span>{item.currency !== 'TWD' && <span className="text-xxs text-stone-400 font-medium">≈ {formatMoney(item.twdAmount)}</span>}</div>
                     </div>
                 ))}
             </div>
@@ -487,20 +407,19 @@
 
         const CalculatorModal = ({ initialValue, onConfirm, onClose }) => {
             const [exp, setExp] = React.useState(String(initialValue || ''));
-            const handleBtn = v => {
+            const handle = v => {
                 if(v === 'C') setExp('');
                 else if(v === '=') { try { setExp(String(eval(exp.replace(/×/g,'*').replace(/÷/g,'/')))); } catch(e){ setExp('Error'); } }
                 else if(v === '⌫') setExp(exp.slice(0, -1));
-                else if(exp === 'Error') setExp(v);
                 else setExp(exp + v);
             };
             return (
-                <div className="fixed inset-0 bg-stone-800/50 backdrop-blur-sm z-[4000] flex items-end justify-center" onClick={onClose}>
+                <div className="fixed inset-0 bg-stone-800/50 z-[4000] flex items-end justify-center" onClick={onClose}>
                     <div className="bg-white w-full max-w-lg rounded-t-3xl p-5 pb-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="calc-display">{exp || '0'}</div>
+                        <div className="calc-display mb-4">{exp || '0'}</div>
                         <div className="calc-grid">
                             {['C','÷','×','⌫','7','8','9','-','4','5','6','+','1','2','3','=','0','.','確定'].map(b => (
-                                <button key={b} onClick={() => b === '確定' ? onConfirm(exp) : handleBtn(b)} className={`calc-btn active:scale-90 transition-transform ${['÷','×','-','+','='].includes(b) ? 'bg-ink-50 text-ink-600 font-bold' : b === '確定' ? 'col-span-1 bg-ink-500 text-white font-bold' : 'text-stone-600 font-medium'}`}>{b}</button>
+                                <button key={b} onClick={() => b === '確定' ? onConfirm(exp) : handle(b)} className={`calc-btn ${['÷','×','-','+','='].includes(b) ? 'bg-ink-50 text-ink-600' : b === '確定' ? 'col-span-1 bg-ink-500 text-white' : ''}`}>{b}</button>
                             ))}
                         </div>
                     </div>
@@ -514,21 +433,21 @@
                 const f = async () => {
                     try {
                         const data = expenses.map(e => `${e.category}: ${e.item} (${e.twdAmount} TWD)`).join('\n');
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位資深旅遊精算師，請用溫柔、文青的口吻分析以下消費清單，並提供三點具體的省錢或理財建議（繁體中文，約150字）：\n${data}` }] }] })
+                            body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位資深旅遊精算師，請用溫柔、文青的口吻分析以下消費清單，並提供三點具體的省錢建議（繁體中文，約150字）：\n${data}` }] }] })
                         });
                         const d = await res.json();
                         setText(d.candidates[0].content.parts[0].text);
-                    } catch(e) { setText("分析失敗，請檢查網路或金鑰狀態。"); }
+                    } catch(e) { setText("分析失敗。"); }
                 };
                 f();
             }, []);
             return (
-                <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col shadow-2xl">
-                        <div className="bg-ink-500 p-4 text-white font-bold flex justify-between rounded-t-3xl"><span><i className="fa-solid fa-sparkles mr-2"></i>AI 旅遊分析</span><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
+                <div className="fixed inset-0 bg-stone-800/40 z-[3000] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+                        <div className="bg-ink-500 p-4 text-white font-bold flex justify-between"><span>AI 旅遊分析</span><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
                         <div className="p-5 overflow-y-auto text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">{text}</div>
                     </div>
                 </div>
@@ -537,22 +456,18 @@
 
         const StatsModal = ({ expenses, onClose }) => {
             const stats = React.useMemo(() => {
-                const m = {};
-                expenses.forEach(e => {
-                    const c = e.category || '其他';
-                    m[c] = (m[c] || 0) + Number(e.twdAmount);
-                });
+                const m = {}; expenses.forEach(e => { const c = e.category || '其他'; m[c] = (m[c] || 0) + Number(e.twdAmount); });
                 return Object.entries(m).sort((a,b) => b[1]-a[1]);
             }, [expenses]);
             const total = stats.reduce((a,b) => a+b[1], 0);
             return (
-                <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-stone-800/40 z-[3000] flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
-                        <div className="flex justify-between items-center mb-4"><h3 className="font-bold">消費統計</h3><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
-                        <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-6"><h3 className="font-bold">消費統計</h3><button onClick={onClose}><i className="fa-solid fa-xmark text-stone-300"></i></button></div>
+                        <div className="space-y-5">
                             {stats.map(([c, v]) => (
                                 <div key={c}>
-                                    <div className="flex justify-between text-xs mb-1"><span>{c}</span><span className="font-bold">{formatMoney(v)} ({Math.round(v/total*100)}%)</span></div>
+                                    <div className="flex justify-between text-xs mb-1.5 font-medium"><span>{c}</span><span className="font-bold">{formatMoney(v)} ({Math.round(v/total*100)}%)</span></div>
                                     <div className="h-2 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-ink-400" style={{ width: `${v/total*100}%` }}></div></div>
                                 </div>
                             ))}
@@ -562,28 +477,21 @@
             );
         };
 
-        const CategoryManagerModal = ({ categories, onAdd, onEdit, onDelete, onReorder, onClose }) => {
-            const [name, setName] = React.useState('');
-            return (
-                <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-sm flex flex-col max-h-[60vh]">
-                        <div className="p-4 border-b font-bold flex justify-between"><span>分類管理</span><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
-                        <div className="p-4 overflow-y-auto space-y-2">
-                            {categories.map(c => (
-                                <div key={c} className="flex justify-between items-center p-2 bg-stone-50 rounded-xl">
-                                    <span className="text-sm font-medium">{c}</span>
-                                    <button onClick={() => onDelete(c)} className="text-stone-300 hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="p-4 border-t flex gap-2">
-                            <input value={name} onChange={e => setName(e.target.value)} className="input-field py-2 text-sm" placeholder="新分類" />
-                            <button onClick={() => { if(name){ onAdd(name); setName(''); } }} className="bg-ink-500 text-white w-10 rounded-xl"><i className="fa-solid fa-plus text-xs"></i></button>
-                        </div>
+        const CategoryManagerModal = ({ categories, onDelete, onClose }) => (
+            <div className="fixed inset-0 bg-stone-800/40 z-[3000] flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl w-full max-w-sm flex flex-col max-h-[60vh] shadow-2xl overflow-hidden">
+                    <div className="p-4 border-b font-bold flex justify-between"><span>分類管理</span><button onClick={onClose}><i className="fa-solid fa-xmark text-stone-300"></i></button></div>
+                    <div className="p-4 overflow-y-auto space-y-2">
+                        {categories.map(c => (
+                            <div key={c} className="flex justify-between items-center p-3 bg-stone-50 rounded-xl">
+                                <span className="text-sm font-medium">{c}</span>
+                                <button onClick={() => onDelete(c)} className="text-stone-300 hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            );
-        };
+            </div>
+        );
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
