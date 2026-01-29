@@ -55,7 +55,6 @@
         .input-field { width: 100%; padding: 10px 12px; border: 1px solid #D6D3D1; border-radius: 12px; font-size: 0.95rem; transition: all 0.2s; -webkit-appearance: none; background: #fff; color: #44403C; }
         .input-field:focus { border-color: #6B8179; outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(107, 129, 121, 0.1); } 
         .btn-primary { background: linear-gradient(135deg, #6B8179 0%, #53665F 100%); color: #F9F8F6; padding: 10px; border-radius: 12px; width: 100%; font-weight: 500; text-align: center; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(107, 129, 121, 0.25); transition: all 0.2s; border: none; letter-spacing: 0.05em; }
-        .btn-primary:active { transform: translateY(2px) scale(0.98); }
         .btn-secondary { background: white; color: #78716C; padding: 10px; border-radius: 12px; width: 100%; font-weight: 500; font-size: 0.95rem; text-align: center; border: 1px solid #D6D3D1; }
         .card-soft { background: white; border-radius: 16px; border: 1px solid #F0F0F0; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.05); }
         .loader { border: 3px solid #E6E0D4; border-radius: 50%; border-top: 3px solid #6B8179; width: 20px; height: 20px; animation: spin 1s linear infinite; }
@@ -293,8 +292,18 @@
                         </div>
                         <div className="text-left mb-6">
                             <label className="input-label">Gemini API Key</label>
-                            <div className="flex gap-2">
-                                <input type="password" value={key} onChange={e => {setKey(e.target.value); setKeyStatus('none');}} className="input-field text-sm" placeholder="貼上 API Key" />
+                            <div className="relative flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <input type="password" value={key} onChange={e => {setKey(e.target.value); setKeyStatus('none');}} className="input-field text-sm pr-10" placeholder="貼上 API Key" />
+                                    {key && (
+                                        <button 
+                                            onClick={() => { setKey(''); setKeyStatus('none'); }} 
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+                                        >
+                                            <i className="fa-solid fa-circle-xmark"></i>
+                                        </button>
+                                    )}
+                                </div>
                                 <button onClick={checkApiKey} className={`w-10 h-[42px] rounded-xl border flex items-center justify-center transition-all ${keyStatus === 'valid' ? 'bg-green-50 text-green-500' : keyStatus === 'invalid' ? 'bg-red-50 text-red-500' : 'bg-white'}`}>
                                     {keyStatus === 'checking' ? <div className="loader w-3 h-3"></div> : keyStatus === 'valid' ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-wifi"></i>}
                                 </button>
@@ -355,7 +364,6 @@
             const [scannedItems, setScannedItems] = React.useState([]);
             const [selectedIndices, setSelectedIndices] = React.useState(new Set());
             const [loading, setLoading] = React.useState(false);
-            const [progress, setProgress] = React.useState(0);
             const fileRef = React.useRef(null);
 
             React.useEffect(() => { if (initialData) setForm(initialData); }, [initialData]);
@@ -371,7 +379,7 @@
             const handleScan = async (e) => {
                 const file = e.target.files[0]; if(!file) return;
                 if(!apiKey) { showAlert("請先設定 API Key"); return; }
-                setLoading(true); setProgress(10);
+                setLoading(true);
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
@@ -391,7 +399,11 @@
                             setScannedItems(json.items.map(i => ({...i, name: i.name + (json.store ? ` @${json.store}` : '')})));
                             setSelectedIndices(new Set(json.items.map((_, i) => i)));
                         }
-                    } catch(err) { showAlert(`辨識失敗\n原因：${err.message}`, "錯誤"); }
+                    } catch(err) { 
+                        let msg = err.message;
+                        if(msg.includes("API key expired")) msg = "API Key 已過期，請回到登入畫面更換新 Key。";
+                        showAlert(`辨識失敗\n原因：${msg}`, "錯誤"); 
+                    }
                     setLoading(false); e.target.value = '';
                 };
             };
@@ -400,10 +412,10 @@
                 <div className="card-soft p-4 pb-6">
                     {loading && (
                         <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl p-6 text-center w-full max-w-xs">
+                            <div className="bg-white rounded-3xl p-6 text-center w-full max-w-xs shadow-xl">
                                 <div className="loader mx-auto mb-4 border-t-ink-500"></div>
                                 <h3 className="font-bold text-lg text-stone-700">AI 辨識中...</h3>
-                                <p className="text-stone-400 text-xs">請稍候，正在分析收據內容</p>
+                                <p className="text-stone-400 text-xs leading-relaxed">分析影像中，請保持網路通暢</p>
                             </div>
                         </div>
                     )}
@@ -411,7 +423,7 @@
                         <span>{initialData ? '修改花費' : '新增花費'}</span>
                         {!initialData && (
                             <>
-                                <button type="button" onClick={() => fileRef.current.click()} className="text-xs bg-ink-500 text-white px-3 py-1.5 rounded-lg font-bold"><i className="fa-solid fa-camera mr-2"></i>拍收據</button>
+                                <button type="button" onClick={() => fileRef.current.click()} className="text-xs bg-ink-500 text-white px-3 py-1.5 rounded-lg font-bold shadow-md active:scale-95 transition-all"><i className="fa-solid fa-camera mr-2"></i>拍收據</button>
                                 <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleScan} />
                             </>
                         )}
@@ -426,7 +438,7 @@
                                         <input value={item.name} onChange={e => { const n = [...scannedItems]; n[idx].name = e.target.value; setScannedItems(n); }} className="text-sm font-bold w-full border-none p-0 focus:ring-0" />
                                         <div className="flex justify-between mt-1">
                                             <select value={item.category} onChange={e => { const n = [...scannedItems]; n[idx].category = e.target.value; setScannedItems(n); }} className="text-xxs text-stone-400 border-none p-0 focus:ring-0">{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
-                                            <span onClick={() => onOpenCalculator(item.amount, val => { const n = [...scannedItems]; n[idx].amount = val; setScannedItems(n); })} className="text-sm font-mono font-bold text-ink-600">{item.amount}</span>
+                                            <span onClick={() => onOpenCalculator(item.amount, val => { const n = [...scannedItems]; n[idx].amount = val; setScannedItems(n); })} className="text-sm font-mono font-bold text-ink-600 cursor-pointer border-b border-ink-100">{item.amount}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -441,7 +453,7 @@
                             <div>
                                 <label className="input-label">分類</label>
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                                    {categories.map(c => <button key={c} onClick={() => setForm({...form, category: c})} className={`px-4 py-1.5 rounded-lg text-xs whitespace-nowrap border-2 transition-all ${form.category === c ? 'bg-ink-400 text-white border-ink-400' : 'bg-white text-stone-400 border-stone-100'}`}>{c}</button>)}
+                                    {categories.map(c => <button key={c} onClick={() => setForm({...form, category: c})} className={`px-4 py-1.5 rounded-lg text-xs whitespace-nowrap border-2 transition-all ${form.category === c ? 'bg-ink-400 text-white border-ink-400 shadow-md' : 'bg-white text-stone-400 border-stone-100'}`}>{c}</button>)}
                                 </div>
                             </div>
                             <input value={form.item} onChange={e => setForm({...form, item: e.target.value})} className="input-field" placeholder="品名" />
@@ -458,15 +470,15 @@
         };
 
         const ExpenseList = ({ expenses, onEdit, onDelete }) => (
-            <div className="space-y-3">
-                {expenses.length === 0 ? <p className="text-center text-stone-300 py-10">尚無紀錄</p> : expenses.map(item => (
-                    <div key={item.id} onClick={() => onEdit(item)} className="card-soft p-3 relative border-l-4 border-ink-300 active:scale-95 transition-transform">
-                        <button onClick={e => { e.stopPropagation(); onDelete(item.id); }} className="absolute top-2 right-2 text-stone-300 hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
-                        <div className="flex items-center gap-2 mb-1"><span className="bg-ink-50 text-ink-600 px-2 py-0.5 rounded text-[10px] font-bold">{item.category}</span><span className="text-[10px] text-stone-400">{formatDateTime(item.createdAt?.seconds)}</span></div>
-                        <div className="text-stone-700 text-sm font-medium mb-1">{item.item}</div>
+            <div className="space-y-3 pb-10">
+                {expenses.length === 0 ? <div className="text-center text-stone-300 py-16"><i className="fa-regular fa-folder-open text-4xl mb-3"></i><p>尚無紀錄</p></div> : expenses.map(item => (
+                    <div key={item.id} onClick={() => onEdit(item)} className="card-soft p-3 relative border-l-4 border-ink-300 active:scale-[0.98] transition-all">
+                        <button onClick={e => { e.stopPropagation(); onDelete(item.id); }} className="absolute top-2 right-2 text-stone-300 hover:text-red-400 p-1"><i className="fa-solid fa-trash text-xs"></i></button>
+                        <div className="flex items-center gap-2 mb-1"><span className="bg-ink-50 text-ink-600 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{item.category}</span><span className="text-[10px] text-stone-400">{formatDateTime(item.createdAt?.seconds)}</span></div>
+                        <div className="text-stone-700 text-sm font-bold mb-1">{item.item}</div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-ink-600 font-bold">{item.currency} {Number(item.foreignAmount).toLocaleString()}</span>
-                            {item.currency !== 'TWD' && <span className="text-xxs text-stone-400">≈ {formatMoney(item.twdAmount)}</span>}
+                            <span className="text-ink-600 font-mono font-bold">{item.currency} {Number(item.foreignAmount).toLocaleString()}</span>
+                            {item.currency !== 'TWD' && <span className="text-xxs text-stone-400 font-medium">≈ {formatMoney(item.twdAmount)}</span>}
                         </div>
                     </div>
                 ))}
@@ -479,15 +491,16 @@
                 if(v === 'C') setExp('');
                 else if(v === '=') { try { setExp(String(eval(exp.replace(/×/g,'*').replace(/÷/g,'/')))); } catch(e){ setExp('Error'); } }
                 else if(v === '⌫') setExp(exp.slice(0, -1));
+                else if(exp === 'Error') setExp(v);
                 else setExp(exp + v);
             };
             return (
                 <div className="fixed inset-0 bg-stone-800/50 backdrop-blur-sm z-[4000] flex items-end justify-center" onClick={onClose}>
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl p-5 pb-8" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl p-5 pb-8 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="calc-display">{exp || '0'}</div>
                         <div className="calc-grid">
                             {['C','÷','×','⌫','7','8','9','-','4','5','6','+','1','2','3','=','0','.','確定'].map(b => (
-                                <button key={b} onClick={() => b === '確定' ? onConfirm(exp) : handleBtn(b)} className={`calc-btn ${['÷','×','-','+','='].includes(b) ? 'bg-ink-50 text-ink-600' : b === '確定' ? 'col-span-1 bg-clay-500 text-white' : ''}`}>{b}</button>
+                                <button key={b} onClick={() => b === '確定' ? onConfirm(exp) : handleBtn(b)} className={`calc-btn active:scale-90 transition-transform ${['÷','×','-','+','='].includes(b) ? 'bg-ink-50 text-ink-600 font-bold' : b === '確定' ? 'col-span-1 bg-ink-500 text-white font-bold' : 'text-stone-600 font-medium'}`}>{b}</button>
                             ))}
                         </div>
                     </div>
@@ -504,18 +517,18 @@
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: `請分析以下旅遊消費清單並提供省錢建議（約150字）：\n${data}` }] }] })
+                            body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位資深旅遊精算師，請用溫柔、文青的口吻分析以下消費清單，並提供三點具體的省錢或理財建議（繁體中文，約150字）：\n${data}` }] }] })
                         });
                         const d = await res.json();
                         setText(d.candidates[0].content.parts[0].text);
-                    } catch(e) { setText("分析失敗：" + e.message); }
+                    } catch(e) { setText("分析失敗，請檢查網路或金鑰狀態。"); }
                 };
                 f();
             }, []);
             return (
                 <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden">
-                        <div className="bg-ink-500 p-4 text-white font-bold flex justify-between"><span>AI 分析報告</span><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
+                    <div className="bg-white rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col shadow-2xl">
+                        <div className="bg-ink-500 p-4 text-white font-bold flex justify-between rounded-t-3xl"><span><i className="fa-solid fa-sparkles mr-2"></i>AI 旅遊分析</span><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
                         <div className="p-5 overflow-y-auto text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">{text}</div>
                     </div>
                 </div>
@@ -534,7 +547,7 @@
             const total = stats.reduce((a,b) => a+b[1], 0);
             return (
                 <div className="fixed inset-0 bg-stone-800/40 backdrop-blur-sm z-[3000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md p-5">
+                    <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4"><h3 className="font-bold">消費統計</h3><button onClick={onClose}><i className="fa-solid fa-xmark"></i></button></div>
                         <div className="space-y-4">
                             {stats.map(([c, v]) => (
