@@ -41,7 +41,7 @@
                             text: '#6d4c51'
                         },
                         stone: {
-                            50: '#f5f5f5',
+                            50: '#f5f5f4',
                             100: '#e7e7e2',
                             200: '#dcdcc6',
                             400: '#a7a797',
@@ -112,16 +112,16 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, FileUp, Eraser
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3
         } from 'https://esm.sh/lucide-react@0.344.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, writeBatch, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
@@ -243,7 +243,6 @@
             const [toast, setToast] = useState(null); 
 
             const [searchTerm, setSearchTerm] = useState('');
-            const fileInputRef = useRef(null);
 
             const [newBook, setNewBook] = useState({
                 title: '', author: '', wordCount: '', isWordCountManual: false,
@@ -302,7 +301,7 @@
                         const isReadingB = b.status === 'reading';
                         if (isReadingA && !isReadingB) return -1;
                         if (!isReadingA && isReadingB) return 1;
-                        return new Date(b.addDate || 0) - new Date(a.addDate || 0);
+                        return new Date(b.addDate) - new Date(a.addDate);
                     });
                     
                     setBooks(fetchedBooks);
@@ -330,27 +329,6 @@
 
             const handleLogout = () => {
                 setModalType('logout');
-            };
-
-            // 全部資料刪除功能
-            const clearAllData = async () => {
-                try {
-                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
-                    const snapshot = await getDocs(colRef);
-                    const batch = writeBatch(db);
-                    
-                    snapshot.docs.forEach((doc) => {
-                        // 保留 settings 不刪除分類，只刪除書籍
-                        if (doc.id !== 'settings') {
-                            batch.delete(doc.ref);
-                        }
-                    });
-
-                    await batch.commit();
-                    showToast("已成功清空所有書籍紀錄");
-                } catch (error) {
-                    showToast("清空失敗", "error");
-                }
             };
 
             const searchBookInfo = async () => {
@@ -383,6 +361,22 @@
             const addBook = async (e) => {
                 e.preventDefault();
                 if (!newBook.title || !customId) return;
+
+                // 檢查是否重複
+                const isDuplicate = books.some(b => 
+                    b.title.trim() === newBook.title.trim() && 
+                    (b.author || '').trim() === (newBook.author || '').trim()
+                );
+
+                if (isDuplicate) {
+                    setModalType('confirmAddDuplicate');
+                    return;
+                }
+
+                executeAddBook();
+            };
+
+            const executeAddBook = async () => {
                 try {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), {
                         ...newBook,
@@ -397,70 +391,6 @@
                 } catch (error) {
                     showToast("新增失敗", "error");
                 }
-            };
-
-            // CSV 匯入邏輯
-            const handleImportCSV = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    const text = event.target.result;
-                    const lines = text.split(/\r?\n/);
-                    if (lines.length <= 1) return;
-
-                    const batch = writeBatch(db);
-                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
-                    let importCount = 0;
-
-                    // 假設格式：已讀完日期, 書名, 作者, 評價
-                    for (let i = 1; i < lines.length; i++) {
-                        if (!lines[i].trim()) continue;
-                        
-                        // 處理 CSV 逗號分割，簡單處理雙引號
-                        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                        if (cols.length < 2) continue;
-
-                        const [finishDate, title, author, ratingRaw] = cols;
-                        if (!title) continue;
-
-                        const bookData = {
-                            title,
-                            author: author || '',
-                            addDate: new Date().toISOString().split('T')[0],
-                            createdAt: serverTimestamp(),
-                            category: []
-                        };
-
-                        if (!finishDate) {
-                            bookData.status = 'reading';
-                        } else if (ratingRaw === '棄文') {
-                            bookData.status = 'dropped';
-                            bookData.dropDate = finishDate;
-                            bookData.dropChapter = '未知';
-                        } else {
-                            bookData.status = 'finished';
-                            bookData.finishDate = finishDate;
-                            // 10分制轉5星制
-                            const score = parseFloat(ratingRaw);
-                            bookData.rating = !isNaN(score) ? Math.min(5, Math.max(0, score / 2)) : 0;
-                        }
-
-                        const newDocRef = doc(colRef);
-                        batch.set(newDocRef, bookData);
-                        importCount++;
-                    }
-
-                    try {
-                        await batch.commit();
-                        showToast(`成功匯入 ${importCount} 本書籍！`);
-                    } catch (err) {
-                        showToast("匯入失敗", "error");
-                    }
-                    e.target.value = null;
-                };
-                reader.readAsText(file);
             };
 
             const updateCategoriesInDb = async (newCats) => {
@@ -535,16 +465,16 @@
                         closeModal();
                         return;
                     }
-                    if (modalType === 'clearAll') {
-                        await clearAllData();
-                        closeModal();
-                        return;
-                    }
                     if (modalType === 'deleteCategory') {
                         const catToDelete = modalData.category;
                         const updatedCats = categories.filter(c => c !== catToDelete);
                         await updateCategoriesInDb(updatedCats);
                         showToast(`已刪除分類「${catToDelete}」`);
+                        closeModal();
+                        return;
+                    }
+                    if (modalType === 'confirmAddDuplicate') {
+                        executeAddBook();
                         closeModal();
                         return;
                     }
@@ -632,7 +562,7 @@
                     } else if (b.status === 'dropped' && b.dropDate) {
                         y = new Date(b.dropDate).getFullYear(); totalDropped++;
                     }
-                    if (y && !isNaN(y)) {
+                    if (y) {
                         activeYears.add(y);
                         if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
                         if (b.status === 'finished') yearStats[y].finished++;
@@ -708,10 +638,9 @@
                                 <BookOpen className="text-wood-400" strokeWidth={1.5} />
                                 <span>閱讀手帳</span>
                             </div>
-                            <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end min-w-0">
-                                <div className="text-[10px] md:text-xs text-sub bg-stone-100 px-2 md:px-3 py-1 rounded-full truncate max-w-[80px] md:max-w-[120px]">ID: {customId}</div>
-                                <button onClick={() => setModalType('clearAll')} className="text-stone-400 hover:text-dried-500 transition" title="清空全部書籍"><Eraser size={20} strokeWidth={1.5}/></button>
-                                <button onClick={handleLogout} className="text-stone-400 hover:text-ink transition" title="登出"><LogOut size={20} strokeWidth={1.5}/></button>
+                            <div className="flex items-center gap-3 md:gap-4 flex-1 justify-end min-w-0">
+                                <div className="text-xs text-sub bg-stone-100 px-3 py-1 rounded-full truncate max-w-[120px]">ID: {customId}</div>
+                                <button onClick={handleLogout} className="text-stone-400 hover:text-ink transition"><LogOut size={20} strokeWidth={1.5}/></button>
                             </div>
                         </div>
                     </header>
@@ -752,18 +681,9 @@
                         </section>
 
                         <section className="bg-white/80 rounded-2xl md:rounded-3xl border border-stone-200 p-5 md:p-8 soft-shadow">
-                            <div className="flex justify-between items-center mb-4 md:mb-6">
-                                <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3">
-                                    <PenTool className="text-wood-400 w-5 h-5" /> 紀錄新書
-                                </h2>
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 text-stone-500 hover:bg-stone-200 rounded-lg transition"
-                                >
-                                    <FileUp size={14} /> 匯入 CSV
-                                </button>
-                                <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv" className="hidden" />
-                            </div>
+                            <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3">
+                                <PenTool className="text-wood-400 w-5 h-5" /> 紀錄新書
+                            </h2>
                             <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5">
                                 <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" required /></div>
                                 <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
@@ -803,18 +723,20 @@
                                 {filteredBooks.map(book => (
                                     <div key={book.id} className="group bg-white p-4 md:p-6 rounded-2xl border border-stone-200 hover:border-wood-200 transition-all duration-300 animate-fade-in soft-shadow flex flex-col md:flex-row gap-4 relative overflow-hidden">
                                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-300'}`}></div>
-                                        <div className="flex-1 pl-3 md:pl-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
+                                        <div className="flex-1 pl-3 md:pl-0 min-w-0">
+                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
+                                                <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap gap-2 items-center mb-1">
                                                         {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
                                                             <span key={idx} className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm">{cat}</span>
                                                         ))}
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'未讀'}</span>
                                                     </div>
-                                                    <h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed">{book.title}</h3>
+                                                    <h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed break-words">{book.title}</h3>
                                                 </div>
-                                                {book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}
+                                                <div className="shrink-0">
+                                                    {book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}
+                                                </div>
                                             </div>
                                             <div className="text-sm text-sub space-y-2">
                                                 <div className="flex flex-wrap gap-4 text-xs opacity-70">
@@ -825,7 +747,7 @@
                                                 {book.status === 'finished' && (
                                                     <div className="mt-2 bg-sage-50/50 p-3 rounded-lg border border-sage-100">
                                                         <p className="text-sage-text flex items-center gap-2 text-xs md:text-sm font-medium"><CheckCircle size={14}/> 完食於 {book.finishDate}</p>
-                                                        {book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5">{book.review}</p>}
+                                                        {book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5 whitespace-pre-wrap">{book.review}</p>}
                                                     </div>
                                                 )}
                                                 {book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
@@ -853,12 +775,12 @@
                             </div>
                         </section>
 
-                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory' || modalType === 'clearAll') && (
+                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory' || modalType === 'confirmAddDuplicate') && (
                             <div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
                                 <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">
-                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'clearAll' ? '清空書櫃' : '編輯書籍'}
+                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}
                                     </h3>
                                     <div className="mb-6">
                                         {modalType === 'edit' && (
@@ -890,16 +812,24 @@
                                                 <div className="space-y-1"><label className="text-xs text-sub block">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div>
                                             </div>
                                         )}
-                                        {['reset', 'delete', 'logout', 'deleteCategory', 'clearAll'].includes(modalType) && (
+                                        {modalType === 'confirmAddDuplicate' && (
                                             <div className="text-center p-4">
-                                                <p className="mb-2 font-bold text-ink">{modalType === 'clearAll' ? '所有書籍紀錄' : (modalData.category || activeBook?.title)}</p>
-                                                <p className="text-sm text-sub">確定執行此操作嗎？{modalType === 'clearAll' && '此動作無法復原。'}</p>
+                                                <div className="flex justify-center mb-4 text-dried-500"><AlertTriangle size={48} /></div>
+                                                <p className="mb-2 font-bold text-ink">這本書已經在書櫃中囉！</p>
+                                                <p className="text-sm text-sub">書名：「{newBook.title}」<br/>作者：「{newBook.author || '佚名'}」</p>
+                                                <p className="mt-4 text-xs text-stone-400">確定要重複加入嗎？</p>
+                                            </div>
+                                        )}
+                                        {['reset', 'delete', 'logout', 'deleteCategory'].includes(modalType) && (
+                                            <div className="text-center p-4">
+                                                <p className="mb-2 font-bold text-ink">{modalData.category || activeBook?.title}</p>
+                                                <p className="text-sm text-sub">確定執行此操作嗎？</p>
                                             </div>
                                         )}
                                     </div>
                                     <div className="flex gap-4">
                                         <button onClick={closeModal} className="flex-1 py-3 text-sub hover:bg-stone-100 rounded-xl transition text-sm">取消</button>
-                                        <button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button>
+                                        <button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button>
                                     </div>
                                 </div>
                             </div>
