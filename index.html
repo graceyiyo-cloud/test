@@ -91,11 +91,9 @@
                 padding-left: 0.5rem !important;
                 padding-right: 0.5rem !important;
             }
-            /* 年度框框窄化 */
             .year-box {
                 padding: 0.5rem !important;
             }
-            /* 導覽列窄化 */
             .mobile-header {
                 padding-top: 0.5rem !important;
                 padding-bottom: 0.5rem !important;
@@ -158,13 +156,13 @@
             "異能", "空間", "甜寵", "虐戀", "升級流", "治癒", "輕鬆", "沙雕"
         ];
 
-        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
+        const CategoryPicker = ({ selectedCategories = [], onToggle, allCategories = [], onAddNew, onDelete }) => {
             const [isOpen, setIsOpen] = useState(false);
             const [filterText, setFilterText] = useState('');
 
             const filtered = useMemo(() => {
-                const term = filterText.toLowerCase();
-                return allCategories.filter(c => c.toLowerCase().includes(term));
+                const term = (filterText || '').toLowerCase();
+                return (allCategories || []).filter(c => c.toLowerCase().includes(term));
             }, [allCategories, filterText]);
 
             const handleSelect = (cat) => {
@@ -302,7 +300,7 @@
 
                     snapshot.docs.forEach(doc => {
                         if (doc.id === 'settings') {
-                            if (doc.data().categories && Array.isArray(doc.data().categories)) {
+                            if (doc.data() && doc.data().categories && Array.isArray(doc.data().categories)) {
                                 fetchedCategories = doc.data().categories;
                             }
                         } else {
@@ -315,16 +313,15 @@
                         const isReadingB = b.status === 'reading';
                         if (isReadingA && !isReadingB) return -1;
                         if (!isReadingA && isReadingB) return 1;
-                        return new Date(b.addDate) - new Date(a.addDate);
+                        return new Date(b.addDate || 0) - new Date(a.addDate || 0);
                     });
                     
                     setBooks(fetchedBooks);
                     setCategories(fetchedCategories);
                     setLoading(false);
                 }, (error) => {
-                    console.error("Error", error);
+                    console.error("Fetch Error:", error);
                     setLoading(false);
-                    showToast("資料讀取失敗", "error");
                 });
                 return () => unsubscribe();
             }, [user, customId]);
@@ -336,8 +333,8 @@
 
             const handleLogin = (e) => {
                 e.preventDefault();
-                if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
-                localStorage.setItem('reading_tracker_custom_id', customId);
+                if (!customId || customId.trim().length < 3) return showToast("ID 太短囉", "error");
+                localStorage.setItem('reading_tracker_custom_id', customId.trim());
                 setIsLoginMode(false);
             };
 
@@ -376,8 +373,8 @@
                 e.preventDefault();
                 if (!newBook.title || !customId) return;
 
-                const isDuplicate = books.some(b => 
-                    b.title.trim() === newBook.title.trim() && 
+                const isDuplicate = (books || []).some(b => 
+                    (b.title || '').trim() === newBook.title.trim() && 
                     (b.author || '').trim() === (newBook.author || '').trim()
                 );
 
@@ -417,7 +414,7 @@
             };
 
             const addNewCategory = async (catName) => {
-                if (!catName.trim()) return;
+                if (!catName || !catName.trim()) return;
                 const name = catName.trim();
                 if (categories.includes(name)) {
                     showToast("分類已存在", "error");
@@ -555,21 +552,21 @@
 
             const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
 
-            const activeBook = useMemo(() => books.find(b => b.id === activeBookId), [books, activeBookId]);
+            const activeBook = useMemo(() => (books || []).find(b => b.id === activeBookId), [books, activeBookId]);
 
             const filteredBooks = useMemo(() => {
-                let list = books;
+                let list = Array.isArray(books) ? books : [];
                 if (statusFilter !== 'all') {
                     list = list.filter(b => b.status === statusFilter);
                 }
                 if (ratingFilter > 0) {
                     list = list.filter(b => (b.rating || 0) >= ratingFilter);
                 }
-                if (searchTerm.trim()) {
+                if (searchTerm && searchTerm.trim()) {
                     const term = searchTerm.toLowerCase();
                     list = list.filter(b => (
-                        b.title?.toLowerCase().includes(term) ||
-                        b.author?.toLowerCase().includes(term) ||
+                        (b.title || '').toLowerCase().includes(term) ||
+                        (b.author || '').toLowerCase().includes(term) ||
                         (b.category && b.category.some(c => c.toLowerCase().includes(term)))
                     ));
                 }
@@ -580,21 +577,28 @@
                 const yearStats = {};
                 let totalFinished = 0, totalDropped = 0, totalReading = 0;
                 const activeYears = new Set();
-                books.forEach(b => {
-                    let y = null;
-                    if (b.status === 'reading') totalReading++;
-                    else if (b.status === 'finished' && b.finishDate) {
-                        y = new Date(b.finishDate).getFullYear(); totalFinished++;
-                    } else if (b.status === 'dropped' && b.dropDate) {
-                        y = new Date(b.dropDate).getFullYear(); totalDropped++;
-                    }
-                    if (y) {
-                        activeYears.add(y);
-                        if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
-                        if (b.status === 'finished') yearStats[y].finished++;
-                        if (b.status === 'dropped') yearStats[y].dropped++;
-                    }
-                });
+                
+                if (Array.isArray(books)) {
+                    books.forEach(b => {
+                        let y = null;
+                        if (b.status === 'reading') totalReading++;
+                        else if (b.status === 'finished' && b.finishDate) {
+                            y = new Date(b.finishDate).getFullYear(); 
+                            totalFinished++;
+                        } else if (b.status === 'dropped' && b.dropDate) {
+                            y = new Date(b.dropDate).getFullYear(); 
+                            totalDropped++;
+                        }
+                        
+                        if (y && !isNaN(y)) {
+                            activeYears.add(y);
+                            if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 };
+                            if (b.status === 'finished') yearStats[y].finished++;
+                            if (b.status === 'dropped') yearStats[y].dropped++;
+                        }
+                    });
+                }
+                
                 return { 
                     years: Array.from(activeYears).sort((a, b) => b - a), 
                     data: yearStats, 
@@ -602,7 +606,7 @@
                 };
             }, [books]);
 
-            const StarRating = ({ rating, setRating, interactive = false }) => (
+            const StarRating = ({ rating = 0, setRating, interactive = false }) => (
                 <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((index) => {
                         const filled = rating >= index;
@@ -627,7 +631,7 @@
 
             const handleWebSearch = (book, e) => {
                 e.stopPropagation();
-                const query = encodeURIComponent(`${book.title} ${book.author || ''}`);
+                const query = encodeURIComponent(`${book.title || ''} ${book.author || ''}`);
                 window.open(`https://www.google.com/search?q=${query}`, '_blank');
             };
 
@@ -814,7 +818,7 @@
                                             <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-1 md:mb-2 gap-1 md:gap-2">
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap gap-1 items-center mb-1">
-                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
+                                                        {(book.category || []).map((cat, idx) => (
                                                             <span key={idx} className="text-[8px] md:text-xs text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-sm">{cat}</span>
                                                         ))}
                                                         <span className={`px-1.5 py-0.5 rounded-full text-[8px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'待讀'}</span>
@@ -824,7 +828,6 @@
                                                         <button 
                                                             onClick={(e) => handleWebSearch(book, e)}
                                                             className="p-1 rounded-full bg-stone-50 text-stone-400 hover:text-wood-500 hover:bg-wood-50 transition-all border border-transparent hover:border-wood-100"
-                                                            title="在 Google 搜尋此書"
                                                         >
                                                             <ExternalLink size={12} md:size={14} strokeWidth={2.5} />
                                                         </button>
@@ -862,8 +865,8 @@
                                             )}
                                             <div className="hidden md:block w-full h-px bg-stone-100 my-1"></div>
                                             <div className="flex gap-2 flex-1 md:w-full">
-                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-400 hover:text-stone-600 rounded-lg transition flex items-center justify-center border border-stone-200" title="編輯"><Edit3 size={14} md:size={16} /></button>
-                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-300 hover:text-dried-500 rounded-lg transition flex items-center justify-center border border-stone-200" title="刪除"><Trash2 size={14} md:size={16} /></button>
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-400 hover:text-stone-600 rounded-lg transition flex items-center justify-center border border-stone-200"><Edit3 size={14} md:size={16} /></button>
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-300 hover:text-dried-500 rounded-lg transition flex items-center justify-center border border-stone-200"><Trash2 size={14} md:size={16} /></button>
                                             </div>
                                         </div>
                                     </div>
@@ -875,21 +878,21 @@
                             <div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
                                 <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
-                                    <h3 className="text-base md:text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4 tracking-wider">
+                                    <h3 className="text-base md:text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">
                                         {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '確認登出' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}
                                     </h3>
                                     <div className="mb-6">
                                         {modalType === 'edit' && (
                                             <div className="space-y-4">
-                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title || ''} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author || ''} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
                                                 <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">分類標籤</label><CategoryPicker selectedCategories={modalData.category || []} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} /></div>
                                                 <div className="flex gap-2">
-                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount || ''} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                    <div className="w-1/2 space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate || ''} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
                                                 </div>
-                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl || ''} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis || ''} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div>
                                             </div>
                                         )}
                                         {modalType === 'finish' && (
@@ -925,7 +928,7 @@
                                     </div>
                                     <div className="flex gap-4">
                                         <button onClick={closeModal} className="flex-1 py-2.5 md:py-3 text-sub hover:bg-stone-100 rounded-xl transition text-xs md:text-sm">取消</button>
-                                        <button onClick={handleModalAction} className={`flex-1 py-2.5 md:py-3 text-white rounded-xl shadow-md text-xs md:text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button>
+                                        <button onClick={handleModalAction} className={`flex-1 py-2.5 md:py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button>
                                     </div>
                                 </div>
                             </div>
