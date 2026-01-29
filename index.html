@@ -213,7 +213,7 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
-                            <input type="text" placeholder="搜尋或輸入「A,B,C」批量建立 (按 Enter)" 
+                            <input type="text" placeholder="搜尋或輸入「A,B,C」批次建立 (按 Enter)" 
                                 value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
@@ -649,17 +649,25 @@
                                 <div className="bg-white/50 p-3 md:p-4 rounded-2xl border border-stone-200 flex flex-col justify-between relative overflow-hidden soft-shadow">
                                     <div className="absolute right-0 top-0 p-2 opacity-5 text-wood-500"><Hourglass size={32}/></div>
                                     <div className="text-xs md:text-sm text-sub font-medium mb-0.5">待讀</div>
-                                    <div className="text-2xl md:text-3xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
-                                        {stats.total.reading} <span className="text-[10px] md:text-xs font-normal text-stone-400">本</span>
+                                    <div className="flex flex-col">
+                                        <div className="text-2xl md:text-3xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
+                                            {stats.total.reading} <span className="text-[10px] md:text-xs font-normal text-stone-400">本</span>
+                                        </div>
+                                        {/* 為了對齊右側卡片的棄書文字高度 */}
+                                        <div className="text-[9px] md:text-[10px] opacity-0 h-[12px] md:h-[15px]">spacer</div>
                                     </div>
                                 </div>
                                 <div className="bg-sage-50 p-3 md:p-4 rounded-2xl border border-sage-100 flex flex-col justify-between relative overflow-hidden soft-shadow">
                                     <div className="absolute right-0 top-0 p-2 opacity-10 text-wood-500"><Trophy size={32}/></div>
                                     <div className="text-xs md:text-sm text-wood-400 font-medium mb-0.5">生涯累積完食</div>
-                                    <div className="text-2xl md:text-3xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
-                                        {stats.total.finished} <span className="text-[10px] md:text-xs font-normal text-sub">本</span>
+                                    <div className="flex flex-col">
+                                        <div className="text-2xl md:text-3xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
+                                            {stats.total.finished} <span className="text-[10px] md:text-xs font-normal text-sub">本</span>
+                                        </div>
+                                        <div className="text-[9px] md:text-[10px] text-dried-500 text-right h-[12px] md:h-[15px]">
+                                            {stats.total.dropped > 0 && `棄書 ${stats.total.dropped}`}
+                                        </div>
                                     </div>
-                                    {stats.total.dropped > 0 && <div className="text-[9px] md:text-[10px] text-dried-500 text-right">棄書 {stats.total.dropped}</div>}
                                 </div>
                             </div>
                             {stats.years.length > 0 && (
@@ -795,37 +803,35 @@
                                             </div>
                                         </div>
                                         
-                                        {/* 按鈕區域：透過 CSS 控制電腦版與手機版佈局 */}
+                                        {/* 按鈕區域：手機與電腦版佈局切換 */}
                                         <div className="flex mt-4 pt-4 border-t border-stone-100 
                                             flex-row gap-1.5 
-                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-40 md:gap-2 shrink-0">
+                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-44 md:gap-2 shrink-0">
                                             
-                                            {/* 第一區塊 (手機: 並排 / 電腦: 左右並排) */}
+                                            {/* 第一區塊 (手機: 並排 / 電腦: 文字按鈕左右對分) */}
                                             <div className="flex gap-1.5 flex-[3] md:flex-none md:gap-2">
                                                 {book.status === 'reading' ? (
                                                     <>
-                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-sage-100 shadow-sm"><CheckCircle size={16} /> 完食</button>
-                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-dried-100 shadow-sm"><BookX size={16} /> 棄書</button>
+                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-sage-100 shadow-sm"><CheckCircle size={16} /> 完食</button>
+                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-dried-100 shadow-sm"><BookX size={16} /> 棄書</button>
                                                     </>
                                                 ) : (
-                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-stone-200 shadow-sm"><RotateCcw size={16} /> 重設</button>
+                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-1.5 px-1 md:py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-stone-200 shadow-sm"><RotateCcw size={16} /> 重設</button>
                                                 )}
                                             </div>
 
-                                            {/* 第二區塊 (釘選與編輯) */}
-                                            <div className="flex gap-1.5 flex-[2] md:flex-none md:gap-2">
-                                                <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-1.5 md:py-2.5 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                            {/* 第二區塊 (手機: 釘選+編輯+刪除一排 / 電腦: 三個圖示按鈕排成一列) */}
+                                            <div className="flex gap-1.5 flex-[3] md:flex-none md:gap-2">
+                                                <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-1.5 md:py-2 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`}>
                                                     {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
                                                 </button>
-                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2.5 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
                                                     <Edit3 size={16} />
                                                 </button>
+                                                <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="刪除">
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
-
-                                            {/* 刪除按鈕 (手機: 同列 / 電腦: 最下方一格) */}
-                                            <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2.5 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="刪除">
-                                                <Trash2 size={16} />
-                                            </button>
                                         </div>
                                     </div>
                                 ))}
