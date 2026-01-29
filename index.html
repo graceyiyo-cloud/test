@@ -42,7 +42,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .header-solid { background: linear-gradient(120deg, #6B8179, #85A49F); padding: 16px; padding-bottom: 30px; border-radius: 0 0 1.5rem 1.5rem; color: white; }
         .fab-container { position: fixed; bottom: 2rem; left: 0; right: 0; z-index: 50; pointer-events: none; display: flex; justify-content: center; }
-        .fab-btn { pointer-events: auto; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(135deg, #D49A89 0%, #B87A68 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 6px 15px rgba(184,122,104,0.3); border: 3px solid #F9F8F6; }
+        .fab-btn { pointer-events: auto; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(135deg, #D49A89 0%, #B87A68 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 6px 15px rgba(184, 122, 104, 0.3); border: 3px solid #F9F8F6; }
         .calc-display { background: #FAFAF9; border-radius: 12px; padding: 12px; text-align: right; font-size: 1.5rem; font-family: monospace; font-weight: 600; border: 1px solid #E7E5E4; min-height: 3.5rem; display: flex; align-items: center; justify-content: flex-end; }
         .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .calc-btn { background: white; border: 1px solid #E7E5E4; border-radius: 12px; height: 48px; font-weight: 500; }
@@ -212,7 +212,7 @@
                                     <div className="fab-container"><div className="fab-wrapper w-full max-w-[600px] flex justify-end px-5"><button onClick={() => setView('add')} className="fab-btn"><i className="fa-solid fa-plus"></i></button></div></div>
                                 </>
                             )}
-                            {view === 'add' && <div className="p-3"><AddForm apiKey={apiKey} categories={categories} onAddCategory={name => { const n = [...categories, name]; setCategories(n); localStorage.setItem(`categories_${tripId}`, JSON.stringify(n)); db.collection('artifacts').doc(appId).collection('public').doc('data').collection('trip_settings').doc(tripId).set({ categories: n }, { merge: true }); }} initialData={editItem} onSave={async d => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); if(d.id){ const {id,...rest}=d; await ref.doc(id).update(rest); }else{ await ref.add({...d, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); } setView('list'); setEditItem(null); }catch(e){ showAlert(e.message); } }} onBatchSave={async items => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); await Promise.all(items.map(i => ref.add({...i, createdAt: firebase.firestore.FieldValue.serverTimestamp()}))); setView('list'); }catch(e){ showAlert(e.message); } }} onCancel={() => { setView('list'); setEditItem(null); }} showAlert={showAlert} onOpenCalculator={(v, cb) => { setCurrentCalcValue(v); setCalculatorCallback(() => cb); setShowCalculator(true); }} /></div>}
+                            {view === 'add' && <div className="p-3"><AddForm apiKey={apiKey} categories={categories} initialData={editItem} onSave={async d => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); if(d.id){ const {id,...rest}=d; await ref.doc(id).update(rest); }else{ await ref.add({...d, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); } setView('list'); setEditItem(null); }catch(e){ showAlert(e.message); } }} onBatchSave={async items => { try { const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection(`${tripId}_simple_v1`); await Promise.all(items.map(i => ref.add({...i, createdAt: firebase.firestore.FieldValue.serverTimestamp()}))); setView('list'); }catch(e){ showAlert(e.message); } }} onCancel={() => { setView('list'); setEditItem(null); }} showAlert={showAlert} onOpenCalculator={(v, cb) => { setCurrentCalcValue(v); setCalculatorCallback(() => cb); setShowCalculator(true); }} /></div>}
                         </>
                     )}
                     {showAnalysis && <AnalysisModal expenses={expenses} apiKey={apiKey} onClose={() => setShowAnalysis(false)} />}
@@ -231,7 +231,7 @@
                 if (!key.trim()) return;
                 setStatus('checking');
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key.trim()}`, {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key.trim()}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
@@ -264,7 +264,7 @@
                             <div className="relative flex items-center gap-2">
                                 <div className="relative flex-1">
                                     <input type="password" value={key} onChange={e => {setKey(e.target.value); setStatus('none');}} className="input-field text-sm pr-10" placeholder="貼上 API Key" />
-                                    {key && <button onClick={() => {setKey(''); setStatus('none');}} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500"><i className="fa-solid fa-circle-xmark"></i></button>}
+                                    {key && <button onClick={() => {setKey(''); setStatus('none');}} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-500 z-10 p-1"><i className="fa-solid fa-circle-xmark"></i></button>}
                                 </div>
                                 <button onClick={checkKey} className={`w-10 h-[42px] rounded-xl border flex items-center justify-center transition-all ${status === 'valid' ? 'bg-green-50 text-green-500' : status === 'invalid' ? 'bg-red-50 text-red-500' : 'bg-white'}`}>
                                     {status === 'checking' ? <div className="loader w-3 h-3"></div> : status === 'valid' ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-wifi"></i>}
@@ -341,17 +341,24 @@
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
                     const base64 = reader.result.split(',')[1];
+                    // 鎖定為 v1beta 路徑與 gemini-1.5-flash 模型名稱
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                     const prompt = `你是一個專業記帳助手。請辨識收據內容，翻譯成繁體中文並回傳純 JSON：{ "store": "店名", "currency": "幣別", "items": [ { "name": "品名", "amount": 數字, "category": "分類" } ] }。分類限選：${categories.join(',')}`;
+                    
                     try {
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        const res = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: file.type, data: base64 } }] }] })
                         });
                         const data = await res.json();
                         if (data.error) throw new Error(`${data.error.code}: ${data.error.message}`);
-                        const text = data.candidates[0].content.parts[0].text;
-                        const json = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+                        
+                        const rawText = data.candidates[0].content.parts[0].text;
+                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) throw new Error("無法解析 AI 回傳的資料格式");
+                        
+                        const json = JSON.parse(jsonMatch[0]);
                         if(json.items) {
                             setScanned(json.items.map(i => ({...i, name: i.name + (json.store ? ` @${json.store}` : '')})));
                             setSelected(new Set(json.items.map((_, i) => i)));
@@ -433,7 +440,7 @@
                 const f = async () => {
                     try {
                         const data = expenses.map(e => `${e.category}: ${e.item} (${e.twdAmount} TWD)`).join('\n');
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位資深旅遊精算師，請用溫柔、文青的口吻分析以下消費清單，並提供三點具體的省錢建議（繁體中文，約150字）：\n${data}` }] }] })
