@@ -116,12 +116,12 @@
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
-            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, FileUp
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, FileUp, Eraser
         } from 'https://esm.sh/lucide-react@0.344.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, writeBatch, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
@@ -332,6 +332,27 @@
                 setModalType('logout');
             };
 
+            // 全部資料刪除功能
+            const clearAllData = async () => {
+                try {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                    const snapshot = await getDocs(colRef);
+                    const batch = writeBatch(db);
+                    
+                    snapshot.docs.forEach((doc) => {
+                        // 保留 settings 不刪除分類，只刪除書籍
+                        if (doc.id !== 'settings') {
+                            batch.delete(doc.ref);
+                        }
+                    });
+
+                    await batch.commit();
+                    showToast("已成功清空所有書籍紀錄");
+                } catch (error) {
+                    showToast("清空失敗", "error");
+                }
+            };
+
             const searchBookInfo = async () => {
                 if (!newBook.title) return;
                 setIsSearching(true);
@@ -514,6 +535,11 @@
                         closeModal();
                         return;
                     }
+                    if (modalType === 'clearAll') {
+                        await clearAllData();
+                        closeModal();
+                        return;
+                    }
                     if (modalType === 'deleteCategory') {
                         const catToDelete = modalData.category;
                         const updatedCats = categories.filter(c => c !== catToDelete);
@@ -682,9 +708,10 @@
                                 <BookOpen className="text-wood-400" strokeWidth={1.5} />
                                 <span>閱讀手帳</span>
                             </div>
-                            <div className="flex items-center gap-3 md:gap-4 flex-1 justify-end min-w-0">
-                                <div className="text-xs text-sub bg-stone-100 px-3 py-1 rounded-full truncate max-w-[120px]">ID: {customId}</div>
-                                <button onClick={handleLogout} className="text-stone-400 hover:text-ink transition"><LogOut size={20} strokeWidth={1.5}/></button>
+                            <div className="flex items-center gap-2 md:gap-3 flex-1 justify-end min-w-0">
+                                <div className="text-[10px] md:text-xs text-sub bg-stone-100 px-2 md:px-3 py-1 rounded-full truncate max-w-[80px] md:max-w-[120px]">ID: {customId}</div>
+                                <button onClick={() => setModalType('clearAll')} className="text-stone-400 hover:text-dried-500 transition" title="清空全部書籍"><Eraser size={20} strokeWidth={1.5}/></button>
+                                <button onClick={handleLogout} className="text-stone-400 hover:text-ink transition" title="登出"><LogOut size={20} strokeWidth={1.5}/></button>
                             </div>
                         </div>
                     </header>
@@ -826,12 +853,12 @@
                             </div>
                         </section>
 
-                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory') && (
+                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory' || modalType === 'clearAll') && (
                             <div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
                                 <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
                                     <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
                                     <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">
-                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : '編輯書籍'}
+                                        {modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'clearAll' ? '清空書櫃' : '編輯書籍'}
                                     </h3>
                                     <div className="mb-6">
                                         {modalType === 'edit' && (
@@ -863,10 +890,10 @@
                                                 <div className="space-y-1"><label className="text-xs text-sub block">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div>
                                             </div>
                                         )}
-                                        {['reset', 'delete', 'logout', 'deleteCategory'].includes(modalType) && (
+                                        {['reset', 'delete', 'logout', 'deleteCategory', 'clearAll'].includes(modalType) && (
                                             <div className="text-center p-4">
-                                                <p className="mb-2 font-bold text-ink">{modalData.category || activeBook?.title}</p>
-                                                <p className="text-sm text-sub">確定執行此操作嗎？</p>
+                                                <p className="mb-2 font-bold text-ink">{modalType === 'clearAll' ? '所有書籍紀錄' : (modalData.category || activeBook?.title)}</p>
+                                                <p className="text-sm text-sub">確定執行此操作嗎？{modalType === 'clearAll' && '此動作無法復原。'}</p>
                                             </div>
                                         )}
                                     </div>
