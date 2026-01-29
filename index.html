@@ -213,7 +213,7 @@
                     </div>
                     {isOpen && (
                         <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
-                            <input type="text" placeholder="搜尋或輸入「A,B,C」批次建立 (按 Enter)" 
+                            <input type="text" placeholder="搜尋或輸入「A,B,C」批量建立 (按 Enter)" 
                                 value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
                                 className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
                             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
@@ -784,7 +784,6 @@
                                                 )}
                                                 {book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
                                                 {book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
-                                                {/* 修正：精簡大綱顯示結構，移除底部的 margin-bottom */}
                                                 {book.synopsis && (
                                                     <div className="mt-2 pt-2 border-t border-stone-100 border-dashed flex flex-col">
                                                         <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition py-1 self-start">
@@ -796,24 +795,35 @@
                                             </div>
                                         </div>
                                         
-                                        {/* 手機板按鈕重新整理：完食與棄書文字加大 */}
-                                        <div className="flex flex-row gap-2 mt-4 pt-4 border-t border-stone-100 md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-40 shrink-0">
-                                            {book.status === 'reading' ? (
-                                                <>
-                                                   <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-[2] py-2.5 px-1 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 border border-sage-100 shadow-sm"><CheckCircle size={16} /> 完食</button>
-                                                   <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-[2] py-2.5 px-1 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 border border-dried-100 shadow-sm"><BookX size={16} /> 棄書</button>
-                                                </>
-                                            ) : (
-                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-[2] py-2.5 px-1 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 border border-stone-200 shadow-sm"><RotateCcw size={16} /> 重設</button>
-                                            )}
+                                        {/* 按鈕區域：透過 CSS 控制電腦版與手機版佈局 */}
+                                        <div className="flex mt-4 pt-4 border-t border-stone-100 
+                                            flex-row gap-1.5 
+                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:flex-col md:w-40 md:gap-2 shrink-0">
                                             
-                                            <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                                {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
-                                            </button>
-                                            <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2.5 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
-                                                <Edit3 size={16} />
-                                            </button>
-                                            <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2.5 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="刪除">
+                                            {/* 第一區塊 (手機: 並排 / 電腦: 左右並排) */}
+                                            <div className="flex gap-1.5 flex-[3] md:flex-none md:gap-2">
+                                                {book.status === 'reading' ? (
+                                                    <>
+                                                       <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-sage-100 shadow-sm"><CheckCircle size={16} /> 完食</button>
+                                                       <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-dried-100 shadow-sm"><BookX size={16} /> 棄書</button>
+                                                    </>
+                                                ) : (
+                                                    <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-1.5 px-1 md:py-2.5 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl text-xs md:text-sm font-normal transition flex flex-col md:flex-row items-center justify-center gap-1 border border-stone-200 shadow-sm"><RotateCcw size={16} /> 重設</button>
+                                                )}
+                                            </div>
+
+                                            {/* 第二區塊 (釘選與編輯) */}
+                                            <div className="flex gap-1.5 flex-[2] md:flex-none md:gap-2">
+                                                <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-1.5 md:py-2.5 rounded-xl transition flex items-center justify-center border shadow-sm ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                                    {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                                                </button>
+                                                <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-1.5 md:py-2.5 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center" title="編輯">
+                                                    <Edit3 size={16} />
+                                                </button>
+                                            </div>
+
+                                            {/* 刪除按鈕 (手機: 同列 / 電腦: 最下方一格) */}
+                                            <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-1.5 md:py-2.5 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="刪除">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
