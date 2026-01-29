@@ -231,6 +231,7 @@
                 if (!key.trim()) return;
                 setStatus('checking');
                 try {
+                    // 修正測試使用的 API 路徑與模型
                     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key.trim()}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -341,7 +342,7 @@
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
                     const base64 = reader.result.split(',')[1];
-                    // 鎖定為 v1beta 路徑與 gemini-1.5-flash 模型名稱
+                    // 修正關鍵：使用 v1beta 路徑與精確的模型 ID 格式
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                     const prompt = `你是一個專業記帳助手。請辨識收據內容，翻譯成繁體中文並回傳純 JSON：{ "store": "店名", "currency": "幣別", "items": [ { "name": "品名", "amount": 數字, "category": "分類" } ] }。分類限選：${categories.join(',')}`;
                     
@@ -356,7 +357,7 @@
                         
                         const rawText = data.candidates[0].content.parts[0].text;
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                        if (!jsonMatch) throw new Error("無法解析 AI 回傳的資料格式");
+                        if (!jsonMatch) throw new Error(`AI 回傳格式異常：${rawText}`);
                         
                         const json = JSON.parse(jsonMatch[0]);
                         if(json.items) {
