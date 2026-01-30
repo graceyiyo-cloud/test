@@ -21,23 +21,30 @@
             box-shadow: 0 4px 10px -2px rgba(74, 63, 53, 0.08);
             border: 2px solid #d1c7b7;
         }
+        
+        /* 分類篩選列：調整行距更窄 */
         #filter-bar-container {
             width: 100%;
             overflow-x: auto;
             overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
-            padding: 8px 0;
+            padding: 4px 0; /* 從 8px 縮小至 4px，減少行距 */
             cursor: default;
         }
         #filter-bar-container::-webkit-scrollbar { height: 4px; }
         #filter-bar-container::-webkit-scrollbar-thumb { background: #d1c7b7; border-radius: 10px; }
         #filter-bar { display: flex; flex-wrap: nowrap; gap: 12px; padding: 0 4px; min-width: max-content; }
+        
+        /* 分類按鈕：微調內距讓視覺更緊湊 */
         .filter-chip {
             transition: all 0.2s; white-space: nowrap; flex-shrink: 0; font-size: 0.85rem; 
             background-color: #ffffff; border-width: 1.5px; border-style: solid;
-            cursor: pointer; user-select: none; padding: 8px 20px; border-radius: 9999px;
+            cursor: pointer; user-select: none; 
+            padding: 6px 18px; /* 垂直 Padding 從 8px 縮減至 6px */
+            border-radius: 9999px;
         }
         .filter-chip.active { color: white !important; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        
         .item-title { font-size: 1.05rem; font-weight: 800; color: #4a3f35; }
         .item-url { font-size: 0.75rem; color: #5c8a97; margin-top: 2px; word-break: break-all; white-space: normal; }
         .item-tag {
@@ -78,21 +85,21 @@
 
     <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
         
-        <div class="mb-6">
+        <div class="mb-4">
             <div class="text-center mb-1">
                 <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase flex items-center justify-center gap-2">
                     <i class="fa-solid fa-link text-[#8fb4a2] text-xl"></i>URL_MANAGER
                 </h1>
             </div>
 
-            <div class="border-b-2 border-[#d1c7b7] mb-4"></div>
+            <div class="border-b-2 border-[#d1c7b7] mb-3"></div>
 
-            <div class="flex justify-between items-center px-2">
+            <div class="flex justify-between items-center px-2 py-0.5">
                 <div class="flex items-center text-[#4a3f35] max-w-[65%]">
                     <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm flex-shrink-0"></i>
                     <span id="display-user-id" class="text-[11px] font-black break-all">---</span>
                 </div>
-                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-1 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
+                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-0.5 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
                     <span class="text-[10px]">切換帳號</span>
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
