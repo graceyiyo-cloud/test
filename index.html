@@ -2,654 +2,643 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>月結餐點費用統計</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的雲端書櫃</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#f2f0e9', 
+                        ink: '#373a36',   
+                        sub: '#6b705c',   
+                        wood: {
+                            100: '#e9e7da',
+                            200: '#dad7cd', 
+                            300: '#a3b18a', 
+                            400: '#588157', 
+                            500: '#3a5a40', 
+                            600: '#344e41',
+                        },
+                        sage: {
+                            50: '#f0f4ef',
+                            100: '#e0e9e1',
+                            200: '#c5d5c5',
+                            500: '#84a59d', 
+                            600: '#6b8a82',
+                            text: '#4a5d5a'
+                        },
+                        dried: {
+                            50: '#f7f2f2',
+                            100: '#ede0e0',
+                            200: '#d9bfbf',
+                            500: '#b5838d', 
+                            600: '#a0717a',
+                            text: '#6d4c51'
+                        },
+                        stone: {
+                            50: '#f5f5f4',
+                            100: '#e7e7e2',
+                            200: '#dcdcc6',
+                            400: '#a7a797',
+                            500: '#7f7f6f',
+                            600: '#5f5f54',
+                            text: '#4a4a40'
+                        },
+                        gold: { 
+                            400: '#d4a373', 
+                            500: '#bc8a5f',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* 莫蘭迪色系 (Morandi Colors) 定義 */
-        body { 
-            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif; 
-            background: #F2F0EB; 
-            color: #333; 
-            margin: 0; 
-            padding: 20px; 
-            letter-spacing: 0.05em; 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down {
+            animation: fadeIn 0.3s ease-out forwards;
         }
         
-        .container { 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-        
-        h1 { 
-            text-align: center; 
-            color: #455A64; 
-            font-weight: normal;
-            margin-bottom: 30px;
-        }
-        
-        .control-panel { 
-            display: flex; 
-            gap: 20px; 
-            background: #E8E6E1; 
-            padding: 20px; 
-            border-radius: 8px; 
-            margin-bottom: 25px; 
-            align-items: center; 
-            color: #444; 
-        }
-        
-        select, input[type="file"] {
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #CCC;
-            background: #FAFAFA;
-            color: #333; 
+        .animate-modal-in {
+            animation: modalIn 0.2s ease-out forwards;
         }
 
-        .main-content { display: grid; grid-template-columns: 1.2fr 2fr; gap: 25px; }
-        
-        .section { 
-            border: 1px solid #EBEBEB; 
-            border-radius: 8px; 
-            padding: 20px; 
-            min-height: 550px; 
-            background: #fff; 
-            display: flex; 
-            flex-direction: column;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-        }
-        
-        h3 { 
-            margin-top: 0; 
-            border-bottom: 2px solid #F0F0F0; 
-            padding-bottom: 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            color: #444; 
-            font-size: 1.1rem;
-            font-weight: 600; 
-        }
-        
-        .scroll-area { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            border: 1px solid #F5F5F5; 
-            border-radius: 4px;
-        }
-        
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #F0F0F0; }
-        
-        #summaryTable th:nth-child(2),
-        #summaryTable td:nth-child(2) {
-            text-align: right;
-        }
-        
-        th { 
-            background-color: #E0E5DF; 
-            color: #333; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10; 
-            font-weight: 700; 
+        html {
+            font-size: 90%;
+            background-color: #f2f0e9; 
         }
 
-        .excluded-header-row { 
-            background-color: #F7F7F7; 
-            color: #777; 
-            font-size: 13px; 
-            text-align: center; 
-            font-weight: normal; 
-            padding: 8px;
-        }
-        
-        .excluded-row { background-color: #FCFCFC; color: #AAA; }
-        
-        .name-cell { display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.2s; }
-        .name-cell:hover { color: #5E7D75; }
-        
-        .red-star { color: #C76C6C; font-weight: bold; } 
-        
-        .btn-group { display: flex; gap: 10px; }
-        
-        .btn { 
-            border: none; 
-            padding: 8px 15px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            color: white; 
-            font-size: 13px; 
-            display: none; 
-            transition: opacity 0.2s, background-color 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .btn:hover { opacity: 0.9; }
-        
-        #copyBtn { background-color: #7A918D; } 
-        #copyImgBtn { background-color: #6B7C8A; } 
-        
-        .non-monthly-box { 
-            margin-top: 15px; 
-            padding: 12px; 
-            background: #F4EBEB; 
-            border-left: 4px solid #D68C8C; 
-            font-size: 14px; 
-            color: #666; 
-            border-radius: 0 4px 4px 0;
-        }
-        
-        .clickable-date { 
-            color: #5D6D7E; 
-            text-decoration: underline; 
-            cursor: pointer; 
-            margin-right: 8px; 
-            font-weight: bold; 
+        @media (max-width: 768px) {
+            html {
+                font-size: 120%; 
+            }
+            input, select, textarea {
+                padding-top: 0.6rem;
+                padding-bottom: 0.6rem;
+            }
+            .mobile-edge-to-edge {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
         }
 
-        .detail-box { 
-            background: #FAFAFA; 
-            padding: 20px; 
-            border-radius: 6px; 
-            border: 1px solid #F0F0F0; 
-            flex-grow: 1; 
-            overflow-y: auto; 
+        input, textarea, select {
+            font-size: 1rem !important; 
         }
-        
-        .detail-row { 
-            padding: 10px 0; 
-            border-bottom: 1px solid #EEE; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 14px; 
-            color: #333; 
-        }
-        
-        .detail-content { flex: 1; padding-right: 15px; line-height: 1.5; }
-        
-        .price-input { 
-            width: 70px; 
-            text-align: right; 
-            border: 1px solid #DDD; 
-            border-radius: 4px; 
-            padding: 5px; 
-            font-size: 14px;
-            font-weight: bold; 
-            color: #B05B5B; 
-            background: #FFF;
-        }
-        .price-input:focus { outline: 2px solid #E0E5DF; border-color: #8FA39D; }
 
-        .price-text { display: none; font-weight: bold; color: #B05B5B; font-size: 14px; }
-
-        .capturing .price-input { display: none !important; }
-        .capturing .price-text { display: inline !important; }
-        .capturing .detail-box { 
-            overflow: visible !important; 
-            height: auto !important; 
-            border: none !important; 
-            background: white !important; 
-            padding: 5px !important;
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
-        .capturing .detail-row { border-bottom: 1px solid #E0E0E0; padding: 12px 0; }
-        .capturing #imgTitle { color: #333; } 
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .soft-shadow {
+            box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08);
+        }
     </style>
 </head>
-<body>
+<body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink pb-10">
+    <div id="root"></div>
 
-<div class="container">
-    <h1>月結餐點費用統計</h1>
-    <div class="control-panel">
-        <div>1. 上傳檔案：<input type="file" id="fileInput" accept=".txt"></div>
-        <div>2. 選擇月份：<select id="monthSelect"></select></div>
-        <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">手動清除所有緩存</button></div>
-    </div>
-    <div class="main-content">
-        <div class="section">
-            <h3>
-                <span>人員費用總計</span>
-                <span id="grandTotalDisplay" style="color: #5D4037;">0</span>
-            </h3>
-            <div class="scroll-area" id="summaryScrollArea">
-                <table id="summaryTable">
-                    <thead>
-                        <tr>
-                            <th style="width:70%">姓名</th>
-                            <th style="width:30%">金額</th>
-                        </tr>
-                    </thead>
-                    <tbody id="includedBody"></tbody>
-                    <tbody>
-                        <tr class="excluded-header-row">
-                            <td colspan="2">▼ 排除不計區域 (不列入總額)</td>
-                        </tr>
-                    </tbody>
-                    <tbody id="excludedBody" class="excluded-row"></tbody>
-                </table>
-            </div>
-            <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
-        </div>
-        <div class="section">
-            <h3>
-                <div>個人明細：<span id="selectedPersonName">-</span></div>
-                <div class="btn-group">
-                    <button id="copyBtn" class="btn">📋 複製文字</button>
-                    <button id="copyImgBtn" class="btn">🖼️ 複製圖片</button>
-                </div>
-            </h3>
-            <div id="captureArea" style="background: white; padding: 15px; border-radius: 6px;">
-                <h4 id="imgTitle" style="margin: 0 0 15px 0; display:none; border-bottom: 2px solid #8FA39D; padding-bottom: 8px; font-size: 18px; color: #333;"></h4>
-                <div id="personalDetail" class="detail-box"></div>
-            </div>
-        </div>
-    </div>
-</div>
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
+            Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, ChevronDown, ExternalLink, Pin, PinOff, ChevronUp
+        } from 'https://esm.sh/lucide-react@0.344.0';
+        
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-<script>
-    let rawFileText = "";
-    let forceIncludeDates = new Set();
-    let excludedUsers = new Set();
-    let personalStats = {};
-    let nonMonthlyDates = [];
-    let currentSelectedUser = null; 
-
-    // 初始化載入
-    window.onload = function() {
-        loadFromLocalStorage();
-    };
-
-    function saveToLocalStorage() {
-        const data = {
-            rawFileText: rawFileText,
-            forceIncludeDates: Array.from(forceIncludeDates),
-            excludedUsers: Array.from(excludedUsers),
-            lastSelectedMonth: document.getElementById('monthSelect').value
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
+            authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+            projectId: "my-reading-tracker-58f69",
+            storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+            messagingSenderId: "370802674969",
+            appId: "1:370802674969:web:efb1c045e0028925154988",
+            measurementId: "G-52EWLNG7ST"
         };
-        localStorage.setItem('lunchStatsData', JSON.stringify(data));
-    }
 
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem('lunchStatsData');
-        if (saved) {
-            const data = JSON.parse(saved);
-            rawFileText = data.rawFileText || "";
-            forceIncludeDates = new Set(data.forceIncludeDates || []);
-            excludedUsers = new Set(data.excludedUsers || []);
-            
-            if (rawFileText) {
-                updateMonthDropdown(data.lastSelectedMonth);
-                render();
-            }
-        }
-    }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "my-reading-app"; 
+        const ESTIMATE_WORDS_PER_PAGE = 350;
 
-    function clearAllData(silent = false) {
-        if(silent || confirm("確定要清除所有紀錄並重設網頁嗎？")) {
-            localStorage.removeItem('lunchStatsData');
-            rawFileText = "";
-            forceIncludeDates = new Set();
-            excludedUsers = new Set();
-            personalStats = {};
-            currentSelectedUser = null;
-            document.getElementById('monthSelect').innerHTML = '';
-            document.getElementById('selectedPersonName').textContent = '-';
-            document.getElementById('personalDetail').innerHTML = '';
-            document.getElementById('copyBtn').style.display = 'none';
-            document.getElementById('copyImgBtn').style.display = 'none';
-            if(!silent) location.reload();
-        }
-    }
+        const DEFAULT_CATEGORIES = [
+            "玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", 
+            "科幻", "懸疑", "推理", "驚悚", "恐怖", "冒險", "耽美 (BL)", "百合 (GL)", 
+            "穿越", "重生", "系統", "快穿", "無限流", "末世", "種田", "宅鬥", "宮鬥", 
+            "娛樂圈", "電競", "校園", "職場", "先婚後愛", "破鏡重圓", "青梅竹馬", 
+            "異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
+        ];
 
-    function updateMonthDropdown(preSelected) {
-        const matches = rawFileText.match(/\d{4}\.\d{2}\.\d{2}/g);
-        if(matches) {
-            const months = [...new Set(matches.map(d => d.substring(0, 7)))].sort().reverse();
-            const select = document.getElementById('monthSelect');
-            select.innerHTML = months.map(m => `<option value="${m}">${m}月</option>`).join('');
-            if (preSelected && months.includes(preSelected)) {
-                select.value = preSelected;
-            }
-        }
-    }
-
-    function parseLunchFile(text, targetMonth) {
-        const lines = text.split(/\r?\n/);
-        const result = {};
-        const dateRegex = /^(\d{4}\.\d{2}\.\d{2})/;
-        let datePositions = [];
-        nonMonthlyDates = [];
-        
-        lines.forEach((line, idx) => {
-            const m = line.match(dateRegex);
-            if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') });
-        });
-
-        datePositions.forEach((pos, i) => {
-            if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
-            const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
-            const dayLines = lines.slice(pos.idx, nextIdx);
-            if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
-                let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
-                if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
-            } else {
-                nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
-            }
-        });
-        return result;
-    }
-
-    function extractDayData(lines) {
-        const dayData = {};
-        let mode = "meal";
-        lines.forEach(line => {
-            let t = line.trim();
-            if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
-            if (t === "午餐") { mode = "meal"; return; }
-            if (!t || t.includes("$$月結") || t.includes("結單")) return;
-            const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
-            if (nameMatch) {
-                let name = nameMatch[1].trim().replace(/^\$/, ''); 
-                if (name === "小計") return;
-
-                let content = nameMatch[2].trim();
-                if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
-                let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
-                if (isNaN(price)) { 
-                    dayData[name].hasError = true; 
-                    dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
-                } else { 
-                    dayData[name].total += price; 
-                    dayData[name].items.push({ text: content, price: price }); 
-                }
-            }
-        });
-        return dayData;
-    }
-
-    document.getElementById('fileInput').addEventListener('change', e => {
-        if (!e.target.files[0]) return;
-        
-        // 重新上傳時，直接清空所有緩存
-        clearAllData(true); 
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            rawFileText = reader.result;
-            updateMonthDropdown();
-            render();
-            saveToLocalStorage();
-        };
-        reader.readAsText(e.target.files[0]);
-    });
-
-    document.getElementById('monthSelect').addEventListener('change', () => {
-        render();
-        saveToLocalStorage();
-    });
-
-    function render() {
-        const monthSelect = document.getElementById('monthSelect');
-        const month = monthSelect.value;
-        if(!month) {
-            document.getElementById('includedBody').innerHTML = '';
-            document.getElementById('excludedBody').innerHTML = '';
-            document.getElementById('grandTotalDisplay').textContent = '0';
-            return;
-        }
-        
-        const data = parseLunchFile(rawFileText, month);
-        personalStats = {};
-        for (let date in data) {
-            for (let name in data[date]) {
-                if (!personalStats[name]) personalStats[name] = { total: 0, details: [], error: false };
-                personalStats[name].total += data[date][name].total;
-                if (data[date][name].hasError) personalStats[name].error = true;
-                
-                const items = data[date][name].items;
-                if (items.length > 0) {
-                    const combinedText = items.map(item => item.text).join('、');
-                    const dayTotal = data[date][name].total;
+        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [filterText, setFilterText] = useState('');
+            const filtered = useMemo(() => {
+                const term = filterText.toLowerCase();
+                return allCategories.filter(c => c.toLowerCase().includes(term));
+            }, [allCategories, filterText]);
+            const handleSelect = (cat) => { onToggle(cat); setFilterText(''); };
+            const handleKeyDown = async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const trimmedInput = filterText.trim();
+                    if (!trimmedInput) return;
                     
-                    personalStats[name].details.push({ 
-                        date: date, 
-                        text: combinedText, 
-                        price: dayTotal 
-                    });
-                }
-            }
-        }
-        buildTable();
-        renderNonMonthly();
-        if (currentSelectedUser && personalStats[currentSelectedUser]) {
-            updateDetail(currentSelectedUser);
-        } else {
-            document.getElementById('selectedPersonName').textContent = '-';
-            document.getElementById('personalDetail').innerHTML = '';
-            document.getElementById('copyBtn').style.display = 'none';
-            document.getElementById('copyImgBtn').style.display = 'none';
-        }
-    }
-
-    function buildTable() {
-        const scrollArea = document.getElementById('summaryScrollArea');
-        const currentScroll = scrollArea.scrollTop;
-        const incBody = document.getElementById('includedBody');
-        const excBody = document.getElementById('excludedBody');
-
-        incBody.innerHTML = ''; excBody.innerHTML = '';
-
-        let grandTotal = 0;
-        Object.keys(personalStats).sort().forEach(name => {
-            const isExc = excludedUsers.has(name);
-            const stats = personalStats[name];
-            if (!isExc) grandTotal += stats.total;
-
-            const tr = document.createElement('tr');
-            if (isExc) tr.className = 'excluded-row';
-            tr.innerHTML = `
-                <td>
-                    <div class="name-cell">
-                        <input type="checkbox" ${isExc ? '' : 'checked'} onchange="toggleUser('${name}')">
-                        <span onclick="selectUser('${name}')">${name}${stats.error ? '<span class="red-star">*</span>' : ''}</span>
-                    </div>
-                </td>
-                <td onclick="selectUser('${name}')" id="sum-${name}">${stats.total.toLocaleString()}</td>
-            `;
-            if (isExc) excBody.appendChild(tr); else incBody.appendChild(tr);
-        });
-
-        document.getElementById('grandTotalDisplay').textContent = grandTotal.toLocaleString();
-        requestAnimationFrame(() => { scrollArea.scrollTop = currentScroll; });
-    }
-
-    function toggleUser(name) {
-        if (excludedUsers.has(name)) excludedUsers.delete(name);
-        else excludedUsers.add(name);
-        buildTable();
-        saveToLocalStorage();
-    }
-
-    function selectUser(name) {
-        currentSelectedUser = name; 
-        updateDetail(name);
-    }
-
-    function handlePriceChange(name, detailIndex, newPrice, inputEl) {
-        const val = parseInt(newPrice) || 0;
-        personalStats[name].details[detailIndex].price = val;
-        
-        inputEl.nextElementSibling.textContent = val.toLocaleString();
-
-        const newTotal = personalStats[name].details.reduce((sum, d) => sum + d.price, 0);
-        personalStats[name].total = newTotal;
-        document.getElementById(`detail-total-${name}`).textContent = newTotal.toLocaleString();
-        document.getElementById(`sum-${name}`).textContent = newTotal.toLocaleString();
-        
-        let grand = 0;
-        Object.keys(personalStats).forEach(n => { if (!excludedUsers.has(n)) grand += personalStats[n].total; });
-        document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
-    }
-
-    function updateDetail(name) {
-        const stats = personalStats[name];
-        if(!stats) return;
-        document.getElementById('selectedPersonName').innerHTML = name + (stats.error ? '<span class="red-star">*</span>' : '');
-        document.getElementById('imgTitle').innerHTML = `【${name}${stats.error ? '<span style="color:#C76C6C">*</span>' : ''} 餐費明細】`;
-        document.getElementById('copyBtn').style.display = document.getElementById('copyImgBtn').style.display = 'inline-block';
-        
-        const box = document.getElementById('personalDetail');
-        stats.details.sort((a,b)=>a.date.localeCompare(b.date));
-        
-        box.innerHTML = stats.details.map((d, index) => `
-            <div class="detail-row">
-                <span class="detail-content">${d.date.substring(5).replace('-','/')}：${d.text}</span>
-                <input type="number" class="price-input" value="${d.price}" oninput="handlePriceChange('${name}', ${index}, this.value, this)">
-                <span class="price-text">${d.price.toLocaleString()}</span>
-            </div>
-        `).join('') + `<hr style="border:0; border-top:1px dashed #CCC;"><div style="text-align:right; font-weight:bold; padding-top:10px; font-size:16px; color:#555;">總計：<span id="detail-total-${name}" style="color:#B05B5B">${stats.total.toLocaleString()}</span> 元</div>`;
-    }
-
-    function renderNonMonthly() {
-        const el = document.getElementById('nonMonthlyList');
-        if (nonMonthlyDates.length > 0) {
-            el.style.display = 'block';
-            el.innerHTML = `<strong>非月結日期（點擊可加入）：</strong><br>`;
-            nonMonthlyDates.forEach(date => {
-                const span = document.createElement('span');
-                span.className = 'clickable-date';
-                span.textContent = date;
-                span.onclick = () => { 
-                    if (confirm(`是否將日期 ${date} 加入月結累計中？`)) { 
-                        forceIncludeDates.add(date); 
-                        render(); 
-                        saveToLocalStorage();
-                    } 
-                };
-                el.appendChild(span);
-            });
-        } else el.style.display = 'none';
-    }
-
-    document.getElementById('copyBtn').addEventListener('click', () => {
-        const name = currentSelectedUser;
-        if (!name) return;
-        
-        const monthVal = document.getElementById('monthSelect').value; 
-        let monthStr = "XX";
-        if (monthVal && monthVal.includes('.')) {
-            monthStr = parseInt(monthVal.split('.')[1], 10);
-        }
-
-        let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(txt)
-                .then(() => {
-                    showCopyFeedback('copyBtn'); 
-                })
-                .catch(err => {
-                    console.warn("Clipboard API failed, using fallback", err);
-                    if(fallbackCopyText(txt)) {
-                        showCopyFeedback('copyBtn'); 
-                    }
-                });
-        } else {
-            if(fallbackCopyText(txt)) {
-                showCopyFeedback('copyBtn'); 
-            }
-        }
-    });
-
-    function showCopyFeedback(btnId, msg = "✔️ 已複製！") {
-        const btn = document.getElementById(btnId);
-        const originalText = btn.innerHTML; 
-        
-        btn.innerHTML = msg;
-        btn.style.backgroundColor = "#5E7D75"; 
-        btn.style.cursor = "default";
-        
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.backgroundColor = ""; 
-            btn.style.cursor = "pointer";
-        }, 2000);
-    }
-
-    function fallbackCopyText(text) {
-        var textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed"; 
-        textArea.style.left = "-9999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        let success = false;
-        try {
-            success = document.execCommand('copy');
-            if(!success) {
-                alert('複製失敗，請手動複製。');
-            }
-        } catch (err) {
-            alert('複製失敗，請手動複製。');
-        }
-        document.body.removeChild(textArea);
-        return success;
-    }
-
-    document.getElementById('copyImgBtn').addEventListener('click', () => {
-        const area = document.getElementById('captureArea');
-        const imgTitle = document.getElementById('imgTitle');
-        const personName = currentSelectedUser;
-        
-        imgTitle.style.display = 'block';
-        document.body.classList.add('capturing');
-        
-        setTimeout(() => {
-            html2canvas(area, { 
-                scale: 2, 
-                backgroundColor: "#ffffff" 
-            }).then(canvas => {
-                canvas.toBlob(blob => {
-                    if (navigator.clipboard && navigator.clipboard.write) {
-                        const item = new ClipboardItem({ "image/png": blob });
-                        navigator.clipboard.write([item]).then(() => {
-                            showCopyFeedback('copyImgBtn', '✔️ 已複製！');
-                            resetUI();
-                        }).catch(err => {
-                            console.warn("Image copy failed, downloading instead", err);
-                            downloadImage(canvas, personName);
-                            showCopyFeedback('copyImgBtn', '✔️ 已下載');
-                            resetUI();
-                        });
+                    // 修改處：支援逗號或空格作為分隔符
+                    const tagsToAdd = trimmedInput.split(/[，,\s]+/).map(t => t.trim()).filter(t => t !== "");
+                    
+                    if (tagsToAdd.length > 1) {
+                        for (const tag of tagsToAdd) {
+                            if (!selectedCategories.includes(tag)) {
+                                if (allCategories.includes(tag)) { onToggle(tag); } else { await onAddNew(tag); }
+                            }
+                        }
+                        setFilterText('');
                     } else {
-                        downloadImage(canvas, personName);
-                        showCopyFeedback('copyImgBtn', '✔️ 已下載');
-                        resetUI();
+                        const singleTag = tagsToAdd[0];
+                        if (filtered.length > 0) {
+                            const firstMatch = filtered.find(c => !selectedCategories.includes(c));
+                            if (firstMatch) { handleSelect(firstMatch); return; }
+                        }
+                        if (!allCategories.includes(singleTag)) { await onAddNew(singleTag); setFilterText(''); }
                     }
-                });
-            }).catch(err => {
-                console.error("html2canvas failed", err);
-                resetUI();
+                }
+            };
+            return (
+                <div className="w-full">
+                    <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
+                        {selectedCategories.map(cat => (
+                            <span key={cat} className="bg-wood-400 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                                {cat}
+                                <X size={12} className="cursor-pointer hover:text-wood-200" onClick={(e) => { e.stopPropagation(); onToggle(cat); }}/>
+                            </span>
+                        ))}
+                        <button type="button" onClick={() => setIsOpen(!isOpen)} 
+                            className={`text-xs flex items-center gap-1 px-2 py-1 rounded-full transition-colors ${isOpen ? 'bg-wood-200 text-wood-600' : 'text-wood-500 hover:bg-wood-100'}`}>
+                            <Plus size={12}/> {isOpen ? '收起' : '選擇分類'}
+                        </button>
+                    </div>
+                    {isOpen && (
+                        <div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
+                            <input type="text" placeholder="搜尋或輸入「A B C」批次建立 (支援空格/逗號)" 
+                                value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
+                                className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
+                            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
+                                {filterText && !allCategories.includes(filterText) && !/[，,\s]/.test(filterText) && (
+                                    <button type="button" onClick={() => { onAddNew(filterText); setFilterText(''); }}
+                                        className="bg-wood-500 text-white text-xs px-3 py-1.5 rounded-full hover:bg-wood-600 transition shadow-sm flex items-center gap-1">
+                                        <Plus size={12}/> 建立「{filterText}」
+                                    </button>
+                                )}
+                                {filtered.map(cat => {
+                                    const isSelected = selectedCategories.includes(cat);
+                                    if (isSelected) return null;
+                                    return (
+                                        <div key={cat} className="group relative">
+                                            <button type="button" onClick={() => handleSelect(cat)}
+                                                className="bg-stone-100 text-stone-600 border border-stone-200 text-xs px-3 py-1.5 rounded-full hover:bg-stone-200 hover:border-stone-400 transition">
+                                                {cat}
+                                            </button>
+                                            <button type="button" onClick={(e) => onDelete(cat, e)}
+                                                className="absolute -top-1 -right-1 bg-white text-stone-300 hover:text-dried-500 rounded-full p-0.5 shadow-sm border border-stone-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <X size={10} strokeWidth={3} />
+                                            </button>
+                                        </div>
+                                    )
+                                })}
+                                {filtered.length === 0 && !filterText && <span className="text-xs text-stone-400 py-1">無符合分類</span>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        function ReadingTracker() {
+            const [user, setUser] = useState(null);
+            const [books, setBooks] = useState([]);
+            const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+            const [loading, setLoading] = useState(true);
+            const [customId, setCustomId] = useState('');
+            const [isLoginMode, setIsLoginMode] = useState(true);
+            const [isAuthChecking, setIsAuthChecking] = useState(true);
+            const [toast, setToast] = useState(null); 
+            const [searchTerm, setSearchTerm] = useState('');
+            const [statusFilter, setStatusFilter] = useState('all'); 
+            const [ratingFilter, setRatingFilter] = useState(0); 
+            const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
+            const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+            const [newBook, setNewBook] = useState({
+                title: '', author: '', wordCount: '', isWordCountManual: false,
+                addDate: new Date().toISOString().split('T')[0],
+                reviewUrl: '', synopsis: '', category: [], isPinned: false
             });
-        }, 150);
-        
-        function resetUI() {
-            imgTitle.style.display = 'none';
-            document.body.classList.remove('capturing');
+            const [isSearching, setIsSearching] = useState(false);
+            const [activeBookId, setActiveBookId] = useState(null);
+            const [modalType, setModalType] = useState(null); 
+            const [modalData, setModalData] = useState({});
+            const [expandedBooks, setExpandedBooks] = useState({});
+
+            useEffect(() => {
+                signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
+                const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                        const savedId = localStorage.getItem('reading_tracker_custom_id');
+                        if (savedId) { setCustomId(savedId); setIsLoginMode(false); } else { setIsLoginMode(true); }
+                    }
+                    setIsAuthChecking(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user || !customId) { setLoading(false); return; }
+                setLoading(true);
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+                    const fetchedBooks = [];
+                    let fetchedCategories = [...DEFAULT_CATEGORIES];
+                    snapshot.docs.forEach(doc => {
+                        if (doc.id === 'settings') {
+                            if (doc.data().categories && Array.isArray(doc.data().categories)) { fetchedCategories = doc.data().categories; }
+                        } else { fetchedBooks.push({ id: doc.id, ...doc.data() }); }
+                    });
+                    fetchedBooks.sort((a, b) => {
+                        if (a.isPinned && !b.isPinned) return -1;
+                        if (!a.isPinned && b.isPinned) return 1;
+                        const isReadingA = a.status === 'reading';
+                        const isReadingB = b.status === 'reading';
+                        if (isReadingA && !isReadingB) return -1;
+                        if (!isReadingA && isReadingB) return 1;
+                        return new Date(b.addDate) - new Date(a.addDate);
+                    });
+                    setBooks(fetchedBooks);
+                    setCategories(fetchedCategories);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error", error); setLoading(false); showToast("資料讀取失敗", "error");
+                });
+                return () => unsubscribe();
+            }, [user, customId]);
+
+            const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
+                localStorage.setItem('reading_tracker_custom_id', customId); setIsLoginMode(false);
+            };
+            const handleLogout = () => { setModalType('logout'); };
+            const searchBookInfo = async () => {
+                if (!newBook.title) return;
+                setIsSearching(true);
+                try {
+                    const q = `intitle:${newBook.title}${newBook.author ? `+inauthor:${newBook.author}` : ''}`;
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+                    const data = await res.json();
+                    if (data.items && data.items.length > 0) {
+                        const info = data.items[0].volumeInfo;
+                        setNewBook(prev => ({
+                            ...prev,
+                            author: prev.author || info.authors?.[0] || '',
+                            wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE,
+                            isWordCountManual: false,
+                            synopsis: info.description || ''
+                        }));
+                        showToast("找到書籍資料！");
+                    } else { showToast("找不到書籍資料", "error"); }
+                } catch (error) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
+            };
+            const addBook = async (e) => {
+                e.preventDefault();
+                if (!newBook.title || !customId) return;
+                const isDuplicate = books.some(b => b.title.trim() === newBook.title.trim() && (b.author || '').trim() === (newBook.author || '').trim());
+                if (isDuplicate) { setModalType('confirmAddDuplicate'); return; }
+                executeAddBook();
+            };
+            const executeAddBook = async () => {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), { ...newBook, status: 'reading', createdAt: serverTimestamp() });
+                    setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+                    setIsAddFormOpen(false); 
+                    showToast("新增成功！");
+                } catch (error) { showToast("新增失敗", "error"); }
+            };
+            const updateCategoriesInDb = async (newCats) => {
+                try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), { categories: newCats }, { merge: true }); } catch (err) { showToast("更新分類失敗", "error"); }
+            };
+            const addNewCategory = async (catName) => {
+                if (!catName.trim()) return;
+                const name = catName.trim();
+                if (categories.includes(name)) return name; 
+                const updatedCats = [...categories, name];
+                await updateCategoriesInDb(updatedCats);
+                showToast(`已新增分類「${name}」`); return name; 
+            };
+            const handleDeleteCategory = async (catToDelete, e) => { e.stopPropagation(); setModalData({ category: catToDelete }); setModalType('deleteCategory'); };
+            const toggleNewBookCategory = (cat) => { setNewBook(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
+            const toggleEditBookCategory = (cat) => { setModalData(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
+            const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
+                 const newName = await addNewCategory(name);
+                 if(newName && targetStateSetter) {
+                    targetStateSetter(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (!currentCats.includes(newName)) { return { ...prev, category: [...currentCats, newName] }; } return prev; });
+                 }
+            };
+            const togglePin = async (book, e) => {
+                e.stopPropagation();
+                try {
+                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id);
+                    const newPinStatus = !book.isPinned; await updateDoc(bookRef, { isPinned: newPinStatus });
+                    showToast(newPinStatus ? "已釘選至最上方" : "已取消釘選");
+                } catch (error) { showToast("操作失敗", "error"); }
+            };
+            const handleModalAction = async () => {
+                if (!modalType) return;
+                try {
+                    if (modalType === 'logout') { localStorage.removeItem('reading_tracker_custom_id'); setCustomId(''); setBooks([]); setIsLoginMode(true); closeModal(); return; }
+                    if (modalType === 'deleteCategory') { const catToDelete = modalData.category; const updatedCats = categories.filter(c => c !== catToDelete); await updateCategoriesInDb(updatedCats); showToast(`已刪除分類「${catToDelete}」`); closeModal(); return; }
+                    if (modalType === 'confirmAddDuplicate') { executeAddBook(); closeModal(); return; }
+                    const targetId = activeBookId || modalData.id;
+                    if (!targetId && modalType !== 'logout' && modalType !== 'deleteCategory') return;
+                    const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, targetId);
+                    if (modalType === 'delete') { await deleteDoc(bookRef); showToast("已刪除書籍"); } 
+                    else if (modalType === 'edit') { await updateDoc(bookRef, { title: modalData.title || '', author: modalData.author || '', category: modalData.category || [], wordCount: modalData.wordCount || '', addDate: modalData.addDate || '', reviewUrl: modalData.reviewUrl || '', synopsis: modalData.synopsis || '' }); showToast("書籍資料已更新"); } 
+                    else {
+                        const updates = {};
+                        if (modalType === 'finish') { updates.status = 'finished'; updates.finishDate = modalData.date; updates.rating = modalData.rating; updates.review = modalData.review || ''; updates.isPinned = false; } 
+                        else if (modalType === 'drop') { updates.status = 'dropped'; updates.dropChapter = modalData.chapter; updates.dropDate = modalData.date; updates.isPinned = false; } 
+                        else if (modalType === 'reset') { updates.status = 'reading'; updates.finishDate = null; updates.dropChapter = null; updates.dropDate = null; updates.rating = null; updates.review = null; }
+                        await updateDoc(bookRef, updates); showToast("狀態已更新");
+                    }
+                    closeModal();
+                } catch (error) { showToast("操作失敗，請稍後再試", "error"); }
+            };
+            const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
+            const openModal = (book, type, e) => {
+                if (e) e.stopPropagation();
+                setActiveBookId(book.id); setModalType(type);
+                if (type === 'edit') { setModalData({ ...book }); } 
+                else { setModalData({ date: new Date().toISOString().split('T')[0], chapter: type === 'drop' ? '' : undefined, rating: type === 'finish' ? 0 : undefined, review: type === 'finish' ? (book.review || '') : undefined }); }
+            };
+            const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
+            const activeBook = useMemo(() => books.find(b => b.id === activeBookId), [books, activeBookId]);
+            const filteredBooks = useMemo(() => {
+                let list = books;
+                if (statusFilter !== 'all') list = list.filter(b => b.status === statusFilter);
+                if (ratingFilter > 0) list = list.filter(b => (b.rating || 0) >= ratingFilter);
+                if (searchTerm.trim()) {
+                    const term = searchTerm.toLowerCase();
+                    list = list.filter(b => (b.title?.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term) || (b.category && b.category.some(c => c.toLowerCase().includes(term)))));
+                }
+                return list;
+            }, [books, searchTerm, statusFilter, ratingFilter]);
+            const stats = useMemo(() => {
+                const yearStats = {}; let totalFinished = 0, totalDropped = 0, totalReading = 0; const activeYears = new Set();
+                books.forEach(b => {
+                    let y = null;
+                    if (b.status === 'reading') totalReading++;
+                    else if (b.status === 'finished' && b.finishDate) { y = new Date(b.finishDate).getFullYear(); totalFinished++; } 
+                    else if (b.status === 'dropped' && b.dropDate) { y = new Date(b.dropDate).getFullYear(); totalDropped++; }
+                    if (y) { activeYears.add(y); if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 }; if (b.status === 'finished') yearStats[y].finished++; if (b.status === 'dropped') yearStats[y].dropped++; }
+                });
+                return { years: Array.from(activeYears).sort((a, b) => b - a), data: yearStats, total: { finished: totalFinished, dropped: totalDropped, reading: totalReading } };
+            }, [books]);
+            const StarRating = ({ rating, setRating, interactive = false }) => (
+                <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((index) => {
+                        const filled = rating >= index; const half = rating >= index - 0.5 && !filled;
+                        return (
+                            <div key={index} className={`relative ${interactive ? 'cursor-pointer transition-transform active:scale-90' : ''}`}
+                                onClick={(e) => { if (interactive) { const rect = e.currentTarget.getBoundingClientRect(); setRating((e.clientX - rect.left) < rect.width / 2 ? index - 0.5 : index); } }}>
+                                <Star size={interactive ? 32 : 16} className="text-stone-200"/>
+                                <div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
+                                    <Star size={interactive ? 32 : 16} className="fill-gold-400 text-gold-400"/>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+            const handleWebSearch = (book, e) => { e.stopPropagation(); const query = encodeURIComponent(`${book.title} ${book.author || ''}`); window.open(`https://www.google.com/search?q=${query}`, '_blank'); };
+            if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-paper"><RefreshCw className="animate-spin text-wood-400" /></div>;
+            if (isLoginMode) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-paper relative">
+                        {toast && <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-400'}`}>{toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>} {toast.message}</div>}
+                        <div className="bg-white/60 p-8 rounded-3xl shadow-lg border border-stone-200 w-full max-w-md backdrop-blur-sm">
+                            <div className="flex justify-center mb-6 text-wood-400"><BookOpen size={56} strokeWidth={1.5} /></div>
+                            <h1 className="text-3xl font-bold text-center mb-3 text-ink tracking-widest">雲端書櫃</h1>
+                            <p className="text-sub text-center mb-8 text-sm">溫和配色，舒適紀錄你的閱讀時光。</p>
+                            <form onSubmit={handleLogin} className="space-y-5">
+                                <input value={customId} onChange={e=>setCustomId(e.target.value)} placeholder="例如: alex2026" className="w-full p-3 bg-white/50 border-b-2 border-stone-200 focus:border-wood-300 outline-none text-center text-lg placeholder-stone-300 rounded-t-lg" />
+                                <button type="submit" className="w-full bg-wood-400 text-white py-3 rounded-xl font-bold flex justify-center gap-2 hover:bg-wood-500 transition shadow-md tracking-widest"><LogIn size={20} strokeWidth={1.5}/> 開啟</button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-paper relative">
+                    {toast && <div className={`fixed top-20 md:top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-400'}`}>{toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>} {toast.message}</div>}
+                    <header className="bg-paper/80 backdrop-blur sticky top-0 z-20 border-b border-stone-200">
+                        <div className="max-w-3xl mx-auto px-4 py-4 md:px-6 md:py-5 flex justify-between items-center">
+                            <div className="flex items-center gap-3 text-ink font-bold text-xl md:text-2xl tracking-widest"><BookOpen className="text-wood-400" strokeWidth={1.5} /><span>閱讀手帳</span></div>
+                            <div className="flex items-center gap-3 md:gap-4 flex-1 justify-end min-w-0"><div className="text-xs text-sub bg-stone-100 px-3 py-1 rounded-full truncate max-w-[120px]">ID: {customId}</div><button onClick={handleLogout} className="text-stone-400 hover:text-ink transition"><LogOut size={20} strokeWidth={1.5}/></button></div>
+                        </div>
+                    </header>
+                    <main className="max-w-3xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 mobile-edge-to-edge">
+                        <section className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                <div className="bg-white/50 p-3 md:p-4 rounded-2xl border border-stone-200 flex flex-col justify-between relative overflow-hidden soft-shadow">
+                                    <div className="absolute right-0 top-0 p-2 opacity-5 text-wood-500"><Hourglass size={32}/></div>
+                                    <div className="text-xs md:text-sm text-sub font-medium mb-0.5">待讀</div>
+                                    <div className="flex flex-col">
+                                        <div className="text-2xl md:text-3xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
+                                            {stats.total.reading} <span className="text-[10px] md:text-xs font-normal text-stone-400">本</span>
+                                        </div>
+                                        <div className="text-[9px] md:text-[10px] opacity-0 h-[12px] md:h-[15px] select-none">spacer</div>
+                                    </div>
+                                </div>
+                                <div className="bg-sage-50 p-3 md:p-4 rounded-2xl border border-sage-100 flex flex-col justify-between relative overflow-hidden soft-shadow">
+                                    <div className="absolute right-0 top-0 p-2 opacity-10 text-wood-500"><Trophy size={32}/></div>
+                                    <div className="text-xs md:text-sm text-wood-400 font-medium mb-0.5">生涯累積完食</div>
+                                    <div className="flex flex-col">
+                                        <div className="text-2xl md:text-3xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
+                                            {stats.total.finished} <span className="text-[10px] md:text-xs font-normal text-sub">本</span>
+                                        </div>
+                                        <div className="text-[9px] md:text-[10px] text-dried-500 text-right h-[12px] md:h-[15px]">
+                                            {stats.total.dropped > 0 ? `棄書 ${stats.total.dropped}` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {stats.years.length > 0 && (
+                                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
+                                    {stats.years.map(y => (
+                                        <div key={y} className="bg-white/40 p-3 rounded-xl border border-stone-100 flex flex-col items-center min-w-[120px] md:min-w-[140px] shrink-0 soft-shadow">
+                                            <span className="text-xs font-bold text-wood-400 mb-2">{y}</span>
+                                            <div className="flex gap-4 w-full justify-center items-center"><div className="text-center"><div className="text-sage-500 font-medium text-lg">{stats.data[y].finished}</div><div className="text-[9px] text-sub">完食</div></div><div className="h-4 w-[1px] bg-stone-200"></div><div className="text-center"><div className="text-dried-500 font-medium text-lg">{stats.data[y].dropped}</div><div className="text-[9px] text-sub">棄書</div></div></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+
+                        <section className="bg-white/80 rounded-2xl md:rounded-3xl border border-stone-200 p-0 overflow-hidden soft-shadow transition-all duration-300">
+                            <div 
+                                onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+                                className="p-4 md:p-5 cursor-pointer flex items-center justify-between hover:bg-stone-50/50 transition-colors"
+                            >
+                                <h2 className="text-[0.825rem] font-bold flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3 uppercase tracking-wider">
+                                    <PenTool className="text-wood-400 w-3.5 h-3.5" /> 紀錄新書
+                                </h2>
+                                <div className="flex items-center gap-2 text-sub">
+                                    {!isAddFormOpen && <span className="text-[10px] font-normal opacity-60">點擊展開</span>}
+                                    {isAddFormOpen ? <ChevronUp size={16} className="text-stone-400" /> : <Plus size={16} className="text-wood-400" />}
+                                </div>
+                            </div>
+
+                            {isAddFormOpen && (
+                                <div className="p-5 md:p-8 pt-0 md:pt-0 animate-fade-in">
+                                    <form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 border-t border-stone-100 pt-5 md:pt-6">
+                                        <div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" required /></div>
+                                        <div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+                                        <div className="md:col-span-3 flex items-end md:items-center"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-10 md:h-9 text-wood-500 bg-stone-100 hover:bg-stone-200 rounded-lg transition flex items-center justify-center gap-1 text-xs md:text-sm font-medium disabled:opacity-50">{isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-3.5 h-3.5" />} 搜尋</button></div>
+                                        <div className="md:col-span-12 relative"><CategoryPicker selectedCategories={newBook.category} onToggle={toggleNewBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)} onDelete={handleDeleteCategory} /></div>
+                                        <div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-0 top-2 text-[10px] text-stone-400 bg-stone-50 px-1 rounded">估算</span>}</div></div>
+                                        <div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub focus:border-wood-300 outline-none" /></div>
+                                        <div className="md:col-span-4"><input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+                                        <div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50/50 rounded-xl border border-stone-200 focus:border-stone-300 outline-none h-24 placeholder-stone-300 resize-none text-base" /></div>
+                                        <div className="md:col-span-12 flex justify-end gap-3 items-center">
+                                            <button type="button" onClick={() => setIsAddFormOpen(false)} className="px-4 py-2 rounded-xl text-sub hover:bg-stone-100 transition text-xs md:text-sm">取消</button>
+                                            <button type="submit" className="w-fit bg-wood-400 text-white px-5 py-2 rounded-xl font-medium hover:bg-wood-500 transition shadow-md flex items-center justify-center gap-2 text-xs md:text-sm"><Plus size={16} /> 加入書櫃</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </section>
+
+                        <section className="space-y-4">
+                            <div className="flex flex-col gap-3 mb-2 px-2">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2"><h2 className="text-lg md:text-xl font-bold text-ink whitespace-nowrap">書單列表</h2>{loading && <RefreshCw className="animate-spin text-stone-400 w-4 h-4" />}</div>
+                                    <div className="relative"><button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border soft-shadow ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-500' : 'bg-white text-stone-500 border-stone-200 hover:border-wood-200'}`}><Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分篩選' : `${ratingFilter} 星以上`}<ChevronDown size={14} className={`transition-transform ${isRatingMenuOpen ? 'rotate-180' : ''}`} /></button>
+                                        {isRatingMenuOpen && (<><div className="fixed inset-0 z-30" onClick={() => setIsRatingMenuOpen(false)}></div><div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in-down">{[{ val: 0, label: '全部評分' }, { val: 4.5, label: '4.5 星以上' }, { val: 4, label: '4 星以上' }, { val: 3, label: '3 星以上' }].map(opt => (<button key={opt.val} onClick={() => { setRatingFilter(opt.val); setIsRatingMenuOpen(false); }} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-stone-50 transition-colors ${ratingFilter === opt.val ? 'text-gold-500 font-bold bg-gold-50/30' : 'text-sub'}`}>{opt.label}</button>))}</div></>)}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col md:flex-row md:items-center gap-3">
+                                    <div className="flex flex-wrap gap-1 md:gap-2">{[{ id: 'all', label: '全部' }, { id: 'reading', label: '待讀' }, { id: 'finished', label: '已完食' }, { id: 'dropped', label: '棄書' }].map(btn => (<button key={btn.id} onClick={() => setStatusFilter(btn.id)} className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${statusFilter === btn.id ? 'bg-wood-400 text-white border-wood-500 shadow-sm' : 'bg-white/60 text-stone-500 border-stone-200 hover:border-wood-200'}`}>{btn.label}</button>))}</div>
+                                    <div className="flex-1 flex items-center gap-2 bg-white/60 px-3 py-2 rounded-xl border border-stone-200 soft-shadow">
+                                        <Filter size={16} className="text-stone-400" />
+                                        <input type="text" placeholder="搜尋書名、作者或分類..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none w-full text-xs text-ink placeholder-stone-300" />
+                                        {searchTerm && <button onClick={() => setSearchTerm('')}><X size={14} className="text-stone-400"/></button>}
+                                    </div>
+                                </div>
+                            </div>
+                            {!loading && filteredBooks.length === 0 && (<div className="text-center py-10 text-stone-400 bg-white/30 rounded-2xl border border-dashed border-stone-200"><BookOpen className="mx-auto mb-2 opacity-30 w-10 h-10" /><p className="text-sm">{searchTerm || statusFilter !== 'all' || ratingFilter > 0 ? '找不到符合條件的書籍。' : '書櫃空蕩蕩，選個安靜的午後開始閱讀吧。'}</p></div>)}
+                            <div className="grid grid-cols-1 gap-4 md:gap-6">
+                                {filteredBooks.map(book => (
+                                    <div key={book.id} className={`group bg-white p-4 md:p-6 rounded-2xl border ${book.isPinned ? 'border-wood-300' : 'border-stone-200'} hover:border-wood-200 transition-all duration-300 animate-fade-in soft-shadow flex flex-col md:flex-row gap-4 relative overflow-hidden`}>
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-300'}`}></div>
+                                        <div className="flex-1 pl-3 md:pl-0 min-w-0">
+                                            <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap gap-2 items-center mb-1">
+                                                        {book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (<span key={idx} className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm">{cat}</span>))}
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'待讀'}</span>
+                                                        {book.isPinned && <span className="flex items-center gap-1 text-[10px] md:text-xs text-wood-500 bg-wood-100 px-2 py-0.5 rounded-full font-bold shadow-sm"><Pin size={10} className="fill-wood-400" /> 已釘選</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 group/title"><h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed break-words">{book.title}</h3><button onClick={(e) => handleWebSearch(book, e)} className="p-1.5 rounded-full bg-stone-50 text-stone-400 hover:text-wood-500 hover:bg-wood-50 transition-all border border-transparent hover:border-wood-100" title="在 Google 搜尋此書"><ExternalLink size={14} strokeWidth={2.5} /></button></div>
+                                                </div>
+                                                <div className="shrink-0">{book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}</div>
+                                            </div>
+                                            <div className="text-sm text-sub space-y-2">
+                                                <div className="flex flex-wrap gap-4 text-xs opacity-70"><span className="flex items-center gap-1"><User size={12}/> {book.author||'佚名'}</span><span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span><span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span></div>
+                                                {book.status === 'finished' && (<div className="mt-2 bg-sage-50/50 p-3 rounded-lg border border-sage-100"><p className="text-sage-text flex items-center gap-2 text-xs md:text-sm font-medium"><CheckCircle size={14}/> 完食於 {book.finishDate}</p>{book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5 whitespace-pre-wrap">{book.review}</p>}</div>)}
+                                                {book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
+                                                {book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
+                                                {book.synopsis && (
+                                                    <div className="mt-2 flex flex-col">
+                                                        <button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition py-1 self-start">
+                                                            <FileText size={12}/> {expandedBooks[book.id] ? '收起大綱' : '查看故事大綱'}
+                                                        </button>
+                                                        {expandedBooks[book.id] && <p className="text-xs text-sub leading-relaxed bg-stone-50/50 p-3 rounded-lg whitespace-pre-wrap mt-2 mb-0">{book.synopsis}</p>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex mt-1 pt-1 border-t border-stone-100 flex-row gap-1.5 
+                                            md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:grid md:grid-cols-2 md:w-28 md:gap-2 shrink-0">
+                                            
+                                            {book.status === 'reading' ? (
+                                                <>
+                                                   <button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl transition flex items-center justify-center border border-sage-100 shadow-sm md:w-full" title="完食"><CheckCircle size={18} /></button>
+                                                   <button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-2 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl transition flex items-center justify-center border border-dried-100 shadow-sm md:w-full" title="棄書"><BookX size={18} /></button>
+                                                </>
+                                            ) : (
+                                                <button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl transition flex items-center justify-center border border-stone-200 shadow-sm col-span-2 md:w-full" title="重設"><RotateCcw size={18} /></button>
+                                            )}
+
+                                            <button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="編輯">
+                                                <Edit3 size={16} />
+                                            </button>
+                                            <button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="刪除">
+                                                <Trash2 size={16} />
+                                            </button>
+
+                                            <button onClick={(e) => togglePin(book, e)} className={`flex-1 py-2 rounded-xl transition flex items-center justify-center border shadow-sm col-span-2 md:w-full ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`} title={book.isPinned ? "取消釘選" : "優先釘選"}>
+                                                {book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {(activeBookId || modalType === 'logout' || modalType === 'deleteCategory' || modalType === 'confirmAddDuplicate') && (
+                            <div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
+                                <div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+                                    <div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
+                                    <h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">{modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'deleteCategory' ? '刪除分類' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}</h3>
+                                    <div className="mb-6">
+                                        {modalType === 'edit' && (<div className="space-y-5"><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">分類標籤</label><CategoryPicker selectedCategories={modalData.category || []} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} /></div><div className="flex gap-4"><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div></div>)}
+                                        {modalType === 'finish' && (<div className="bg-white/50 p-4 rounded-xl space-y-5 border border-stone-200"><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /><div className="flex flex-col items-center gap-2"><label className="text-xs text-sub">給這本書一個評價吧</label><StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="寫點什麼紀錄一下心情..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-2 bg-white rounded-lg border border-stone-200 h-20 text-sm" /></div>)}
+                                        {modalType === 'drop' && (<div className="bg-white/50 p-4 rounded-xl space-y-4 border border-stone-200"><div className="space-y-1"><label className="text-xs text-sub block">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div><div className="space-y-1"><label className="text-xs text-sub block">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div></div>)}
+                                        {modalType === 'confirmAddDuplicate' && (<div className="text-center p-4"><div className="flex justify-center mb-4 text-dried-500"><AlertTriangle size={48} /></div><p className="mb-2 font-bold text-ink">這本書已經在書櫃中囉！</p><p className="text-sm text-sub">書名：「{newBook.title}」<br/>作者：「{newBook.author || '佚名'}」</p></div>)}
+                                        {['reset', 'delete', 'logout', 'deleteCategory'].includes(modalType) && (<div className="text-center p-4"><p className="mb-2 font-bold text-ink">{modalData.category || activeBook?.title}</p><p className="text-sm text-sub">確定執行此操作嗎？</p></div>)}
+                                    </div>
+                                    <div className="flex gap-4"><button onClick={closeModal} className="flex-1 py-3 text-sub hover:bg-stone-100 rounded-xl transition text-sm">取消</button><button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button></div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
         }
-        
-        function downloadImage(canvas, name) {
-            const link = document.createElement('a');
-            link.download = `餐費明細-${name}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-        }
-    });
-</script>
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<ReadingTracker />);
+    </script>
 </body>
 </html>
