@@ -34,7 +34,6 @@
             cursor: default;
         }
 
-        /* 美化滾動條 - 讓電腦版用戶知道可以滑動 */
         #filter-bar-container::-webkit-scrollbar {
             height: 4px;
         }
@@ -51,7 +50,7 @@
             flex-wrap: nowrap;
             gap: 12px;
             padding: 0 4px;
-            min-width: max-content; /* 確保內容不縮放 */
+            min-width: max-content;
         }
 
         .filter-chip {
@@ -73,18 +72,17 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
 
-        /* 網址明細字體放大 15% (原約 14px -> 現約 16px) */
         .item-title {
-            font-size: 1.05rem; /* 放大字體 */
+            font-size: 1.05rem;
             font-weight: 800;
             color: #4a3f35;
         }
 
         .item-url {
-            font-size: 0.75rem; /* 同步微調 URL 字體 */
+            font-size: 0.75rem;
             color: #5c8a97;
             margin-top: 2px;
-            word-break: break-all; /* 強制換行以完整顯示網址 */
+            word-break: break-all;
             white-space: normal;   
         }
 
@@ -134,7 +132,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 登入視窗專屬樣式 */
         #login-overlay {
             background-color: #f7f3e9;
             background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
@@ -153,8 +150,7 @@
                 <input type="text" id="userInput" placeholder="請輸入使用者代號" 
                        class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
                 
-                <div id="login-history" class="flex flex-wrap justify-center gap-2">
-                    </div>
+                <div id="login-history" class="flex flex-wrap justify-center gap-2"></div>
 
                 <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
                     進入系統
@@ -166,10 +162,16 @@
 
     <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
         <div class="text-center mb-4 border-b-2 border-[#d1c7b7] pb-1 flex justify-between items-end">
-            <div class="w-8"></div> <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
+            <div class="flex items-center text-[10px] font-bold text-[#8fb4a2] pb-1 min-w-[60px]">
+                <i class="fa-solid fa-user mr-1"></i>
+                <span id="display-user-id" class="truncate max-w-[80px]">---</span>
+            </div>
+
+            <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
                 <i class="fa-solid fa-link text-[#8fb4a2] mr-1"></i>URL_MANAGER
             </h1>
-            <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 pb-1 text-sm">
+
+            <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 pb-1 text-sm min-w-[60px] text-right">
                 <i class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
@@ -251,7 +253,6 @@
 
         const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
 
-        // 初始化歷史紀錄
         function renderLoginHistory() {
             const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
             const container = document.getElementById('login-history');
@@ -268,14 +269,12 @@
             });
         }
 
-        // 登入處理
         window.handleLogin = () => {
             const id = document.getElementById('userInput').value.trim();
             if (!id) return;
 
             state.userId = id;
             
-            // 儲存歷史與目前登入狀態
             let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
             if (!history.includes(id)) {
                 history.unshift(id);
@@ -283,14 +282,14 @@
             }
             localStorage.setItem('url_manager_current_user', id);
 
-            // 畫面切換
+            // 更新顯示帳號文字
+            document.getElementById('display-user-id').textContent = id;
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
             
             initDataListeners();
         };
 
-        // 登出處理
         window.handleLogout = () => {
             if (!confirm('確定要切換使用者？')) return;
             localStorage.removeItem('url_manager_current_user');
@@ -306,7 +305,6 @@
         }
 
         function initDataListeners() {
-            // 先清除舊的監聽
             off(ref(db, `users/${state.userId}/links`));
             off(ref(db, `users/${state.userId}/categories`));
 
@@ -501,7 +499,6 @@
 
         document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
 
-        // 頁面加載檢查
         window.onload = () => {
             renderLoginHistory();
             const lastUser = localStorage.getItem('url_manager_current_user');
