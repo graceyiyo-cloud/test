@@ -286,7 +286,46 @@
             document.getElementById('display-user-id').textContent = id;
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
+
+            // --- 遷移腳本開始 ---
+async function migrateToUserPath(newUserId) {
+    const oldLinksRef = ref(db, 'links');
+    const oldCatsRef = ref(db, 'categories');
+    
+    // 檢查是否已經搬移過，避免重複操作
+    const checkRef = ref(db, `users/${newUserId}/links`);
+    
+    onValue(ref(db, '/'), async (snapshot) => {
+        const allData = snapshot.val();
+        if (!allData || allData.users?.[newUserId]) return; // 如果沒舊資料或新路徑已有資料就跳過
+
+        console.log("偵測到舊資料，開始搬移至：" + newUserId);
+
+        const updates = {};
+        // 搬移連結
+        if (allData.links) {
+            updates[`users/${newUserId}/links`] = allData.links;
+        }
+        // 搬移分類
+        if (allData.categories) {
+            updates[`users/${newUserId}/categories`] = allData.categories;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await update(ref(db), updates);
+            // 搬移完畢後，你可以選擇是否要刪除舊資料根目錄（建議先註解掉，等確定新路徑OK再手動刪除）
+            // await remove(ref(db, 'links'));
+            // await remove(ref(db, 'categories'));
             
+            alert(`資料已成功搬移至代號：${newUserId}！頁面即將重新整理。`);
+            location.reload();
+        }
+    }, { onlyOnce: true });
+}
+
+// 執行搬移至 graceyiyo
+migrateToUserPath('graceyiyo');
+// --- 遷移腳本結束 ---
             initDataListeners();
         };
 
@@ -510,3 +549,4 @@
     </script>
 </body>
 </html>
+
