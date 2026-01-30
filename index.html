@@ -133,55 +133,45 @@
             animation: spin 1.5s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* 登入介面樣式 */
-        #auth-screen {
+
+        /* 登入視窗專屬樣式 */
+        #login-overlay {
             background-color: #f7f3e9;
-            z-index: 100;
-        }
-        .history-account {
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid #d1c7b7;
-        }
-        .history-account:hover {
-            background-color: #e8e2d5;
+            background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
+            background-size: 24px 24px;
         }
     </style>
 </head>
 <body class="pb-20 min-h-screen flex flex-col items-center">
 
-    <div id="auth-screen" class="fixed inset-0 flex flex-col items-center justify-center px-6">
-        <div class="w-full max-w-sm">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
-                    <i class="fa-solid fa-link text-[#8fb4a2] mr-1"></i>URL_MANAGER
-                </h1>
-                <p class="text-xs text-[#b7ad9d] mt-2 font-bold">請輸入個人識別帳號登入</p>
-            </div>
-            
-            <div class="space-y-4">
-                <input type="text" id="authEmail" placeholder="使用者帳號 (例如: user01)" 
-                    class="ghibli-input w-full px-4 py-3 rounded-xl text-sm font-bold">
+    <div id="login-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4">
+        <div class="w-full max-w-xs text-center">
+            <h1 class="text-3xl font-black text-[#4a3f35] mb-8 tracking-tight uppercase">
+                <i class="fa-solid fa-door-open text-[#8fb4a2] mr-1"></i>USER LOGIN
+            </h1>
+            <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
+                <input type="text" id="userInput" placeholder="請輸入使用者代號" 
+                       class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
                 
-                <button id="loginBtn" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-black transition-colors shadow-sm">
+                <div id="login-history" class="flex flex-wrap justify-center gap-2">
+                    </div>
+
+                <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
                     進入系統
                 </button>
-
-                <div id="history-container" class="mt-6 hidden">
-                    <p class="text-[10px] text-[#b7ad9d] font-bold mb-2 uppercase tracking-widest">最近登入紀錄</p>
-                    <div id="account-history" class="flex flex-wrap gap-2"></div>
-                </div>
             </div>
+            <p class="text-[10px] text-[#b7ad9d] mt-4 font-bold">系統將記住此代號以便下次自動登入</p>
         </div>
     </div>
 
     <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
         <div class="text-center mb-4 border-b-2 border-[#d1c7b7] pb-1 flex justify-between items-end">
-            <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase">
+            <div class="w-8"></div> <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
                 <i class="fa-solid fa-link text-[#8fb4a2] mr-1"></i>URL_MANAGER
             </h1>
-            <button onclick="logout()" class="text-[10px] font-bold text-[#b7ad9d] hover:text-red-400 mb-1 px-2 py-1 border border-[#d1c7b7] rounded-md">登出</button>
+            <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 pb-1 text-sm">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
         </div>
 
         <div class="mb-6">
@@ -243,8 +233,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, set, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
@@ -255,73 +244,58 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const auth = getAuth(app);
         
-        let state = { links: [], categories: [], currentFilter: 'all', currentUser: null };
+        let state = { userId: '', links: [], categories: [], currentFilter: 'all' };
         let linkSortables = [];
         let catSortable = null;
 
         const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
 
-        // --- 登入邏輯 ---
-        
-        function updateAccountHistory(email) {
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            if (!history.includes(email)) {
-                history.push(email);
-                localStorage.setItem('url_manager_history', JSON.stringify(history));
-            }
-            renderHistory();
-        }
-
-        function renderHistory() {
+        // 初始化歷史紀錄
+        function renderLoginHistory() {
             const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            const container = document.getElementById('account-history');
-            const box = document.getElementById('history-container');
-            if (history.length > 0) {
-                box.classList.remove('hidden');
-                container.innerHTML = history.map(acc => 
-                    `<div class="history-account px-3 py-1.5 rounded-lg text-[10px] font-bold text-[#6b5e51] bg-white" onclick="document.getElementById('authEmail').value='${acc}'">${acc}</div>`
-                ).join('');
-            }
+            const container = document.getElementById('login-history');
+            container.innerHTML = '';
+            history.forEach(id => {
+                const btn = document.createElement('button');
+                btn.className = 'text-[10px] px-3 py-1 bg-[#f0ede4] rounded-full text-[#6b5e51] hover:bg-[#d1c7b7] font-bold';
+                btn.textContent = id;
+                btn.onclick = () => {
+                    document.getElementById('userInput').value = id;
+                    handleLogin();
+                };
+                container.appendChild(btn);
+            });
         }
 
-        document.getElementById('loginBtn').onclick = async () => {
-            const account = document.getElementById('authEmail').value.trim();
-            if (!account) return alert('請輸入帳號');
-            
-            // 為了簡化，我們將帳號轉為虛擬 Email 格式 (Firebase 要求 Email 格式)
-            const virtualEmail = `${account}@urlmanager.com`;
-            const virtualPwd = `pwd_${account}`;
+        // 登入處理
+        window.handleLogin = () => {
+            const id = document.getElementById('userInput').value.trim();
+            if (!id) return;
 
-            try {
-                await signInWithEmailAndPassword(auth, virtualEmail, virtualPwd);
-            } catch (error) {
-                if (error.code === 'auth/user-not-found') {
-                    try {
-                        await createUserWithEmailAndPassword(auth, virtualEmail, virtualPwd);
-                    } catch (e) { alert('建立帳號失敗'); }
-                } else { alert('登入失敗: ' + error.message); }
+            state.userId = id;
+            
+            // 儲存歷史與目前登入狀態
+            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            if (!history.includes(id)) {
+                history.unshift(id);
+                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 5)));
             }
+            localStorage.setItem('url_manager_current_user', id);
+
+            // 畫面切換
+            document.getElementById('login-overlay').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            
+            initDataListeners();
         };
 
-        window.logout = () => signOut(auth).then(() => location.reload());
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                state.currentUser = user;
-                updateAccountHistory(user.email.split('@')[0]);
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
-                initDataListeners(user.uid);
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app-content').classList.add('hidden');
-                renderHistory();
-            }
-        });
-
-        // --- 核心功能 (已修正為使用者路徑) ---
+        // 登出處理
+        window.handleLogout = () => {
+            if (!confirm('確定要切換使用者？')) return;
+            localStorage.removeItem('url_manager_current_user');
+            location.reload();
+        };
 
         function getCatColor(id) {
             if (id === 'all') return "#4a3f35";
@@ -331,10 +305,12 @@
             return ghibliColors[Math.abs(hash) % ghibliColors.length];
         }
 
-        function initDataListeners(uid) {
-            const userRef = `users/${uid}`;
-            
-            onValue(ref(db, `${userRef}/links`), (snapshot) => {
+        function initDataListeners() {
+            // 先清除舊的監聽
+            off(ref(db, `users/${state.userId}/links`));
+            off(ref(db, `users/${state.userId}/categories`));
+
+            onValue(ref(db, `users/${state.userId}/links`), (snapshot) => {
                 const data = snapshot.val();
                 state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
                 state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -342,7 +318,7 @@
                 checkAndRender();
             });
 
-            onValue(ref(db, `${userRef}/categories`), (snapshot) => {
+            onValue(ref(db, `users/${state.userId}/categories`), (snapshot) => {
                 const data = snapshot.val();
                 state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
                 state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -376,7 +352,7 @@
                     const updates = {};
                     let orderIndex = 0;
                     Array.from(bar.children).forEach((item) => {
-                        if (item.dataset.catId) updates[`users/${state.currentUser.uid}/categories/${item.dataset.catId}/order`] = orderIndex++;
+                        if (item.dataset.catId) updates[`users/${state.userId}/categories/${item.dataset.catId}/order`] = orderIndex++;
                     });
                     if(Object.keys(updates).length > 0) update(ref(db), updates);
                 }
@@ -503,27 +479,37 @@
             const catId = document.getElementById('newLinkCat').value;
             if (!desc || !url) return;
             if (!url.startsWith('http')) url = 'https://' + url;
-            push(ref(db, `users/${state.currentUser.uid}/links`), { desc, url, categoryId: catId || null, order: 999 });
+            push(ref(db, `users/${state.userId}/links`), { desc, url, categoryId: catId || null, order: 999 });
             document.getElementById('newDesc').value = document.getElementById('newUrl').value = '';
         };
         window.addCategory = () => {
             const name = document.getElementById('newCatName').value.trim();
             if(!name) return;
-            push(ref(db, `users/${state.currentUser.uid}/categories`), { name, order: state.categories.length });
+            push(ref(db, `users/${state.userId}/categories`), { name, order: state.categories.length });
             document.getElementById('newCatName').value = '';
             switchTab('link');
         };
         window.saveEdit = () => {
             const key = document.getElementById('editKey').value;
-            update(ref(db, `users/${state.currentUser.uid}/links/` + key), { 
+            update(ref(db, `users/${state.userId}/links/${key}`), { 
                 desc: document.getElementById('editDesc').value.trim(), 
                 url: document.getElementById('editUrl').value.trim(), 
                 categoryId: document.getElementById('editCatId').value || null 
             }).then(closeEditModal);
         };
-        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.currentUser.uid}/links/` + document.getElementById('editKey').value)).then(closeEditModal);
+        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.userId}/links/${document.getElementById('editKey').value}`)).then(closeEditModal);
 
         document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
+
+        // 頁面加載檢查
+        window.onload = () => {
+            renderLoginHistory();
+            const lastUser = localStorage.getItem('url_manager_current_user');
+            if (lastUser) {
+                document.getElementById('userInput').value = lastUser;
+                handleLogin();
+            }
+        };
     </script>
 </body>
 </html>
