@@ -207,7 +207,7 @@
     <div class="control-panel">
         <div>1. 上傳檔案：<input type="file" id="fileInput" accept=".txt"></div>
         <div>2. 選擇月份：<select id="monthSelect"></select></div>
-        <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">清除緩存資料</button></div>
+        <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">手動清除所有緩存</button></div>
     </div>
     <div class="main-content">
         <div class="section">
@@ -288,10 +288,20 @@
         }
     }
 
-    function clearAllData() {
-        if(confirm("確定要清除所有紀錄並重設網頁嗎？")) {
+    function clearAllData(silent = false) {
+        if(silent || confirm("確定要清除所有紀錄並重設網頁嗎？")) {
             localStorage.removeItem('lunchStatsData');
-            location.reload();
+            rawFileText = "";
+            forceIncludeDates = new Set();
+            excludedUsers = new Set();
+            personalStats = {};
+            currentSelectedUser = null;
+            document.getElementById('monthSelect').innerHTML = '';
+            document.getElementById('selectedPersonName').textContent = '-';
+            document.getElementById('personalDetail').innerHTML = '';
+            document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('copyImgBtn').style.display = 'none';
+            if(!silent) location.reload();
         }
     }
 
@@ -313,8 +323,6 @@
         const dateRegex = /^(\d{4}\.\d{2}\.\d{2})/;
         let datePositions = [];
         nonMonthlyDates = [];
-
-        datePositions.forEach((pos, i) => {}); // Clean unused loop
         
         lines.forEach((line, idx) => {
             const m = line.match(dateRegex);
@@ -364,6 +372,11 @@
     }
 
     document.getElementById('fileInput').addEventListener('change', e => {
+        if (!e.target.files[0]) return;
+        
+        // 重新上傳時，直接清空所有緩存
+        clearAllData(true); 
+
         const reader = new FileReader();
         reader.onload = () => {
             rawFileText = reader.result;
@@ -380,8 +393,15 @@
     });
 
     function render() {
-        const month = document.getElementById('monthSelect').value;
-        if(!month) return;
+        const monthSelect = document.getElementById('monthSelect');
+        const month = monthSelect.value;
+        if(!month) {
+            document.getElementById('includedBody').innerHTML = '';
+            document.getElementById('excludedBody').innerHTML = '';
+            document.getElementById('grandTotalDisplay').textContent = '0';
+            return;
+        }
+        
         const data = parseLunchFile(rawFileText, month);
         personalStats = {};
         for (let date in data) {
@@ -407,6 +427,11 @@
         renderNonMonthly();
         if (currentSelectedUser && personalStats[currentSelectedUser]) {
             updateDetail(currentSelectedUser);
+        } else {
+            document.getElementById('selectedPersonName').textContent = '-';
+            document.getElementById('personalDetail').innerHTML = '';
+            document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('copyImgBtn').style.display = 'none';
         }
     }
 
