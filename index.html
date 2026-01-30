@@ -2,331 +2,629 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>URL_Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
+    <title>月結餐點費用統計</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body {
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f7f3e9; 
-            background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
-            background-size: 24px 24px;
-            color: #4a3f35;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ghibli-shadow {
-            box-shadow: 0 4px 10px -2px rgba(74, 63, 53, 0.08);
-            border: 2px solid #d1c7b7;
+        /* 莫蘭迪色系 (Morandi Colors) 定義 */
+        body { 
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif; 
+            background: #F2F0EB; 
+            color: #333; 
+            margin: 0; 
+            padding: 20px; 
+            letter-spacing: 0.05em; 
         }
         
-        /* 分類篩選列：調整行距更窄 */
-        #filter-bar-container {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            padding: 4px 0; /* 從 8px 縮小至 4px，減少行距 */
-            cursor: default;
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
         }
-        #filter-bar-container::-webkit-scrollbar { height: 4px; }
-        #filter-bar-container::-webkit-scrollbar-thumb { background: #d1c7b7; border-radius: 10px; }
-        #filter-bar { display: flex; flex-wrap: nowrap; gap: 12px; padding: 0 4px; min-width: max-content; }
         
-        /* 分類按鈕：微調內距讓視覺更緊湊 */
-        .filter-chip {
-            transition: all 0.2s; white-space: nowrap; flex-shrink: 0; font-size: 0.85rem; 
-            background-color: #ffffff; border-width: 1.5px; border-style: solid;
-            cursor: pointer; user-select: none; 
-            padding: 6px 18px; /* 垂直 Padding 從 8px 縮減至 6px */
-            border-radius: 9999px;
+        h1 { 
+            text-align: center; 
+            color: #455A64; 
+            font-weight: normal;
+            margin-bottom: 30px;
         }
-        .filter-chip.active { color: white !important; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         
-        .item-title { font-size: 1.05rem; font-weight: 800; color: #4a3f35; }
-        .item-url { font-size: 0.75rem; color: #5c8a97; margin-top: 2px; word-break: break-all; white-space: normal; }
-        .item-tag {
-            background-color: #ffffff; border-width: 1px; border-style: solid;
-            padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 8px; vertical-align: middle;
+        .control-panel { 
+            display: flex; 
+            gap: 20px; 
+            background: #E8E6E1; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 25px; 
+            align-items: center; 
+            color: #444; 
         }
-        .ghibli-input { background-color: rgba(255, 255, 255, 0.9); border: 2px solid #d1c7b7; transition: all 0.3s; }
-        .ghibli-input:focus { outline: none; border-color: #8fb4a2; box-shadow: 0 0 0 3px rgba(143, 180, 162, 0.15); }
-        .tab-btn { background-color: #e8e2d5; color: #6b5e51; border: 2px solid #d1c7b7; border-bottom: none; font-size: 0.8rem; }
-        .tab-btn.active { background-color: #fff; color: #4a3f35; font-weight: bold; }
-        .loading-spinner { border: 4px solid #e8e2d5; border-top: 4px solid #8fb4a2; border-radius: 50%; width: 30px; height: 30px; animation: spin 1.5s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #login-overlay { background-color: #f7f3e9; background-image: radial-gradient(#e0d7c1 1px, transparent 1px); background-size: 24px 24px; }
+        
+        select, input[type="file"] {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #CCC;
+            background: #FAFAFA;
+            color: #333; 
+        }
+
+        .main-content { display: grid; grid-template-columns: 1.2fr 2fr; gap: 25px; }
+        
+        .section { 
+            border: 1px solid #EBEBEB; 
+            border-radius: 8px; 
+            padding: 20px; 
+            min-height: 550px; 
+            background: #fff; 
+            display: flex; 
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        
+        h3 { 
+            margin-top: 0; 
+            border-bottom: 2px solid #F0F0F0; 
+            padding-bottom: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            color: #444; 
+            font-size: 1.1rem;
+            font-weight: 600; 
+        }
+        
+        .scroll-area { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            border: 1px solid #F5F5F5; 
+            border-radius: 4px;
+        }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #F0F0F0; }
+        
+        #summaryTable th:nth-child(2),
+        #summaryTable td:nth-child(2) {
+            text-align: right;
+        }
+        
+        th { 
+            background-color: #E0E5DF; 
+            color: #333; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            font-weight: 700; 
+        }
+
+        .excluded-header-row { 
+            background-color: #F7F7F7; 
+            color: #777; 
+            font-size: 13px; 
+            text-align: center; 
+            font-weight: normal; 
+            padding: 8px;
+        }
+        
+        .excluded-row { background-color: #FCFCFC; color: #AAA; }
+        
+        .name-cell { display: flex; align-items: center; gap: 8px; cursor: pointer; transition: color 0.2s; }
+        .name-cell:hover { color: #5E7D75; }
+        
+        .red-star { color: #C76C6C; font-weight: bold; } 
+        
+        .btn-group { display: flex; gap: 10px; }
+        
+        .btn { 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            color: white; 
+            font-size: 13px; 
+            display: none; 
+            transition: opacity 0.2s, background-color 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn:hover { opacity: 0.9; }
+        
+        #copyBtn { background-color: #7A918D; } 
+        #copyImgBtn { background-color: #6B7C8A; } 
+        
+        .non-monthly-box { 
+            margin-top: 15px; 
+            padding: 12px; 
+            background: #F4EBEB; 
+            border-left: 4px solid #D68C8C; 
+            font-size: 14px; 
+            color: #666; 
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .clickable-date { 
+            color: #5D6D7E; 
+            text-decoration: underline; 
+            cursor: pointer; 
+            margin-right: 8px; 
+            font-weight: bold; 
+        }
+
+        .detail-box { 
+            background: #FAFAFA; 
+            padding: 20px; 
+            border-radius: 6px; 
+            border: 1px solid #F0F0F0; 
+            flex-grow: 1; 
+            overflow-y: auto; 
+        }
+        
+        .detail-row { 
+            padding: 10px 0; 
+            border-bottom: 1px solid #EEE; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 14px; 
+            color: #333; 
+        }
+        
+        .detail-content { flex: 1; padding-right: 15px; line-height: 1.5; }
+        
+        .price-input { 
+            width: 70px; 
+            text-align: right; 
+            border: 1px solid #DDD; 
+            border-radius: 4px; 
+            padding: 5px; 
+            font-size: 14px;
+            font-weight: bold; 
+            color: #B05B5B; 
+            background: #FFF;
+        }
+        .price-input:focus { outline: 2px solid #E0E5DF; border-color: #8FA39D; }
+
+        .price-text { display: none; font-weight: bold; color: #B05B5B; font-size: 14px; }
+
+        .capturing .price-input { display: none !important; }
+        .capturing .price-text { display: inline !important; }
+        .capturing .detail-box { 
+            overflow: visible !important; 
+            height: auto !important; 
+            border: none !important; 
+            background: white !important; 
+            padding: 5px !important;
+        }
+        .capturing .detail-row { border-bottom: 1px solid #E0E0E0; padding: 12px 0; }
+        .capturing #imgTitle { color: #333; } 
     </style>
 </head>
-<body class="pb-20 min-h-screen flex flex-col items-center">
+<body>
 
-    <div id="login-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4">
-        <div class="w-full max-w-xs text-center">
-            <div class="mb-8">
-                <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
-                    <i class="fa-solid fa-door-open text-[#8fb4a2] mr-1"></i>USER LOGIN
-                </h1>
-                <p class="text-sm font-black text-[#8fb4a2] tracking-[0.2em] mt-1 opacity-80">URL_MANAGER</p>
+<div class="container">
+    <h1>月結餐點費用統計</h1>
+    <div class="control-panel">
+        <div>1. 上傳檔案：<input type="file" id="fileInput" accept=".txt"></div>
+        <div>2. 選擇月份：<select id="monthSelect"></select></div>
+        <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">清除緩存資料</button></div>
+    </div>
+    <div class="main-content">
+        <div class="section">
+            <h3>
+                <span>人員費用總計</span>
+                <span id="grandTotalDisplay" style="color: #5D4037;">0</span>
+            </h3>
+            <div class="scroll-area" id="summaryScrollArea">
+                <table id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th style="width:70%">姓名</th>
+                            <th style="width:30%">金額</th>
+                        </tr>
+                    </thead>
+                    <tbody id="includedBody"></tbody>
+                    <tbody>
+                        <tr class="excluded-header-row">
+                            <td colspan="2">▼ 排除不計區域 (不列入總額)</td>
+                        </tr>
+                    </tbody>
+                    <tbody id="excludedBody" class="excluded-row"></tbody>
+                </table>
             </div>
-            
-            <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
-                <input type="text" id="userInput" placeholder="請輸入使用者代號" 
-                       class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
-                <div id="login-history" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-1"></div>
-                <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
-                    進入系統
-                </button>
+            <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
+        </div>
+        <div class="section">
+            <h3>
+                <div>個人明細：<span id="selectedPersonName">-</span></div>
+                <div class="btn-group">
+                    <button id="copyBtn" class="btn">📋 複製文字</button>
+                    <button id="copyImgBtn" class="btn">🖼️ 複製圖片</button>
+                </div>
+            </h3>
+            <div id="captureArea" style="background: white; padding: 15px; border-radius: 6px;">
+                <h4 id="imgTitle" style="margin: 0 0 15px 0; display:none; border-bottom: 2px solid #8FA39D; padding-bottom: 8px; font-size: 18px; color: #333;"></h4>
+                <div id="personalDetail" class="detail-box"></div>
             </div>
-            <p class="text-[10px] text-[#b7ad9d] mt-4 font-bold">系統將記住此代號以便下次自動登入</p>
         </div>
     </div>
+</div>
 
-    <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
+<script>
+    let rawFileText = "";
+    let forceIncludeDates = new Set();
+    let excludedUsers = new Set();
+    let personalStats = {};
+    let nonMonthlyDates = [];
+    let currentSelectedUser = null; 
+
+    // 初始化載入
+    window.onload = function() {
+        loadFromLocalStorage();
+    };
+
+    function saveToLocalStorage() {
+        const data = {
+            rawFileText: rawFileText,
+            forceIncludeDates: Array.from(forceIncludeDates),
+            excludedUsers: Array.from(excludedUsers),
+            lastSelectedMonth: document.getElementById('monthSelect').value
+        };
+        localStorage.setItem('lunchStatsData', JSON.stringify(data));
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('lunchStatsData');
+        if (saved) {
+            const data = JSON.parse(saved);
+            rawFileText = data.rawFileText || "";
+            forceIncludeDates = new Set(data.forceIncludeDates || []);
+            excludedUsers = new Set(data.excludedUsers || []);
+            
+            if (rawFileText) {
+                updateMonthDropdown(data.lastSelectedMonth);
+                render();
+            }
+        }
+    }
+
+    function clearAllData() {
+        if(confirm("確定要清除所有紀錄並重設網頁嗎？")) {
+            localStorage.removeItem('lunchStatsData');
+            location.reload();
+        }
+    }
+
+    function updateMonthDropdown(preSelected) {
+        const matches = rawFileText.match(/\d{4}\.\d{2}\.\d{2}/g);
+        if(matches) {
+            const months = [...new Set(matches.map(d => d.substring(0, 7)))].sort().reverse();
+            const select = document.getElementById('monthSelect');
+            select.innerHTML = months.map(m => `<option value="${m}">${m}月</option>`).join('');
+            if (preSelected && months.includes(preSelected)) {
+                select.value = preSelected;
+            }
+        }
+    }
+
+    function parseLunchFile(text, targetMonth) {
+        const lines = text.split(/\r?\n/);
+        const result = {};
+        const dateRegex = /^(\d{4}\.\d{2}\.\d{2})/;
+        let datePositions = [];
+        nonMonthlyDates = [];
+
+        datePositions.forEach((pos, i) => {}); // Clean unused loop
         
-        <div class="mb-4">
-            <div class="text-center mb-1">
-                <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-link text-[#8fb4a2] text-xl"></i>URL_MANAGER
-                </h1>
-            </div>
+        lines.forEach((line, idx) => {
+            const m = line.match(dateRegex);
+            if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') });
+        });
 
-            <div class="border-b-2 border-[#d1c7b7] mb-3"></div>
-
-            <div class="flex justify-between items-center px-2 py-0.5">
-                <div class="flex items-center text-[#4a3f35] max-w-[65%]">
-                    <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm flex-shrink-0"></i>
-                    <span id="display-user-id" class="text-[11px] font-black break-all">---</span>
-                </div>
-                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-0.5 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
-                    <span class="text-[10px]">切換帳號</span>
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <div class="flex gap-1">
-                <button onclick="switchTab('link')" id="tab-link" class="tab-btn active px-5 py-2 rounded-t-xl font-bold">新增連結</button>
-                <button onclick="switchTab('category')" id="tab-category" class="tab-btn px-5 py-2 rounded-t-xl font-bold">新增分類</button>
-            </div>
-            <div class="bg-white p-4 border-2 border-[#d1c7b7] ghibli-shadow rounded-b-2xl rounded-tr-2xl">
-                <div id="panel-link" class="flex flex-col gap-3">
-                    <div class="flex gap-2">
-                        <select id="newLinkCat" class="ghibli-input w-1/3 px-2 py-2.5 rounded-lg text-xs font-bold text-[#6b5e51]"></select>
-                        <input type="text" id="newDesc" placeholder="輸入標題" class="ghibli-input w-2/3 px-3 py-2.5 text-xs rounded-lg">
-                    </div>
-                    <input type="url" id="newUrl" placeholder="輸入網址" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addItem()" class="w-full bg-[#8fb4a2] text-white py-2.5 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">新增連結 <i class="fa-solid fa-plus ml-1"></i></button>
-                </div>
-                <div id="panel-category" class="hidden flex flex-col gap-3">
-                    <input type="text" id="newCatName" placeholder="輸入新分類名稱" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addCategory()" class="w-full bg-[#5c8a97] text-white py-2.5 rounded-xl hover:bg-[#4d7885] font-bold text-sm transition-colors">建立分類 <i class="fa-solid fa-folder ml-1"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <div id="filter-bar-container" class="mb-4"><div id="filter-bar"></div></div>
-        <div class="relative mb-4">
-            <i class="fa-solid fa-search absolute left-4 top-3 text-[#b7ad9d] text-xs"></i>
-            <input type="text" id="searchInput" placeholder="搜尋標題或網址..." class="ghibli-input w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-xs font-bold">
-        </div>
-        <div id="loading" class="loading-spinner mx-auto my-10"></div>
-        <div id="main-container" class="space-y-3 hidden pb-10"></div>
-        <p id="empty-msg" class="text-center text-[#b7ad9d] mt-10 hidden font-bold text-xs">[ 無資料 ]</p>
-    </div>
-
-    <div id="editModal" class="fixed inset-0 bg-[#4a3f35]/50 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
-        <div class="bg-white p-6 w-full max-w-sm ghibli-shadow rounded-2xl relative">
-            <button onclick="closeEditModal()" class="absolute top-3 right-4 text-[#b7ad9d] hover:text-[#4a3f35] text-lg"><i class="fa-solid fa-times"></i></button>
-            <h3 class="text-sm font-bold text-[#4a3f35] mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯連結</h3>
-            <input type="hidden" id="editKey">
-            <div class="space-y-3">
-                <select id="editCatId" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs font-bold"></select>
-                <input type="text" id="editDesc" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs">
-                <input type="text" id="editUrl" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-[10px] font-mono">
-            </div>
-            <div class="flex justify-between items-center mt-6 gap-3">
-                <button onclick="deleteCurrentItem()" class="px-4 py-2 text-red-400 font-bold text-xs">刪除</button>
-                <button onclick="saveEdit()" class="px-7 py-2.5 bg-[#8fb4a2] text-white font-bold rounded-xl text-xs">儲存更新</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
-            authDomain: "url-sorting.firebaseapp.com",
-            projectId: "url-sorting",
-            databaseURL: "https://url-sorting-default-rtdb.firebaseio.com"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let state = { userId: '', links: [], categories: [], currentFilter: 'all' };
-        let linkSortables = [], catSortable = null;
-        const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
-
-        function renderLoginHistory() {
-            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            const container = document.getElementById('login-history');
-            container.innerHTML = '';
-            
-            history.forEach(id => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'flex items-center bg-[#f0ede4] rounded-full px-3 py-1 gap-1 border border-[#d1c7b7]';
-                
-                const idBtn = document.createElement('button');
-                idBtn.className = 'text-[10px] text-[#6b5e51] font-bold hover:text-[#4a3f35]';
-                idBtn.textContent = id;
-                idBtn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
-                
-                const delBtn = document.createElement('button');
-                delBtn.className = 'text-[10px] text-red-300 hover:text-red-500 ml-1 pl-1 border-l border-[#d1c7b7]';
-                delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removeHistoryId(id);
-                };
-                
-                wrapper.appendChild(idBtn);
-                wrapper.appendChild(delBtn);
-                container.appendChild(wrapper);
-            });
-        }
-
-        window.removeHistoryId = (id) => {
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            history = history.filter(item => item !== id);
-            localStorage.setItem('url_manager_history', JSON.stringify(history));
-            renderLoginHistory();
-        };
-
-        window.handleLogin = () => {
-            const id = document.getElementById('userInput').value.trim();
-            if (!id) return;
-            state.userId = id;
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            if (!history.includes(id)) {
-                history.unshift(id);
-                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 10)));
-            }
-            localStorage.setItem('url_manager_current_user', id);
-            document.getElementById('display-user-id').textContent = id;
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('app-content').classList.remove('hidden');
-            initDataListeners();
-        };
-
-        window.handleLogout = () => {
-            if (confirm('切換使用者？')) {
-                localStorage.removeItem('url_manager_current_user');
-                location.reload();
-            }
-        };
-
-        function initDataListeners() {
-            onValue(ref(db, `users/${state.userId}/links`), (snapshot) => {
-                const data = snapshot.val();
-                state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
-                renderFilterBar(); checkAndRender();
-            });
-            onValue(ref(db, `users/${state.userId}/categories`), (snapshot) => {
-                const data = snapshot.val();
-                state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-                updateCategoryDropdowns(); renderFilterBar(); checkAndRender();
-            });
-        }
-
-        function getCatColor(id) {
-            if (id === 'all') return "#4a3f35";
-            if (id === 'uncategorized') return "#9b8b7a";
-            let hash = 0; for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-            return ghibliColors[Math.abs(hash) % ghibliColors.length];
-        }
-
-        function renderFilterBar() {
-            const bar = document.getElementById('filter-bar'); bar.innerHTML = '';
-            if(catSortable) catSortable.destroy();
-            bar.appendChild(createFilterChip('全部', 'all'));
-            state.categories.forEach(cat => {
-                const chip = createFilterChip(cat.name, cat.id);
-                chip.dataset.catId = cat.id; bar.appendChild(chip);
-            });
-            if (state.links.some(l => !l.categoryId || !state.categories.find(c => c.id === l.categoryId)))
-                bar.appendChild(createFilterChip('未分類', 'uncategorized'));
-            catSortable = Sortable.create(bar, {
-                animation: 200, delay: 200, filter: '.static-chip',
-                onEnd: () => {
-                    const updates = {}; let idx = 0;
-                    Array.from(bar.children).forEach(el => { if(el.dataset.catId) updates[`users/${state.userId}/categories/${el.dataset.catId}/order`] = idx++; });
-                    update(ref(db), updates);
-                }
-            });
-        }
-
-        function createFilterChip(text, filterId) {
-            const btn = document.createElement('button');
-            const isActive = state.currentFilter === filterId, color = getCatColor(filterId);
-            btn.className = `filter-chip ${isActive ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.style.color = isActive ? 'white' : color;
-            btn.style.borderColor = btn.style.backgroundColor = isActive ? color : (isActive ? color : '#fff');
-            if (filterId === 'all' || filterId === 'uncategorized') btn.classList.add('static-chip');
-            btn.onclick = () => { state.currentFilter = filterId; renderFilterBar(); checkAndRender(); };
-            return btn;
-        }
-
-        function renderMain(filterText = '') {
-            const container = document.getElementById('main-container'); container.innerHTML = '';
-            const term = filterText.toLowerCase(); let hasData = false;
-            const renderBlock = (cat, links, isUncat) => {
-                if (links.length > 0) {
-                    const ul = document.createElement('ul'); ul.className = 'space-y-3';
-                    links.forEach(link => {
-                        const li = document.createElement('li');
-                        li.className = `bg-white p-4 ghibli-shadow rounded-2xl flex items-center gap-3 transition-all hover:bg-[#faf9f6]`;
-                        const tag = (state.currentFilter === 'all' && !isUncat) ? `<span class="item-tag" style="color:${getCatColor(cat.id)}; border-color:${getCatColor(cat.id)}">${cat.name}</span>` : '';
-                        li.innerHTML = `<div class="flex-grow min-w-0"><div class="flex items-center"><span class="item-title truncate">${link.desc}</span>${tag}</div><div class="item-url font-mono"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div></div><div class="flex flex-col gap-1 flex-shrink-0 border-l-2 border-[#f0ede4] pl-2"><button onclick="copyToClipboard(this, '${link.desc}', '${link.url}')" class="text-[#b7ad9d] hover:text-[#8fb4a2] p-1.5"><i class="fa-regular fa-copy"></i></button><button onclick="openEditModal('${link.id}', '${link.desc}', '${link.url}', '${link.categoryId || ''}')" class="text-[#b7ad9d] hover:text-[#5c8a97] p-1.5"><i class="fa-solid fa-pen"></i></button></div>`;
-                        ul.appendChild(li);
-                    });
-                    container.appendChild(ul); hasData = true;
-                }
-            };
-            if (state.currentFilter === 'all') {
-                state.categories.forEach(cat => renderBlock(cat, state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term)), false));
-                renderBlock({id:'uncategorized', name:'未分類'}, state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term)), true);
+        datePositions.forEach((pos, i) => {
+            if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
+            const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
+            const dayLines = lines.slice(pos.idx, nextIdx);
+            if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
+                let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
+                if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
             } else {
-                const activeCat = state.currentFilter === 'uncategorized' ? {id:'uncategorized', name:'未分類'} : state.categories.find(c => c.id === state.currentFilter);
-                if (activeCat) renderBlock(activeCat, state.links.filter(l => ((state.currentFilter==='uncategorized') ? (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) : (l.categoryId===state.currentFilter)) && matchFilter(l, term)), state.currentFilter==='uncategorized');
+                nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
             }
-            document.getElementById('empty-msg').classList.toggle('hidden', hasData);
+        });
+        return result;
+    }
+
+    function extractDayData(lines) {
+        const dayData = {};
+        let mode = "meal";
+        lines.forEach(line => {
+            let t = line.trim();
+            if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
+            if (t === "午餐") { mode = "meal"; return; }
+            if (!t || t.includes("$$月結") || t.includes("結單")) return;
+            const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
+            if (nameMatch) {
+                let name = nameMatch[1].trim().replace(/^\$/, ''); 
+                if (name === "小計") return;
+
+                let content = nameMatch[2].trim();
+                if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
+                let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
+                if (isNaN(price)) { 
+                    dayData[name].hasError = true; 
+                    dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
+                } else { 
+                    dayData[name].total += price; 
+                    dayData[name].items.push({ text: content, price: price }); 
+                }
+            }
+        });
+        return dayData;
+    }
+
+    document.getElementById('fileInput').addEventListener('change', e => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            rawFileText = reader.result;
+            updateMonthDropdown();
+            render();
+            saveToLocalStorage();
+        };
+        reader.readAsText(e.target.files[0]);
+    });
+
+    document.getElementById('monthSelect').addEventListener('change', () => {
+        render();
+        saveToLocalStorage();
+    });
+
+    function render() {
+        const month = document.getElementById('monthSelect').value;
+        if(!month) return;
+        const data = parseLunchFile(rawFileText, month);
+        personalStats = {};
+        for (let date in data) {
+            for (let name in data[date]) {
+                if (!personalStats[name]) personalStats[name] = { total: 0, details: [], error: false };
+                personalStats[name].total += data[date][name].total;
+                if (data[date][name].hasError) personalStats[name].error = true;
+                
+                const items = data[date][name].items;
+                if (items.length > 0) {
+                    const combinedText = items.map(item => item.text).join('、');
+                    const dayTotal = data[date][name].total;
+                    
+                    personalStats[name].details.push({ 
+                        date: date, 
+                        text: combinedText, 
+                        price: dayTotal 
+                    });
+                }
+            }
+        }
+        buildTable();
+        renderNonMonthly();
+        if (currentSelectedUser && personalStats[currentSelectedUser]) {
+            updateDetail(currentSelectedUser);
+        }
+    }
+
+    function buildTable() {
+        const scrollArea = document.getElementById('summaryScrollArea');
+        const currentScroll = scrollArea.scrollTop;
+        const incBody = document.getElementById('includedBody');
+        const excBody = document.getElementById('excludedBody');
+
+        incBody.innerHTML = ''; excBody.innerHTML = '';
+
+        let grandTotal = 0;
+        Object.keys(personalStats).sort().forEach(name => {
+            const isExc = excludedUsers.has(name);
+            const stats = personalStats[name];
+            if (!isExc) grandTotal += stats.total;
+
+            const tr = document.createElement('tr');
+            if (isExc) tr.className = 'excluded-row';
+            tr.innerHTML = `
+                <td>
+                    <div class="name-cell">
+                        <input type="checkbox" ${isExc ? '' : 'checked'} onchange="toggleUser('${name}')">
+                        <span onclick="selectUser('${name}')">${name}${stats.error ? '<span class="red-star">*</span>' : ''}</span>
+                    </div>
+                </td>
+                <td onclick="selectUser('${name}')" id="sum-${name}">${stats.total.toLocaleString()}</td>
+            `;
+            if (isExc) excBody.appendChild(tr); else incBody.appendChild(tr);
+        });
+
+        document.getElementById('grandTotalDisplay').textContent = grandTotal.toLocaleString();
+        requestAnimationFrame(() => { scrollArea.scrollTop = currentScroll; });
+    }
+
+    function toggleUser(name) {
+        if (excludedUsers.has(name)) excludedUsers.delete(name);
+        else excludedUsers.add(name);
+        buildTable();
+        saveToLocalStorage();
+    }
+
+    function selectUser(name) {
+        currentSelectedUser = name; 
+        updateDetail(name);
+    }
+
+    function handlePriceChange(name, detailIndex, newPrice, inputEl) {
+        const val = parseInt(newPrice) || 0;
+        personalStats[name].details[detailIndex].price = val;
+        
+        inputEl.nextElementSibling.textContent = val.toLocaleString();
+
+        const newTotal = personalStats[name].details.reduce((sum, d) => sum + d.price, 0);
+        personalStats[name].total = newTotal;
+        document.getElementById(`detail-total-${name}`).textContent = newTotal.toLocaleString();
+        document.getElementById(`sum-${name}`).textContent = newTotal.toLocaleString();
+        
+        let grand = 0;
+        Object.keys(personalStats).forEach(n => { if (!excludedUsers.has(n)) grand += personalStats[n].total; });
+        document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
+    }
+
+    function updateDetail(name) {
+        const stats = personalStats[name];
+        if(!stats) return;
+        document.getElementById('selectedPersonName').innerHTML = name + (stats.error ? '<span class="red-star">*</span>' : '');
+        document.getElementById('imgTitle').innerHTML = `【${name}${stats.error ? '<span style="color:#C76C6C">*</span>' : ''} 餐費明細】`;
+        document.getElementById('copyBtn').style.display = document.getElementById('copyImgBtn').style.display = 'inline-block';
+        
+        const box = document.getElementById('personalDetail');
+        stats.details.sort((a,b)=>a.date.localeCompare(b.date));
+        
+        box.innerHTML = stats.details.map((d, index) => `
+            <div class="detail-row">
+                <span class="detail-content">${d.date.substring(5).replace('-','/')}：${d.text}</span>
+                <input type="number" class="price-input" value="${d.price}" oninput="handlePriceChange('${name}', ${index}, this.value, this)">
+                <span class="price-text">${d.price.toLocaleString()}</span>
+            </div>
+        `).join('') + `<hr style="border:0; border-top:1px dashed #CCC;"><div style="text-align:right; font-weight:bold; padding-top:10px; font-size:16px; color:#555;">總計：<span id="detail-total-${name}" style="color:#B05B5B">${stats.total.toLocaleString()}</span> 元</div>`;
+    }
+
+    function renderNonMonthly() {
+        const el = document.getElementById('nonMonthlyList');
+        if (nonMonthlyDates.length > 0) {
+            el.style.display = 'block';
+            el.innerHTML = `<strong>非月結日期（點擊可加入）：</strong><br>`;
+            nonMonthlyDates.forEach(date => {
+                const span = document.createElement('span');
+                span.className = 'clickable-date';
+                span.textContent = date;
+                span.onclick = () => { 
+                    if (confirm(`是否將日期 ${date} 加入月結累計中？`)) { 
+                        forceIncludeDates.add(date); 
+                        render(); 
+                        saveToLocalStorage();
+                    } 
+                };
+                el.appendChild(span);
+            });
+        } else el.style.display = 'none';
+    }
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+        const name = currentSelectedUser;
+        if (!name) return;
+        
+        const monthVal = document.getElementById('monthSelect').value; 
+        let monthStr = "XX";
+        if (monthVal && monthVal.includes('.')) {
+            monthStr = parseInt(monthVal.split('.')[1], 10);
         }
 
-        function matchFilter(item, term) { return !term || item.desc?.toLowerCase().includes(term) || item.url?.toLowerCase().includes(term); }
-        function checkAndRender() { document.getElementById('loading').style.display = 'none'; document.getElementById('main-container').classList.remove('hidden'); renderMain(document.getElementById('searchInput').value); }
-        window.switchTab = (t) => { document.getElementById('panel-link').classList.toggle('hidden', t!=='link'); document.getElementById('panel-category').classList.toggle('hidden', t!=='category'); document.getElementById('tab-link').classList.toggle('active', t==='link'); document.getElementById('tab-category').classList.toggle('active', t==='category'); };
-        window.openEditModal = (k, d, u, c) => { document.getElementById('editKey').value = k; document.getElementById('editDesc').value = d; document.getElementById('editUrl').value = u; document.getElementById('editCatId').value = c || ""; document.getElementById('editModal').classList.remove('hidden'); };
-        window.closeEditModal = () => document.getElementById('editModal').classList.add('hidden');
-        window.copyToClipboard = (b, d, u) => { navigator.clipboard.writeText(`${d} - ${u}`).then(() => { const icon = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-check text-[#8fb4a2]"></i>'; setTimeout(() => b.innerHTML = icon, 1000); }); };
-        function updateCategoryDropdowns() { let opts = '<option value="">未分類</option>'; state.categories.forEach(cat => opts += `<option value="${cat.id}">${cat.name}</option>`); document.getElementById('newLinkCat').innerHTML = document.getElementById('editCatId').innerHTML = opts; }
-        window.addItem = () => { const desc = document.getElementById('newDesc').value.trim(), url = document.getElementById('newUrl').value.trim(), catId = document.getElementById('newLinkCat').value; if (!desc || !url) return; push(ref(db, `users/${state.userId}/links`), { desc, url: url.startsWith('http') ? url : 'https://'+url, categoryId: catId || null, order: 999 }); document.getElementById('newDesc').value = document.getElementById('newUrl').value = ''; };
-        window.addCategory = () => { const name = document.getElementById('newCatName').value.trim(); if(!name) return; push(ref(db, `users/${state.userId}/categories`), { name, order: state.categories.length }); document.getElementById('newCatName').value = ''; switchTab('link'); };
-        window.saveEdit = () => { const k = document.getElementById('editKey').value; update(ref(db, `users/${state.userId}/links/${k}`), { desc: document.getElementById('editDesc').value.trim(), url: document.getElementById('editUrl').value.trim(), categoryId: document.getElementById('editCatId').value || null }).then(closeEditModal); };
-        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.userId}/links/${document.getElementById('editKey').value}`)).then(closeEditModal);
-        document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
+        let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
         
-        window.onload = () => {
-            renderLoginHistory();
-            const lastUser = localStorage.getItem('url_manager_current_user');
-            if (lastUser) { document.getElementById('userInput').value = lastUser; handleLogin(); }
-        };
-    </script>
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt)
+                .then(() => {
+                    showCopyFeedback('copyBtn'); 
+                })
+                .catch(err => {
+                    console.warn("Clipboard API failed, using fallback", err);
+                    if(fallbackCopyText(txt)) {
+                        showCopyFeedback('copyBtn'); 
+                    }
+                });
+        } else {
+            if(fallbackCopyText(txt)) {
+                showCopyFeedback('copyBtn'); 
+            }
+        }
+    });
+
+    function showCopyFeedback(btnId, msg = "✔️ 已複製！") {
+        const btn = document.getElementById(btnId);
+        const originalText = btn.innerHTML; 
+        
+        btn.innerHTML = msg;
+        btn.style.backgroundColor = "#5E7D75"; 
+        btn.style.cursor = "default";
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.backgroundColor = ""; 
+            btn.style.cursor = "pointer";
+        }, 2000);
+    }
+
+    function fallbackCopyText(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; 
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        let success = false;
+        try {
+            success = document.execCommand('copy');
+            if(!success) {
+                alert('複製失敗，請手動複製。');
+            }
+        } catch (err) {
+            alert('複製失敗，請手動複製。');
+        }
+        document.body.removeChild(textArea);
+        return success;
+    }
+
+    document.getElementById('copyImgBtn').addEventListener('click', () => {
+        const area = document.getElementById('captureArea');
+        const imgTitle = document.getElementById('imgTitle');
+        const personName = currentSelectedUser;
+        
+        imgTitle.style.display = 'block';
+        document.body.classList.add('capturing');
+        
+        setTimeout(() => {
+            html2canvas(area, { 
+                scale: 2, 
+                backgroundColor: "#ffffff" 
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    if (navigator.clipboard && navigator.clipboard.write) {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        navigator.clipboard.write([item]).then(() => {
+                            showCopyFeedback('copyImgBtn', '✔️ 已複製！');
+                            resetUI();
+                        }).catch(err => {
+                            console.warn("Image copy failed, downloading instead", err);
+                            downloadImage(canvas, personName);
+                            showCopyFeedback('copyImgBtn', '✔️ 已下載');
+                            resetUI();
+                        });
+                    } else {
+                        downloadImage(canvas, personName);
+                        showCopyFeedback('copyImgBtn', '✔️ 已下載');
+                        resetUI();
+                    }
+                });
+            }).catch(err => {
+                console.error("html2canvas failed", err);
+                resetUI();
+            });
+        }, 150);
+        
+        function resetUI() {
+            imgTitle.style.display = 'none';
+            document.body.classList.remove('capturing');
+        }
+        
+        function downloadImage(canvas, name) {
+            const link = document.createElement('a');
+            link.download = `餐費明細-${name}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    });
+</script>
 </body>
 </html>
