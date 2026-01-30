@@ -63,7 +63,9 @@
             <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
                 <input type="text" id="userInput" placeholder="請輸入使用者代號" 
                        class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
-                <div id="login-history" class="flex flex-wrap justify-center gap-2"></div>
+                
+                <div id="login-history" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-1"></div>
+
                 <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
                     進入系統
                 </button>
@@ -73,15 +75,17 @@
     </div>
 
     <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
-        <div class="text-center mb-4 border-b-2 border-[#d1c7b7] pb-1 flex justify-between items-end">
-            <div class="flex items-center text-[10px] font-bold text-[#8fb4a2] pb-1 min-w-[60px]">
-                <i class="fa-solid fa-user mr-1"></i>
-                <span id="display-user-id" class="truncate max-w-[80px]">---</span>
+        <div class="text-center mb-6 border-b-2 border-[#d1c7b7] pb-2 flex justify-between items-center">
+            <div class="flex items-center bg-[#8fb4a2]/10 px-3 py-1.5 rounded-full border border-[#8fb4a2]/30 min-w-[70px]">
+                <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm"></i>
+                <span id="display-user-id" class="text-xs font-black text-[#4a3f35] truncate max-w-[80px]">---</span>
             </div>
+
             <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
                 <i class="fa-solid fa-link text-[#8fb4a2] mr-1"></i>URL_MANAGER
             </h1>
-            <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 pb-1 text-sm min-w-[60px] text-right">
+
+            <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 p-2 text-sm min-w-[70px] text-right">
                 <i class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
@@ -151,23 +155,42 @@
         let linkSortables = [], catSortable = null;
         const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
 
-        // --- 搬移腳本區 (確認搬移完成後可整段刪除) ---
-        async function migrateToUserPath(newUserId) {
-            onValue(ref(db, '/'), async (snapshot) => {
-                const allData = snapshot.val();
-                if (!allData || (allData.users && allData.users[newUserId])) return;
-                const updates = {};
-                if (allData.links) updates[`users/${newUserId}/links`] = allData.links;
-                if (allData.categories) updates[`users/${newUserId}/categories`] = allData.categories;
-                if (Object.keys(updates).length > 0) {
-                    await update(ref(db), updates);
-                    alert(`資料已成功搬移至：${newUserId}！頁面即將重整。`);
-                    location.reload();
-                }
-            }, { onlyOnce: true });
+        // 渲染歷史紀錄功能 (新增刪除按鈕)
+        function renderLoginHistory() {
+            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            const container = document.getElementById('login-history');
+            container.innerHTML = '';
+            
+            history.forEach(id => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center bg-[#f0ede4] rounded-full px-3 py-1 gap-1 border border-[#d1c7b7]';
+                
+                const idBtn = document.createElement('button');
+                idBtn.className = 'text-[10px] text-[#6b5e51] font-bold hover:text-[#4a3f35]';
+                idBtn.textContent = id;
+                idBtn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-[10px] text-red-300 hover:text-red-500 ml-1 pl-1 border-l border-[#d1c7b7]';
+                delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeHistoryId(id);
+                };
+                
+                wrapper.appendChild(idBtn);
+                wrapper.appendChild(delBtn);
+                container.appendChild(wrapper);
+            });
         }
-        migrateToUserPath('graceyiyo'); // 呼叫搬移
-        // --- 搬移腳本區結束 ---
+
+        // 移除單筆歷史紀錄
+        window.removeHistoryId = (id) => {
+            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            history = history.filter(item => item !== id);
+            localStorage.setItem('url_manager_history', JSON.stringify(history));
+            renderLoginHistory();
+        };
 
         window.handleLogin = () => {
             const id = document.getElementById('userInput').value.trim();
@@ -176,7 +199,7 @@
             let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
             if (!history.includes(id)) {
                 history.unshift(id);
-                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 5)));
+                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 10)));
             }
             localStorage.setItem('url_manager_current_user', id);
             document.getElementById('display-user-id').textContent = id;
@@ -207,7 +230,6 @@
             });
         }
 
-        // ... (其餘渲染邏輯與原版一致，均已改為 path: users/${state.userId}/...)
         function getCatColor(id) {
             if (id === 'all') return "#4a3f35";
             if (id === 'uncategorized') return "#9b8b7a";
@@ -287,14 +309,7 @@
         document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
         
         window.onload = () => {
-            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            const container = document.getElementById('login-history');
-            history.forEach(id => {
-                const btn = document.createElement('button');
-                btn.className = 'text-[10px] px-3 py-1 bg-[#f0ede4] rounded-full text-[#6b5e51] font-bold';
-                btn.textContent = id; btn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
-                container.appendChild(btn);
-            });
+            renderLoginHistory();
             const lastUser = localStorage.getItem('url_manager_current_user');
             if (lastUser) { document.getElementById('userInput').value = lastUser; handleLogin(); }
         };
