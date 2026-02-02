@@ -67,11 +67,9 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
         
-        /* 付款清單：文字超過可反白拉動，且不換行 */
         #recordTable td { text-overflow: clip; white-space: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
         #recordTable td::-webkit-scrollbar { display: none; }
         
-        /* 廠商資料表格換行邏輯 */
         #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
         
         th { background-color: #f8f8f8; color: var(--primary); }
@@ -219,7 +217,8 @@
             </div>
             <div class="filter-group">
                 <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
-                <button class="btn-excel" onclick="exportToExcel()">匯出 Excel (CSV)</button>
+                <button class="btn-info" style="background: #2c3e50;" onclick="exportBankData()">匯出匯款資料</button>
+                <button class="btn-excel" onclick="exportClaimDetail()">匯出請款明細</button>
             </div>
         </div>
         <table id="recordTable">
@@ -556,14 +555,31 @@
 
     function clearData() { if(confirm("確定清空？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
-    function exportToExcel() {
+    // --- 新增：匯出匯款資料 (日期、解款行、帳號、戶名、金額) ---
+    function exportBankData() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
         const data = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        let csv = "\uFEFF日期,明細內容,金額,解款行,帳號,戶名,付款公司\n" + data.map(i => `${i.date},"${i.desc}",${i.amount},${i.bank},${i.acc},${i.owner},${i.company}`).join("\n");
+        if(data.length === 0) return alert("目前篩選條件下無資料可匯出");
+
+        let csv = "\uFEFF日期,解款行,帳號,戶名,金額\n" + data.map(i => `${i.date},"${i.bank}","${i.acc}","${i.owner}",${i.amount}`).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = `付款清單_${filterMon}.csv`;
+        link.download = `匯款資料_${filterMon}_${filterComp}.csv`;
+        link.click();
+    }
+
+    // --- 修改：匯出請款明細 (日期、明細內容、金額) ---
+    function exportClaimDetail() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const data = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
+        if(data.length === 0) return alert("目前篩選條件下無資料可匯出");
+
+        let csv = "\uFEFF日期,明細內容,金額\n" + data.map(i => `${i.date},"${i.desc}",${i.amount}`).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        link.download = `請款明細_${filterMon}_${filterComp}.csv`;
         link.click();
     }
 
