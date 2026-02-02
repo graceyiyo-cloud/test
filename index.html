@@ -73,6 +73,9 @@
         #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
         
         th { background-color: #f8f8f8; color: var(--primary); }
+        .sortable { cursor: pointer; user-select: none; position: relative; }
+        .sortable:hover { background-color: #f0f0f0; }
+        
         .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; border: 1px transparent solid; }
         .editable:focus { border-color: var(--accent); outline: none; background-color: #fff; }
         
@@ -225,7 +228,7 @@
             <thead>
                 <tr>
                     <th style="width: 8%;">日期</th>
-                    <th style="width: 25%;">明細內容</th>
+                    <th style="width: 25%;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
                     <th style="width: 10%;">金額</th>
                     <th style="width: 10%;">解款行</th>
                     <th style="width: 16%;">帳號</th>
@@ -293,6 +296,7 @@
     const fmt = new Intl.NumberFormat('zh-TW');
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
+    let currentSortOrder = 'asc'; // 記錄當前排序順序
 
     function searchVendor(val) {
         const resultsDiv = document.getElementById('searchResults');
@@ -507,11 +511,28 @@
         document.getElementById('paymentDetail').innerHTML = "";
     }
 
+    // --- 新增：切換排序邏輯 ---
+    function toggleSort(field) {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+        db.sort((a, b) => {
+            let valA = a[field] || "";
+            let valB = b[field] || "";
+            if (currentSortOrder === 'asc') {
+                return valA.localeCompare(valB, 'zh-TW');
+            } else {
+                return valB.localeCompare(valA, 'zh-TW');
+            }
+        });
+        renderTable();
+    }
+
     function renderTable() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = "";
+        
+        // 此處 db 已根據排序邏輯排列
         db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon))
           .forEach(item => {
             const tr = document.createElement('tr');
@@ -555,7 +576,6 @@
 
     function clearData() { if(confirm("確定清空？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
-    // --- 新增：匯出匯款資料 (日期、解款行、帳號、戶名、金額) ---
     function exportBankData() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
@@ -569,7 +589,6 @@
         link.click();
     }
 
-    // --- 修改：匯出請款明細 (日期、明細內容、金額) ---
     function exportClaimDetail() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
