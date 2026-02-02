@@ -70,7 +70,6 @@
         
         .filter-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
 
-        /* Modal 彈窗樣式 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
@@ -193,7 +192,7 @@
     </div>
 </div>
 
-<div id="infoModal" class="modal" onclick="closeModal(event)">
+<div id="infoModal" class="modal" onclick="document.getElementById('infoModal').style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
         <div class="section-title">計算過程紀錄</div>
@@ -243,7 +242,7 @@
             `${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong>`;
 
         document.getElementById('processFormula').innerHTML = `
-            <div>① 全額：${fmt.format(raw)} + ${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
+            <div>① 全額：${fmt.format(raw)} + 稅${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
             <div>② 清潔費(${cRate}%)：${fmt.format(total)} × ${cRate}% = <strong>${fmt.format(cleanFee)}</strong></div>
             <div class="subtotal-line">③ 小計 (①-②)：${fmt.format(total)} - ${fmt.format(cleanFee)} = <strong>${fmt.format(subtotal)}</strong></div>
             <div>④ 保留款：${retentionDisplay}</div>
@@ -290,7 +289,7 @@
         const company = document.getElementById('companySelect').value;
         const note = document.getElementById('workNote').value || "工程";
         const rRate = document.getElementById('retentionRate').value;
-        const formulaHtml = document.getElementById('processFormula').innerHTML; // 擷取當前算式
+        const formulaHtml = document.getElementById('processFormula').innerHTML;
         
         if (net <= 0 || p1PctInput === "") { alert("請輸入金額與比例"); return; }
         
@@ -303,7 +302,7 @@
             desc: `${note}-保留${rRate}%(2-1)`, 
             amount: pay1Amount,
             company: company,
-            formula: formulaHtml // 儲存算式
+            formula: formulaHtml
         });
         
         if (p1Pct < 100) {
@@ -313,7 +312,7 @@
                 desc: `${note}-保留${rRate}%(2-2)`, 
                 amount: net - pay1Amount,
                 company: company,
-                formula: formulaHtml // 儲存算式
+                formula: formulaHtml
             });
         }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
