@@ -2,541 +2,330 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冷氣清洗紀錄</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工程階層結算系統</title>
     <style>
-        /* 整體字體加大約 10% */
-        html {
-            font-size: 110%;
+        :root {
+            --bg: #F7F6F2;
+            --card: #FFFFFF;
+            --primary: #8E9775;
+            --accent: #AF8F6F;
+            --text: #4A4A4A;
+            --border: #E0DED7;
+            --danger: #e74c3c;
         }
-        body { 
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; 
-        }
-        .hidden { display: none; }
-        .completed-row { background-color: #f8fafc !important; border-left: 4px solid #94a3b8 !important; opacity: 0.85; }
+
+        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         
-        /* 讓備註支援分行顯示 */
-        .note-display {
-            white-space: pre-wrap;
-            word-break: break-all;
-            display: block;
-            line-height: 1.5;
-        }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; width: 100%; max-width: 500px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #E0DED7; cursor: pointer; border-radius: 8px 8px 0 0; color: #777; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
 
-        /* 亮點提示動畫 */
-        @keyframes highlight-fade {
-            0% { background-color: #fef08a; transform: scale(1.02); }
-            100% { background-color: white; transform: scale(1); }
-        }
-        .highlight-target {
-            animation: highlight-fade 2s ease-out;
-            z-index: 10;
-        }
+        .page { display: none; width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 全裝置統一使用卡片式佈局 */
-        thead { display: none; }
-        tr { 
-            display: block; 
-            margin-bottom: 1rem; 
-            border-radius: 12px;
-            background: white;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-        td { 
-            display: block; 
-            width: 100%;
-            padding: 0.25rem 0 !important;
-            border: none !important;
-            text-align: left;
-            color: #475569;
-        }
-        /* 移除「時間：」與「明細：」前綴文字 */
-        td[data-label="預約時間"]::before { content: ""; }
-        td[data-label="服務明細"]::before { content: ""; }
+        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
+        .list-card { background: var(--card); width: 100%; max-width: 850px; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
         
-        td[data-label="客戶"] { font-weight: 700; font-size: 1.1rem; color: #1e293b; padding-bottom: 0.5rem !important; }
-        td[data-label="金額帳目"] { 
-            padding-top: 0.75rem !important; 
-            margin-top: 0.5rem;
-            border-top: 1px dashed #e2e8f0 !important; 
-            color: #475569; 
-            font-size: 0.85rem;
-        }
-        td.action-cell {
-            border-top: 1px solid #f1f5f9 !important;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem !important;
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
+        h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
+        .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
+        .col { flex: 1; display: flex; flex-direction: column; }
+        
+        label { font-size: 0.8rem; margin-bottom: 5px; color: #999; }
+        input, select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none; background: #FAFAFA; width: 100%; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--primary); background: #FFF; }
+        
+        #netAmount { font-weight: bold; color: var(--accent); background-color: #FFF9F3; border: 1px solid var(--accent); }
+        .config-box { background: #F9F9F8; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #EEE; }
+        .payment-box { border-top: 2px solid var(--primary); padding-top: 15px; margin-top: 20px; }
+        
+        .input-with-unit { position: relative; display: flex; align-items: center; }
+        .unit-label { margin-left: 5px; font-size: 0.8rem; color: #999; white-space: nowrap; width: 20px; }
 
-        /* 電腦版寬度調整為 1/2 */
-        @media (min-width: 1024px) {
-            .desktop-half-width {
-                max-width: 50% !important;
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
+        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .section-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
+        
+        .formula { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; color: #666; }
+        .formula strong { color: #333; font-weight: 600; }
+        .subtotal-line { background: #F0F2EB; padding: 4px 8px; border-radius: 4px; color: var(--primary) !important; }
+        
+        .payment-result { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #DDD; }
+        .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
+
+        .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-excel { padding: 10px 20px; background: #217346; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
+        
+        .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .check-label input[type="checkbox"] { width: auto; margin: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; overflow: hidden; }
+        th { background-color: #f8f8f8; color: var(--primary); }
+        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: inline-block; width: 90%; }
+        .amount-cell { text-align: right; font-family: monospace; }
+        .action-cell { text-align: center; width: 60px; }
+        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.5rem; line-height: 1; }
+        
+        .filter-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
     </style>
 </head>
-<body class="bg-[#faf9f6] min-h-screen text-slate-700">
+<body>
 
-    <nav class="bg-slate-600 text-white py-2 px-4 shadow-md sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-bold tracking-widest">冷氣清洗紀錄</h1>
-            <div class="flex space-x-2">
-                <button onclick="showPage('listPage')" class="px-4 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">清單</button>
-                <button onclick="prepareNewForm()" class="px-4 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">填寫</button>
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchPage('calcPage', this)">計算工具</button>
+    <button class="tab-btn" onclick="switchPage('listPage', this)">付款清單</button>
+</div>
+
+<div id="calcPage" class="page active">
+    <div class="card">
+        <h2>工程結算明細</h2>
+        <div class="row">
+            <div class="col">
+                <label>付款公司</label>
+                <select id="companySelect">
+                    <option value="瀞川">瀞川</option>
+                    <option value="聿川">聿川</option>
+                    <option value="長川">長川</option>
+                    <option value="上川">上川</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>工程內容 (明細)</label>
+                <input type="text" id="workNote" placeholder="例如：頂美段-弘龍-木地板已完成54戶請款">
             </div>
         </div>
-    </nav>
 
-    <div class="container mx-auto px-3 md:px-4 py-6">
-        
-        <section id="formPage" class="hidden max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
-            <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">📝 新增紀錄</h2>
-            <form id="recordForm" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">預約日期時間</label>
-                        <input type="datetime-local" id="bookingTime" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">客戶姓名</label>
-                        <input type="text" id="customerName" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">連絡電話</label>
-                        <input type="tel" id="phone" class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">施工地址</label>
-                        <input type="text" id="address" placeholder="" class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">冷氣台數</label>
-                        <input type="number" id="acCount" value="0" min="0" onfocus="this.select()" oninput="toggleAcBrand()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">洗衣機</label>
-                        <input type="number" id="wmCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">水塔</label>
-                        <input type="number" id="wtCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
-                    </div>
-                </div>
-                <div id="acBrandSection" class="hidden">
-                    <label class="block text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">❄️ 冷氣品牌與規格備註</label>
-                    <input type="text" id="acBrand" placeholder="例如：大金*2、華菱*1" class="block w-full border-emerald-100 rounded-xl p-3 border bg-emerald-50/30 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required placeholder="金額" onfocus="this.select()" class="w-full border-slate-200 rounded-xl p-3 border font-bold text-slate-700"></div>
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手支出</label><input type="number" id="assistantPay" placeholder="金額" onfocus="this.select()" class="w-full border-slate-200 rounded-xl p-3 border font-bold text-slate-700"></div>
-                </div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
-            </form>
-        </section>
+        <div class="row">
+            <div class="col">
+                <label>未稅金額</label>
+                <input type="number" id="rawAmount" placeholder="請輸入金額" oninput="calculate(false, false)">
+            </div>
+            <div class="col">
+                <label>稅額 (5%)</label>
+                <input type="number" id="taxAmount" oninput="calculate(true, false)">
+            </div>
+        </div>
 
-        <section id="listPage" class="desktop-half-width">
-            <div class="flex flex-col gap-4 mb-6">
-                <div class="bg-slate-700 p-4 rounded-2xl shadow-sm border-l-4 border-slate-400 text-white flex items-center">
-                    <div class="flex flex-col text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-4 border-r border-slate-600 pr-3 leading-tight">
-                        <span>全</span><span>部</span><span>年</span><span>份</span><span>總</span><span>累</span><span>計</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="grid grid-cols-3 gap-2 text-center border-b border-slate-600 pb-2 mb-2">
-                            <div><p class="text-[10px] text-slate-400">冷氣</p><p class="text-md font-bold" id="allAc">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">洗衣機</p><p class="text-md font-bold" id="allWm">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">水塔</p><p class="text-md font-bold" id="allWt">0</p></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 text-center">
-                            <div><p class="text-[10px] text-slate-400">總收入</p><p class="text-[12px] font-bold" id="allRev">$0</p></div>
-                            <div><p class="text-[10px] text-slate-400">小幫手</p><p class="text-[12px] font-bold text-rose-300" id="allExp">$0</p></div>
-                            <div><p class="text-[10px] text-emerald-300">淨實收</p><p class="text-[12px] font-bold text-emerald-300" id="allNet">$0</p></div>
-                        </div>
-                    </div>
+        <div class="config-box">
+            <div class="row">
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate(false, false)"> 清潔保險 (%)</label>
+                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate(false, false)">
                 </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-400 space-y-6">
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="yearTitle">年度統計</h3>
-                            <div class="text-[10px] text-slate-400">年度數量: <span class="text-slate-700 font-bold" id="yCounts">冷0 / 洗0 / 水0</span></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                            <div><p class="text-[10px] text-slate-400 mb-1">年度總營收</p><p class="text-sm font-bold text-slate-800" id="yRev">$0</p></div>
-                            <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><p class="text-sm font-bold text-rose-400" id="yExp">$0</p></div>
-                            <div><p class="text-[10px] text-emerald-600 font-bold mb-1">年度淨利</p><p class="text-sm font-bold text-emerald-700" id="yNet">$0</p></div>
-                        </div>
-                    </div>
-
-                    <div class="border-t border-slate-100 pt-4">
-                        <div class="flex justify-between items-start">
-                            <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="monthTitle">本月統計</h3>
-                            <div class="text-[10px] text-slate-400">月度數量: <span class="text-slate-700 font-bold" id="mCounts">冷0 / 洗0 / 水0</span></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                            <div><p class="text-[10px] text-slate-400 mb-1">本月總營收</p><p class="text-sm font-bold text-slate-800" id="mRev">$0</p></div>
-                            <div><p class="text-[10px] text-slate-400 mb-1">本月支出</p><p class="text-sm font-bold text-rose-400" id="mExp">$0</p></div>
-                            <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-sm font-bold text-emerald-700" id="mNet">$0</p></div>
-                        </div>
-                    </div>
-
-                    <div id="unpaidSection" class="border-t border-amber-100 pt-4 bg-amber-50/30 -mx-5 px-5 pb-2 hidden">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-amber-600 text-[10px] font-bold uppercase tracking-widest">⚠️ 本月待收款明細 (點擊姓名跳轉)</h3>
-                            <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
-                        </div>
-                        <div id="unpaidList" class="space-y-1 text-[11px] text-amber-800">
-                            </div>
-                    </div>
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate(false, false)"> 保留款 (%)</label>
+                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate(false, false)">
                 </div>
             </div>
-
-            <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
-                <div class="flex flex-col md:flex-row gap-3">
-                    <div class="flex-[3]">
-                        <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址或機型內容..." class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100">
-                    </div>
-                    <div class="flex-[2] flex items-center gap-1">
-                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none">◀</button>
-                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
-                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none">▶</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 md:flex gap-2">
-                    <select id="typeFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
-                        <option value="all">全部品項</option>
-                        <option value="ac">冷氣</option>
-                        <option value="wm">洗衣機</option>
-                        <option value="wt">水塔</option>
-                    </select>
-                    <select id="statusFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
-                        <option value="all">施工進度</option>
-                        <option value="completed">已完成</option>
-                        <option value="pending">待處理</option>
-                    </select>
-                    <select id="paymentFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
-                        <option value="all">帳務狀態</option>
-                        <option value="paid">已收款</option>
-                        <option value="unpaid">待收款</option>
-                    </select>
+            <div class="row">
+                <div class="col">
+                    <label>保留款金額 (可手動修改)</label>
+                    <input type="number" id="retentionAmount" oninput="calculate(true, true)">
                 </div>
             </div>
+        </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <tbody id="recordList" class="divide-y divide-slate-100"></tbody>
-                </table>
+        <div class="row">
+            <div class="col">
+                <label>最終淨額 (可手動修改)</label>
+                <input type="number" id="netAmount" oninput="renderDetail()">
             </div>
-        </section>
+        </div>
+
+        <div class="payment-box">
+            <label>付款比例 / 期數 (月)</label>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
+            </div>
+        </div>
+
+        <div class="display-area">
+            <div class="section-title">階層計算列示</div>
+            <div id="processFormula" class="formula">請輸入資料...</div>
+            <div class="payment-result" id="paymentDetail"></div>
+        </div>
+
+        <button class="btn-save" onclick="saveData()">儲存此筆排程</button>
+        <button class="btn-reset" onclick="location.reload()">重新整理</button>
     </div>
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTyt_nIV1h_MFRhQoT9PHFMXhus1jQVL4",
-            authDomain: "ac-records-b8c40.firebaseapp.com",
-            projectId: "ac-records-b8c40",
-            storageBucket: "ac-records-b8c40.firebasestorage.app",
-            messagingSenderId: "471993362594",
-            appId: "1:471993362594:web:1be7e72af1021760c64ffb"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const recordsCol = collection(db, "cleaningRecords");
-        let allRecords = [];
-        let editingId = null;
-
-        document.getElementById('monthFilter').value = new Date().toISOString().substring(0, 7);
-
-        window.showPage = (id) => {
-            document.getElementById('formPage').classList.toggle('hidden', id !== 'formPage');
-            document.getElementById('listPage').classList.toggle('hidden', id !== 'listPage');
-        };
-
-        window.prepareNewForm = () => {
-            editingId = null;
-            document.getElementById('recordForm').reset();
-            toggleAcBrand();
-            showPage('formPage');
-        };
-
-        window.toggleAcBrand = () => {
-            document.getElementById('acBrandSection').classList.toggle('hidden', document.getElementById('acCount').value <= 0);
-        };
-
-        window.changeMonth = (offset) => {
-            const input = document.getElementById('monthFilter');
-            let [year, month] = input.value.split('-').map(Number);
-            let currentDate = new Date(year, month - 1);
-            currentDate.setMonth(currentDate.getMonth() + offset);
-            
-            const nextYear = currentDate.getFullYear();
-            const nextMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-            input.value = `${nextYear}-${nextMonth}`;
-            filterRecords();
-        };
-
-        window.quickFilterUnpaid = () => {
-            document.getElementById('paymentFilter').value = 'unpaid';
-            filterRecords();
-            document.getElementById('recordList').scrollIntoView({ behavior: 'smooth' });
-        };
-
-        // 新增：跳轉到特定紀錄功能
-        window.scrollToRecord = (id) => {
-            const element = document.getElementById(`rec-${id}`);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                element.classList.add('highlight-target');
-                setTimeout(() => element.classList.remove('highlight-target'), 2000);
-            } else {
-                alert("該紀錄在目前的篩選條件下被隱藏了，請切換篩選條件再試一次。");
-            }
-        };
-
-        document.getElementById('recordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const record = {
-                bookingTime: document.getElementById('bookingTime').value,
-                customerName: document.getElementById('customerName').value,
-                phone: document.getElementById('phone').value || "",
-                address: document.getElementById('address').value || "",
-                acCount: parseInt(document.getElementById('acCount').value) || 0,
-                acBrand: document.getElementById('acBrand').value || '',
-                wmCount: parseInt(document.getElementById('wmCount').value) || 0,
-                wtCount: parseInt(document.getElementById('wtCount').value) || 0,
-                totalAmount: parseInt(document.getElementById('totalAmount').value) || 0,
-                assistantPay: parseInt(document.getElementById('assistantPay').value) || 0,
-                note: document.getElementById('note').value || '',
-                status: 'pending',
-                payment: 'unpaid'
-            };
-            try {
-                if (editingId) {
-                    await updateDoc(doc(db, "cleaningRecords", editingId), record);
-                    alert('已更新成功');
-                    editingId = null;
-                } else {
-                    await addDoc(recordsCol, record);
-                    alert('已儲存成功');
-                }
-                e.target.reset(); 
-                toggleAcBrand();
-                showPage('listPage');
-            } catch (err) { alert('儲存失敗'); }
-        });
-
-        onSnapshot(recordsCol, (snap) => {
-            allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            filterRecords();
-        });
-
-        window.filterRecords = () => {
-            const kw = document.getElementById('searchKeyword').value.toLowerCase();
-            const mon = document.getElementById('monthFilter').value;
-            const type = document.getElementById('typeFilter').value;
-            const status = document.getElementById('statusFilter').value;
-            const payment = document.getElementById('paymentFilter').value;
-            
-            let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
-            let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
-            let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
-            let mUnpaidDetails = []; 
-            
-            const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
-            const filterMonthName = mon ? mon.split('-')[1] : (new Date().getMonth() + 1).toString().padStart(2, '0');
-            
-            document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
-            document.getElementById('monthTitle').innerText = `${filterMonthName} 月份統計`;
-
-            allRecords.forEach(r => {
-                aAc += (r.acCount || 0);
-                aWm += (r.wmCount || 0);
-                aWt += (r.wtCount || 0);
-                aRev += (r.totalAmount || 0);
-                aExp += (r.assistantPay || 0);
-            });
-
-            const baseFiltered = allRecords.filter(i => {
-                const iY = i.bookingTime.split('-')[0];
-                const iM = i.bookingTime.substring(0, 7);
-                
-                if (iY === filterYear) { 
-                    yRev += i.totalAmount; 
-                    yExp += i.assistantPay;
-                    yAc += (i.acCount || 0);
-                    yWm += (i.wmCount || 0);
-                    yWt += (i.wtCount || 0);
-                }
-                if (mon && iM === mon) { 
-                    mRev += i.totalAmount; 
-                    mExp += i.assistantPay; 
-                    mAc += (i.acCount || 0);
-                    mWm += (i.wmCount || 0);
-                    mWt += (i.wtCount || 0);
-                    
-                    if (i.payment === 'unpaid') {
-                        mUnpaidDetails.push({ id: i.id, name: i.customerName, amount: i.totalAmount });
-                    }
-                }
-                
-                const searchStr = `${i.customerName} ${i.phone} ${i.address} ${i.acBrand} ${i.note}`.toLowerCase();
-                const matchSearch = searchStr.includes(kw);
-                const matchMonth = mon ? iM === mon : true;
-                const matchType = type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0);
-                const matchStatus = status === 'all' || i.status === status;
-                const matchPayment = payment === 'all' || i.payment === payment;
-
-                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
-            });
-
-            const unpaidSection = document.getElementById('unpaidSection');
-            const unpaidList = document.getElementById('unpaidList');
-            if (mUnpaidDetails.length > 0) {
-                unpaidSection.classList.remove('hidden');
-                unpaidList.innerHTML = mUnpaidDetails.map(item => `
-                    <div class="flex justify-between border-b border-amber-100/50 py-1">
-                        <button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-medium">
-                            • ${item.name}
-                        </button>
-                        <span class="font-bold">$${item.amount.toLocaleString()}</span>
-                    </div>
-                `).join('');
-            } else {
-                unpaidSection.classList.add('hidden');
-            }
-
-            const sorted = baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime));
-
-            document.getElementById('allAc').innerText = aAc.toLocaleString();
-            document.getElementById('allWm').innerText = aWm.toLocaleString();
-            document.getElementById('allWt').innerText = aWt.toLocaleString();
-            document.getElementById('allRev').innerText = `$${aRev.toLocaleString()}`;
-            document.getElementById('allExp').innerText = `$${aExp.toLocaleString()}`;
-            document.getElementById('allNet').innerText = `$${(aRev - aExp).toLocaleString()}`;
-
-            document.getElementById('mRev').innerText = `$${mRev.toLocaleString()}`;
-            document.getElementById('mExp').innerText = `$${mExp.toLocaleString()}`;
-            document.getElementById('mNet').innerText = `$${(mRev - mExp).toLocaleString()}`;
-            document.getElementById('mCounts').innerText = `冷${mAc} / 洗${mWm} / 水${mWt}`;
-            
-            document.getElementById('yRev').innerText = `$${yRev.toLocaleString()}`;
-            document.getElementById('yExp').innerText = `$${yExp.toLocaleString()}`;
-            document.getElementById('yNet').innerText = `$${(yRev - yExp).toLocaleString()}`;
-            document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
-
-            renderRecords(sorted);
-        };
-
-        function renderRecords(data) {
-            const list = document.getElementById('recordList');
-            if (data.length === 0) {
-                list.innerHTML = `<tr><td class="px-6 py-10 text-center text-slate-400 italic">此月份尚無紀錄</td></tr>`;
-                return;
-            }
-            list.innerHTML = data.map(i => {
-                let services = [];
-                if(i.acCount > 0) services.push(`冷氣${i.acCount}台 ${i.acBrand ? `(${i.acBrand})` : ''}`);
-                if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
-                if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
-
-                let net = i.totalAmount - i.assistantPay;
-                let isComp = i.status === 'completed';
-                let isPaid = i.payment === 'paid';
-                let statusClass = isComp ? 'completed-row' : '';
-
-                const hasValidAddress = i.address && i.address.trim() !== "" && i.address !== "未提供地址";
-                const hasValidPhone = i.phone && i.phone.trim() !== "";
-
-                let contactInfo = "";
-                if (hasValidPhone || hasValidAddress) {
-                    contactInfo = `<td data-label="聯絡資訊" class="px-6 py-4 text-slate-500 leading-relaxed">
-                        ${hasValidPhone ? `${i.phone}` : ''}
-                        ${hasValidPhone && hasValidAddress ? '<br>' : ''}
-                        ${hasValidAddress ? `<span class="text-xs">${i.address}</span>` : ''}
-                    </td>`;
-                }
-
-                return `
-                <tr id="rec-${i.id}" class="hover:bg-slate-50 transition ${statusClass}">
-                    <td data-label="預約時間" class="px-6 py-4 font-medium text-slate-500">${i.bookingTime.replace('T',' ')}</td>
-                    <td data-label="客戶" class="px-6 py-4 font-bold text-slate-900">${i.customerName}</td>
-                    ${contactInfo}
-                    <td data-label="服務明細" class="px-6 py-4 text-slate-600">
-                        ${services.join('、') || '無'}
-                        ${i.note ? `<br><span class="text-[11px] text-slate-400 note-display"># ${i.note}</span>` : ''}
-                    </td>
-                    <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
-                        收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700">淨 ${net.toLocaleString()}</span>
-                    </td>
-                    <td class="px-6 py-4 text-center action-cell">
-                        <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <span>${isComp ? '✔️' : '⭕'}</span><span>${isComp ? '已完成' : '未完成'}</span>
-                        </button>
-                        <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <span>${isPaid ? '💰' : '⏳'}</span><span>${isPaid ? '已收款' : '待收款'}</span>
-                        </button>
-                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-bold">
-                            <span>✏️</span><span>修改</span>
-                        </button>
-                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border border-rose-100 text-[10px] font-bold">
-                            <span>🗑️</span><span>刪除</span>
-                        </button>
-                    </td>
+<div id="listPage" class="page" style="max-width: 850px;">
+    <div class="list-card">
+        <div class="section-title">付款清單明細 (點擊文字可直接修改)</div>
+        <div class="filter-row">
+            <div>
+                <label style="margin:0">篩選公司：</label>
+                <select id="filterCompany" style="width: auto; padding: 5px;" onchange="renderTable()">
+                    <option value="全部">全部顯示</option>
+                    <option value="瀞川">瀞川</option>
+                    <option value="聿川">聿川</option>
+                    <option value="長川">長川</option>
+                    <option value="上川">上川</option>
+                </select>
+            </div>
+            <button class="btn-excel" onclick="exportToExcel()">匯出 Excel (CSV)</button>
+        </div>
+        <table id="recordTable">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">匯款日期</th>
+                    <th style="width: 47%;">明細</th>
+                    <th style="width: 25%;">金額</th>
+                    <th class="action-cell">刪除</th>
                 </tr>
-                `;
-            }).join('');
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <button class="btn-reset" onclick="clearData()" style="color: var(--danger);">清空所有資料</button>
+    </div>
+</div>
+
+<script>
+    const fmt = new Intl.NumberFormat('zh-TW');
+    let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
+
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        btn.classList.add('active');
+        if(pageId === 'listPage') renderTable();
+    }
+
+    function calculate(isManualTax, isManualRetention) {
+        const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
+        const taxInput = document.getElementById('taxAmount');
+        const retentionInput = document.getElementById('retentionAmount');
+        let tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
+        if(!isManualTax) taxInput.value = tax || "";
+        const total = raw + tax;
+        const hasClean = document.getElementById('cleanCheck').checked;
+        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
+        const cleanFee = hasClean ? Math.round(total * (cRate / 100)) : 0;
+        const subtotal = total - cleanFee;
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
+        let retention = 0;
+        if (hasRetention) {
+            retention = isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100));
         }
+        if(!isManualRetention) retentionInput.value = retention || "";
+        const net = subtotal - retention;
+        document.getElementById('processFormula').innerHTML = `
+            <div>① 全額：${fmt.format(raw)} + ${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
+            <div>② 清潔費(${cRate}%)：${fmt.format(total)} × ${cRate}% = <strong>${fmt.format(cleanFee)}</strong></div>
+            <div class="subtotal-line">③ 小計 (①-②)：${fmt.format(total)} - ${fmt.format(cleanFee)} = <strong>${fmt.format(subtotal)}</strong></div>
+            <div>④ 保留款(${hasRetention ? rRate : 0}%)：${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong></div>
+            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">⑤ 淨額 (③-④)：${fmt.format(subtotal)} - ${fmt.format(retention)} = <strong>${fmt.format(net)}</strong></div>
+        `;
+        document.getElementById('netAmount').value = net;
+        renderDetail();
+    }
 
-        window.toggleDone = async (id, currentStatus) => {
-            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-            await updateDoc(doc(db, "cleaningRecords", id), { status: newStatus });
-        };
+    function getMinguoDate(addMonths) {
+        let d = new Date();
+        d.setMonth(d.getMonth() + addMonths);
+        const y = d.getFullYear() - 1911;
+        const m = (d.getMonth() + 1).toString().padStart(2, '0');
+        return `${y}/${m}/15`;
+    }
 
-        window.togglePayment = async (id, currentPayment) => {
-            const newPayment = currentPayment === 'paid' ? 'unpaid' : 'paid';
-            await updateDoc(doc(db, "cleaningRecords", id), { payment: newPayment });
-        };
+    function renderDetail() {
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
+        const p1Mon = parseInt(document.getElementById('p1Mon').value) || 0;
+        const pDetail = document.getElementById('paymentDetail');
+        if(net <= 0 || document.getElementById('p1Pct').value === "") { pDetail.innerHTML = ""; return; }
+        const pay1Amount = Math.round(net * (p1Pct / 100));
+        const pay2Amount = net - pay1Amount;
+        let html = `<div class="section-title">付款排程 (預覽)</div>`;
+        html += `<div class="formula">第一期 (${p1Pct}%)：<strong>${fmt.format(pay1Amount)}</strong></div>`;
+        html += `<div class="date-line">${getMinguoDate(p1Mon)} &nbsp; $${fmt.format(pay1Amount)}</div>`;
+        if (p1Pct < 100) {
+            const p2Mon = parseInt(document.getElementById('p2Mon').value) || 0;
+            html += `<div class="formula" style="margin-top:10px;">第二期：<strong>${fmt.format(pay2Amount)}</strong></div>`;
+            html += `<div class="date-line">${getMinguoDate(p2Mon)} &nbsp; $${fmt.format(pay2Amount)}</div>`;
+        }
+        pDetail.innerHTML = html;
+    }
 
-        window.editRec = (id) => {
-            const r = allRecords.find(x => x.id === id);
-            if(!r) return;
-            editingId = id;
-            document.getElementById('bookingTime').value = r.bookingTime;
-            document.getElementById('customerName').value = r.customerName;
-            document.getElementById('phone').value = r.phone || "";
-            document.getElementById('address').value = (r.address === "未提供地址") ? "" : (r.address || "");
-            document.getElementById('acCount').value = r.acCount;
-            document.getElementById('wmCount').value = r.wmCount;
-            document.getElementById('wtCount').value = r.wtCount;
-            document.getElementById('acBrand').value = r.acBrand;
-            document.getElementById('totalAmount').value = r.totalAmount;
-            document.getElementById('assistantPay').value = r.assistantPay;
-            document.getElementById('note').value = r.note;
-            toggleAcBrand();
-            showPage('formPage');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+    function saveData() {
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
+        const company = document.getElementById('companySelect').value;
+        const note = document.getElementById('workNote').value || "工程";
+        const rRate = document.getElementById('retentionRate').value;
+        if (net <= 0 || isNaN(p1Pct)) { alert("請輸入金額與比例"); return; }
+        const timestamp = Date.now();
+        db.push({ id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0)), desc: `${note}-保留${rRate}%(2-1)`, amount: Math.round(net * (p1Pct / 100)), company: company });
+        if (p1Pct < 100) {
+            db.push({ id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0)), desc: `${note}-保留${rRate}%(2-2)`, amount: net - Math.round(net * (p1Pct / 100)), company: company });
+        }
+        localStorage.setItem('paymentRecords', JSON.stringify(db));
+        alert("儲存成功！");
+    }
 
-        window.deleteRec = async (id) => { if(confirm('確定要刪除這筆紀錄嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
-    </script>
+    function renderTable() {
+        const filter = document.getElementById('filterCompany').value;
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+        const filteredData = db.filter(item => filter === "全部" || item.company === filter);
+        filteredData.forEach((item) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
+                <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
+                <td class="action-cell"><button class="btn-del" onclick="deleteRecord('${item.id}')">×</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function updateField(id, field, value) {
+        const idx = db.findIndex(i => i.id === id);
+        if(idx !== -1) { db[idx][field] = value; localStorage.setItem('paymentRecords', JSON.stringify(db)); }
+    }
+
+    function updateAmountField(id, el) {
+        const idx = db.findIndex(i => i.id === id);
+        if(idx !== -1) {
+            let val = parseInt(el.innerText.replace(/,/g, '')) || 0;
+            db[idx].amount = val;
+            localStorage.setItem('paymentRecords', JSON.stringify(db));
+            el.innerText = fmt.format(val);
+        }
+    }
+
+    function deleteRecord(id) {
+        if(confirm("確定要刪除此筆項次嗎？")) {
+            db = db.filter(i => i.id !== id);
+            localStorage.setItem('paymentRecords', JSON.stringify(db));
+            renderTable();
+        }
+    }
+
+    function clearData() { if(confirm("確定要清空所有紀錄嗎？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
+
+    function exportToExcel() {
+        const filter = document.getElementById('filterCompany').value;
+        const data = db.filter(i => filter === "全部" || i.company === filter);
+        if(data.length === 0) return alert("無資料");
+        let csv = "\uFEFF匯款日期,明細,金額\n" + data.map(i => `${i.date},"${i.desc.replace(/"/g, '""')}",${i.amount}`).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        link.download = `付款清單_${filter}.csv`;
+        link.click();
+    }
+</script>
+
 </body>
 </html>
