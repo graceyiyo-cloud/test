@@ -2,394 +2,540 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>URL_Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冷氣清洗紀錄</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
     <style>
-        body {
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f7f3e9; 
-            background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
-            background-size: 24px 24px;
-            color: #4a3f35;
-            -webkit-tap-highlight-color: transparent;
+        /* 整體字體加大約 10% */
+        html {
+            font-size: 110%;
         }
-        .ghibli-shadow {
-            box-shadow: 0 4px 10px -2px rgba(74, 63, 53, 0.08);
-            border: 2px solid #d1c7b7;
+        body { 
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; 
         }
+        .hidden { display: none; }
+        .completed-row { background-color: #f8fafc !important; border-left: 4px solid #94a3b8 !important; opacity: 0.85; }
         
-        #filter-bar-container {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            padding: 8px 0; 
-            cursor: default;
-        }
-        #filter-bar-container::-webkit-scrollbar { height: 4px; }
-        #filter-bar-container::-webkit-scrollbar-thumb { background: #d1c7b7; border-radius: 10px; }
-        #filter-bar { display: flex; flex-wrap: nowrap; gap: 12px; padding: 0 4px; min-width: max-content; }
-        
-        .filter-chip {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
-            white-space: nowrap; 
-            flex-shrink: 0; 
-            font-size: 0.85rem; 
-            font-weight: 900; 
-            border-width: 2.5px; 
-            border-style: solid;
-            cursor: pointer; 
-            user-select: none; 
-            padding: 6px 20px; 
-            border-radius: 9999px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        
-        .filter-chip:not(.active) {
-            background-color: rgba(255, 255, 255, 0.5) !important;
+        /* 讓備註支援分行顯示 */
+        .note-display {
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: block;
+            line-height: 1.5;
         }
 
-        .filter-chip.active { 
-            color: #ffffff !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-1.5px);
+        /* 亮點提示動畫 */
+        @keyframes highlight-fade {
+            0% { background-color: #fef08a; transform: scale(1.02); }
+            100% { background-color: white; transform: scale(1); }
         }
-        
-        .item-title { font-size: 1.05rem; font-weight: 800; color: #4a3f35; }
-        .item-url { font-size: 0.75rem; color: #5c8a97; margin-top: 2px; word-break: break-all; white-space: normal; }
-        
-        .item-tag {
-            border-width: 1.5px; border-style: solid;
-            padding: 1px 7px; border-radius: 6px; 
-            font-size: 0.6rem; 
-            font-weight: 900; 
-            margin-left: 8px; vertical-align: middle;
-            letter-spacing: 0.05em;
-            display: inline-block;
-            line-height: 1.2;
-            text-transform: uppercase;
+        .highlight-target {
+            animation: highlight-fade 2s ease-out;
+            z-index: 10;
         }
-        
-        .ghibli-input { background-color: rgba(255, 255, 255, 0.9); border: 2px solid #d1c7b7; transition: all 0.3s; }
-        .ghibli-input:focus { outline: none; border-color: #8fb4a2; box-shadow: 0 0 0 3px rgba(143, 180, 162, 0.15); }
-        .tab-btn { background-color: #e8e2d5; color: #6b5e51; border: 2px solid #d1c7b7; border-bottom: none; font-size: 0.8rem; }
-        .tab-btn.active { background-color: #fff; color: #4a3f35; font-weight: bold; }
-        .loading-spinner { border: 4px solid #e8e2d5; border-top: 4px solid #8fb4a2; border-radius: 50%; width: 30px; height: 30px; animation: spin 1.5s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #login-overlay { background-color: #f7f3e9; background-image: radial-gradient(#e0d7c1 1px, transparent 1px); background-size: 24px 24px; }
+
+        /* 全裝置統一使用卡片式佈局 */
+        thead { display: none; }
+        tr { 
+            display: block; 
+            margin-bottom: 1rem; 
+            border-radius: 12px;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        td { 
+            display: block; 
+            width: 100%;
+            padding: 0.25rem 0 !important;
+            border: none !important;
+            text-align: left;
+            color: #475569;
+        }
+        td[data-label="預約時間"]::before { content: "時間："; font-weight: 700; color: #64748b; }
+        td[data-label="服務明細"]::before { content: "明細："; font-weight: 700; color: #64748b; }
+        td[data-label="客戶"] { font-weight: 700; font-size: 1.1rem; color: #1e293b; padding-bottom: 0.5rem !important; }
+        td[data-label="金額帳目"] { 
+            padding-top: 0.75rem !important; 
+            margin-top: 0.5rem;
+            border-top: 1px dashed #e2e8f0 !important; 
+            color: #475569; 
+            font-size: 0.85rem;
+        }
+        td.action-cell {
+            border-top: 1px solid #f1f5f9 !important;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem !important;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* 電腦版寬度調整為 1/2 */
+        @media (min-width: 1024px) {
+            .desktop-half-width {
+                max-width: 50% !important;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
     </style>
 </head>
-<body class="pb-20 min-h-screen flex flex-col items-center">
+<body class="bg-[#faf9f6] min-h-screen text-slate-700">
 
-    <div id="login-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4">
-        <div class="w-full max-w-xs text-center">
-            <div class="mb-8">
-                <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
-                    <i class="fa-solid fa-door-open text-[#8fb4a2] mr-1"></i>USER LOGIN
-                </h1>
-                <p class="text-sm font-black text-[#8fb4a2] tracking-[0.2em] mt-1 opacity-80">URL_MANAGER</p>
+    <nav class="bg-slate-600 text-white py-2 px-4 shadow-md sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold tracking-widest">冷氣清洗紀錄</h1>
+            <div class="flex space-x-2">
+                <button onclick="showPage('listPage')" class="px-4 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">清單</button>
+                <button onclick="prepareNewForm()" class="px-4 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">填寫</button>
             </div>
-            
-            <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
-                <input type="text" id="userInput" placeholder="請輸入使用者代號" 
-                       class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
-                <div id="login-history" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-1"></div>
-                <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
-                    進入系統
-                </button>
-            </div>
-            <p class="text-[10px] text-[#b7ad9d] mt-4 font-bold">系統將記住此代號以便下次自動登入</p>
         </div>
-    </div>
+    </nav>
 
-    <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
+    <div class="container mx-auto px-3 md:px-4 py-6">
         
-        <div class="mb-4">
-            <div class="text-center mb-1">
-                <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-link text-[#8fb4a2] text-xl"></i>URL_MANAGER
-                </h1>
-            </div>
-
-            <div class="border-b-2 border-[#d1c7b7] mb-3"></div>
-
-            <div class="flex justify-between items-center px-2 py-0.5">
-                <div class="flex items-center text-[#4a3f35] max-w-[65%]">
-                    <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm flex-shrink-0"></i>
-                    <span id="display-user-id" class="text-[11px] font-black break-all">---</span>
-                </div>
-                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-0.5 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
-                    <span class="text-[10px]">切換帳號</span>
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <div class="flex gap-1">
-                <button onclick="switchTab('link')" id="tab-link" class="tab-btn active px-5 py-2 rounded-t-xl font-bold">新增連結</button>
-                <button onclick="switchTab('category')" id="tab-category" class="tab-btn px-5 py-2 rounded-t-xl font-bold">新增分類</button>
-            </div>
-            <div class="bg-white p-4 border-2 border-[#d1c7b7] ghibli-shadow rounded-b-2xl rounded-tr-2xl">
-                <div id="panel-link" class="flex flex-col gap-3">
-                    <div class="flex gap-2">
-                        <select id="newLinkCat" class="ghibli-input w-1/3 px-2 py-2.5 rounded-lg text-xs font-bold text-[#6b5e51]"></select>
-                        <input type="text" id="newDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-2/3 px-3 py-2.5 text-xs rounded-lg">
+        <section id="formPage" class="hidden max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">📝 新增紀錄</h2>
+            <form id="recordForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">預約日期時間</label>
+                        <input type="datetime-local" id="bookingTime" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
                     </div>
-                    <input type="text" id="newUrl" placeholder="輸入網址" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addItem()" class="w-full bg-[#8fb4a2] text-white py-2.5 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">新增連結 <i class="fa-solid fa-plus ml-1"></i></button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">客戶姓名</label>
+                        <input type="text" id="customerName" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
+                    </div>
                 </div>
-                <div id="panel-category" class="hidden flex flex-col gap-3">
-                    <input type="text" id="newCatName" placeholder="輸入新分類名稱" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addCategory()" class="w-full bg-[#5c8a97] text-white py-2.5 rounded-xl hover:bg-[#4d7885] font-bold text-sm transition-colors">建立分類 <i class="fa-solid fa-folder ml-1"></i></button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">連絡電話</label>
+                        <input type="tel" id="phone" class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">施工地址</label>
+                        <input type="text" id="address" placeholder="" class="block w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">冷氣台數</label>
+                        <input type="number" id="acCount" value="0" min="0" onfocus="this.select()" oninput="toggleAcBrand()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">洗衣機</label>
+                        <input type="number" id="wmCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">水塔</label>
+                        <input type="number" id="wtCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold text-slate-700">
+                    </div>
+                </div>
+                <div id="acBrandSection" class="hidden">
+                    <label class="block text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">❄️ 冷氣品牌與規格備註</label>
+                    <input type="text" id="acBrand" placeholder="例如：大金*2、華菱*1" class="block w-full border-emerald-100 rounded-xl p-3 border bg-emerald-50/30 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required placeholder="金額" onfocus="this.select()" class="w-full border-slate-200 rounded-xl p-3 border font-bold text-slate-700"></div>
+                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手支出</label><input type="number" id="assistantPay" placeholder="金額" onfocus="this.select()" class="w-full border-slate-200 rounded-xl p-3 border font-bold text-slate-700"></div>
+                </div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
+            </form>
+        </section>
+
+        <section id="listPage" class="desktop-half-width">
+            <div class="flex flex-col gap-4 mb-6">
+                <div class="bg-slate-700 p-4 rounded-2xl shadow-sm border-l-4 border-slate-400 text-white flex items-center">
+                    <div class="flex flex-col text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-4 border-r border-slate-600 pr-3 leading-tight">
+                        <span>全</span><span>部</span><span>年</span><span>份</span><span>總</span><span>累</span><span>計</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="grid grid-cols-3 gap-2 text-center border-b border-slate-600 pb-2 mb-2">
+                            <div><p class="text-[10px] text-slate-400">冷氣</p><p class="text-md font-bold" id="allAc">0</p></div>
+                            <div><p class="text-[10px] text-slate-400">洗衣機</p><p class="text-md font-bold" id="allWm">0</p></div>
+                            <div><p class="text-[10px] text-slate-400">水塔</p><p class="text-md font-bold" id="allWt">0</p></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div><p class="text-[10px] text-slate-400">總收入</p><p class="text-[12px] font-bold" id="allRev">$0</p></div>
+                            <div><p class="text-[10px] text-slate-400">小幫手</p><p class="text-[12px] font-bold text-rose-300" id="allExp">$0</p></div>
+                            <div><p class="text-[10px] text-emerald-300">淨實收</p><p class="text-[12px] font-bold text-emerald-300" id="allNet">$0</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-400 space-y-6">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="yearTitle">年度統計</h3>
+                            <div class="text-[10px] text-slate-400">年度數量: <span class="text-slate-700 font-bold" id="yCounts">冷0 / 洗0 / 水0</span></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                            <div><p class="text-[10px] text-slate-400 mb-1">年度總營收</p><p class="text-sm font-bold text-slate-800" id="yRev">$0</p></div>
+                            <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><p class="text-sm font-bold text-rose-400" id="yExp">$0</p></div>
+                            <div><p class="text-[10px] text-emerald-600 font-bold mb-1">年度淨利</p><p class="text-sm font-bold text-emerald-700" id="yNet">$0</p></div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-4">
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="monthTitle">本月統計</h3>
+                            <div class="text-[10px] text-slate-400">月度數量: <span class="text-slate-700 font-bold" id="mCounts">冷0 / 洗0 / 水0</span></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                            <div><p class="text-[10px] text-slate-400 mb-1">本月總營收</p><p class="text-sm font-bold text-slate-800" id="mRev">$0</p></div>
+                            <div><p class="text-[10px] text-slate-400 mb-1">本月支出</p><p class="text-sm font-bold text-rose-400" id="mExp">$0</p></div>
+                            <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-sm font-bold text-emerald-700" id="mNet">$0</p></div>
+                        </div>
+                    </div>
+
+                    <div id="unpaidSection" class="border-t border-amber-100 pt-4 bg-amber-50/30 -mx-5 px-5 pb-2 hidden">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-amber-600 text-[10px] font-bold uppercase tracking-widest">⚠️ 本月待收款明細 (點擊姓名跳轉)</h3>
+                            <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
+                        </div>
+                        <div id="unpaidList" class="space-y-1 text-[11px] text-amber-800">
+                            </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="filter-bar-container" class="mb-4"><div id="filter-bar"></div></div>
-        <div class="relative mb-4">
-            <i class="fa-solid fa-search absolute left-4 top-3 text-[#b7ad9d] text-xs"></i>
-            <input type="text" id="searchInput" placeholder="搜尋標題或網址..." class="ghibli-input w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-xs font-bold">
-        </div>
-        <div id="loading" class="loading-spinner mx-auto my-10"></div>
-        <div id="main-container" class="space-y-3 hidden pb-10"></div>
-        <p id="empty-msg" class="text-center text-[#b7ad9d] mt-10 hidden font-bold text-xs">[ 無資料 ]</p>
-    </div>
+            <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="flex-[3]">
+                        <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址或機型內容..." class="w-full bg-slate-50 border-none rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100">
+                    </div>
+                    <div class="flex-[2] flex items-center gap-1">
+                        <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none">◀</button>
+                        <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
+                        <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none">▶</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 md:flex gap-2">
+                    <select id="typeFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
+                        <option value="all">全部品項</option>
+                        <option value="ac">冷氣</option>
+                        <option value="wm">洗衣機</option>
+                        <option value="wt">水塔</option>
+                    </select>
+                    <select id="statusFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
+                        <option value="all">施工進度</option>
+                        <option value="completed">已完成</option>
+                        <option value="pending">待處理</option>
+                    </select>
+                    <select id="paymentFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 md:px-4 text-[10px] md:text-sm outline-none">
+                        <option value="all">帳務狀態</option>
+                        <option value="paid">已收款</option>
+                        <option value="unpaid">待收款</option>
+                    </select>
+                </div>
+            </div>
 
-    <div id="editModal" class="fixed inset-0 bg-[#4a3f35]/50 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
-        <div class="bg-white p-6 w-full max-w-sm ghibli-shadow rounded-2xl relative">
-            <button onclick="closeEditModal()" class="absolute top-3 right-4 text-[#b7ad9d] hover:text-[#4a3f35] text-lg"><i class="fa-solid fa-times"></i></button>
-            <h3 class="text-sm font-bold text-[#4a3f35] mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯連結</h3>
-            <input type="hidden" id="editKey">
-            <div class="space-y-3">
-                <select id="editCatId" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs font-bold"></select>
-                <input type="text" id="editDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs">
-                <input type="text" id="editUrl" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-[10px] font-mono">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <tbody id="recordList" class="divide-y divide-slate-100"></tbody>
+                </table>
             </div>
-            <div class="flex justify-between items-center mt-6 gap-3">
-                <button onclick="deleteCurrentItem()" class="px-4 py-2 text-red-400 font-bold text-xs">刪除</button>
-                <button onclick="saveEdit()" class="px-7 py-2.5 bg-[#8fb4a2] text-white font-bold rounded-xl text-xs">儲存更新</button>
-            </div>
-        </div>
+        </section>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
-            authDomain: "url-sorting.firebaseapp.com",
-            projectId: "url-sorting",
-            databaseURL: "https://url-sorting-default-rtdb.firebaseio.com"
+            apiKey: "AIzaSyDTyt_nIV1h_MFRhQoT9PHFMXhus1jQVL4",
+            authDomain: "ac-records-b8c40.firebaseapp.com",
+            projectId: "ac-records-b8c40",
+            storageBucket: "ac-records-b8c40.firebasestorage.app",
+            messagingSenderId: "471993362594",
+            appId: "1:471993362594:web:1be7e72af1021760c64ffb"
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let state = { userId: '', links: [], categories: [], currentFilter: 'all' };
-        let linkSortables = [], catSortable = null;
-        const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
+        const db = getFirestore(app);
+        const recordsCol = collection(db, "cleaningRecords");
+        let allRecords = [];
+        let editingId = null;
 
-        function renderLoginHistory() {
-            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            const container = document.getElementById('login-history');
-            container.innerHTML = '';
+        document.getElementById('monthFilter').value = new Date().toISOString().substring(0, 7);
+
+        window.showPage = (id) => {
+            document.getElementById('formPage').classList.toggle('hidden', id !== 'formPage');
+            document.getElementById('listPage').classList.toggle('hidden', id !== 'listPage');
+        };
+
+        window.prepareNewForm = () => {
+            editingId = null;
+            document.getElementById('recordForm').reset();
+            toggleAcBrand();
+            showPage('formPage');
+        };
+
+        window.toggleAcBrand = () => {
+            document.getElementById('acBrandSection').classList.toggle('hidden', document.getElementById('acCount').value <= 0);
+        };
+
+        window.changeMonth = (offset) => {
+            const input = document.getElementById('monthFilter');
+            let [year, month] = input.value.split('-').map(Number);
+            let currentDate = new Date(year, month - 1);
+            currentDate.setMonth(currentDate.getMonth() + offset);
             
-            history.forEach(id => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'flex items-center bg-[#f0ede4] rounded-full px-3 py-1 gap-1 border border-[#d1c7b7]';
-                
-                const idBtn = document.createElement('button');
-                idBtn.className = 'text-[10px] text-[#6b5e51] font-bold hover:text-[#4a3f35]';
-                idBtn.textContent = id;
-                idBtn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
-                
-                const delBtn = document.createElement('button');
-                delBtn.className = 'text-[10px] text-red-300 hover:text-red-500 ml-1 pl-1 border-l border-[#d1c7b7]';
-                delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removeHistoryId(id);
-                };
-                
-                wrapper.appendChild(idBtn);
-                wrapper.appendChild(delBtn);
-                container.appendChild(wrapper);
-            });
-        }
-
-        window.removeHistoryId = (id) => {
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            history = history.filter(item => item !== id);
-            localStorage.setItem('url_manager_history', JSON.stringify(history));
-            renderLoginHistory();
+            const nextYear = currentDate.getFullYear();
+            const nextMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+            input.value = `${nextYear}-${nextMonth}`;
+            filterRecords();
         };
 
-        window.handleLogin = () => {
-            const id = document.getElementById('userInput').value.trim();
-            if (!id) return;
-            state.userId = id;
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            if (!history.includes(id)) {
-                history.unshift(id);
-                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 10)));
-            }
-            localStorage.setItem('url_manager_current_user', id);
-            document.getElementById('display-user-id').textContent = id;
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('app-content').classList.remove('hidden');
-            initDataListeners();
+        window.quickFilterUnpaid = () => {
+            document.getElementById('paymentFilter').value = 'unpaid';
+            filterRecords();
+            document.getElementById('recordList').scrollIntoView({ behavior: 'smooth' });
         };
 
-        window.handleLogout = () => {
-            if (confirm('切換使用者？')) {
-                localStorage.removeItem('url_manager_current_user');
-                location.reload();
-            }
-        };
-
-        function initDataListeners() {
-            onValue(ref(db, `users/${state.userId}/links`), (snapshot) => {
-                const data = snapshot.val();
-                state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
-                renderFilterBar(); checkAndRender();
-            });
-            onValue(ref(db, `users/${state.userId}/categories`), (snapshot) => {
-                const data = snapshot.val();
-                state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-                updateCategoryDropdowns(); renderFilterBar(); checkAndRender();
-            });
-        }
-
-        function getCatColor(id) {
-            if (id === 'all') return "#4a3f35";
-            if (id === 'uncategorized') return "#9b8b7a";
-            let hash = 0; for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-            return ghibliColors[Math.abs(hash) % ghibliColors.length];
-        }
-
-        function renderFilterBar() {
-            const bar = document.getElementById('filter-bar'); bar.innerHTML = '';
-            if(catSortable) catSortable.destroy();
-            bar.appendChild(createFilterChip('全部', 'all'));
-            state.categories.forEach(cat => {
-                const chip = createFilterChip(cat.name, cat.id);
-                chip.dataset.catId = cat.id; bar.appendChild(chip);
-            });
-            if (state.links.some(l => !l.categoryId || !state.categories.find(c => c.id === l.categoryId)))
-                bar.appendChild(createFilterChip('未分類', 'uncategorized'));
-            catSortable = Sortable.create(bar, {
-                animation: 200, delay: 200, filter: '.static-chip',
-                onEnd: () => {
-                    const updates = {}; let idx = 0;
-                    Array.from(bar.children).forEach(el => { if(el.dataset.catId) updates[`users/${state.userId}/categories/${el.dataset.catId}/order`] = idx++; });
-                    update(ref(db), updates);
-                }
-            });
-        }
-
-        function createFilterChip(text, filterId) {
-            const btn = document.createElement('button');
-            const isActive = state.currentFilter === filterId, color = getCatColor(filterId);
-            btn.className = `filter-chip ${isActive ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.style.borderColor = color;
-            btn.style.backgroundColor = isActive ? color : "#ffffff";
-            btn.style.color = isActive ? "#ffffff" : color;
-            
-            if (filterId === 'all' || filterId === 'uncategorized') btn.classList.add('static-chip');
-            btn.onclick = () => { state.currentFilter = filterId; renderFilterBar(); checkAndRender(); };
-            return btn;
-        }
-
-        function renderMain(filterText = '') {
-            const container = document.getElementById('main-container'); container.innerHTML = '';
-            const term = filterText.toLowerCase(); let hasData = false;
-            const renderBlock = (cat, links, isUncat) => {
-                if (links.length > 0) {
-                    const ul = document.createElement('ul'); ul.className = 'space-y-3';
-                    links.forEach(link => {
-                        const li = document.createElement('li');
-                        li.className = `bg-white p-4 ghibli-shadow rounded-2xl flex items-center gap-3 transition-all hover:bg-[#faf9f6]`;
-                        
-                        const catColor = isUncat ? '#9b8b7a' : getCatColor(cat.id);
-                        const tag = (state.currentFilter === 'all' || state.currentFilter === 'uncategorized') 
-                            ? `<span class="item-tag" style="color:${catColor}; border-color:${catColor}; background-color:${catColor}10">${cat.name}</span>` 
-                            : '';
-
-                        const displayDesc = link.desc && link.desc.trim() !== "" ? link.desc : "[ 無標題 ]";
-
-                        li.innerHTML = `<div class="flex-grow min-w-0"><div class="flex items-center"><span class="item-title truncate">${displayDesc}</span>${tag}</div><div class="item-url font-mono"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div></div><div class="flex flex-col gap-1 flex-shrink-0 border-l-2 border-[#f0ede4] pl-2"><button onclick="copyToClipboard(this, '${link.desc || ''}', '${link.url}')" class="text-[#b7ad9d] hover:text-[#8fb4a2] p-1.5"><i class="fa-regular fa-copy"></i></button><button onclick="openEditModal('${link.id}', '${link.desc || ''}', '${link.url}', '${link.categoryId || ''}')" class="text-[#b7ad9d] hover:text-[#5c8a97] p-1.5"><i class="fa-solid fa-pen"></i></button></div>`;
-                        ul.appendChild(li);
-                    });
-                    container.appendChild(ul); hasData = true;
-                }
-            };
-            if (state.currentFilter === 'all') {
-                state.categories.forEach(cat => renderBlock(cat, state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term)), false));
-                renderBlock({id:'uncategorized', name:'未分類'}, state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term)), true);
+        // 新增：跳轉到特定紀錄功能
+        window.scrollToRecord = (id) => {
+            // 如果當前有過濾條件可能導致該紀錄被隱藏，先清除過濾(可選，這裡採取直接尋找)
+            const element = document.getElementById(`rec-${id}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('highlight-target');
+                setTimeout(() => element.classList.remove('highlight-target'), 2000);
             } else {
-                const activeCat = state.currentFilter === 'uncategorized' ? {id:'uncategorized', name:'未分類'} : state.categories.find(c => c.id === state.currentFilter);
-                if (activeCat) renderBlock(activeCat, state.links.filter(l => ((state.currentFilter==='uncategorized') ? (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) : (l.categoryId===state.currentFilter)) && matchFilter(l, term)), state.currentFilter==='uncategorized');
+                alert("該紀錄在目前的篩選條件下被隱藏了，請切換篩選條件再試一次。");
             }
-            document.getElementById('empty-msg').classList.toggle('hidden', hasData);
+        };
+
+        document.getElementById('recordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const record = {
+                bookingTime: document.getElementById('bookingTime').value,
+                customerName: document.getElementById('customerName').value,
+                phone: document.getElementById('phone').value || "",
+                address: document.getElementById('address').value || "",
+                acCount: parseInt(document.getElementById('acCount').value) || 0,
+                acBrand: document.getElementById('acBrand').value || '',
+                wmCount: parseInt(document.getElementById('wmCount').value) || 0,
+                wtCount: parseInt(document.getElementById('wtCount').value) || 0,
+                totalAmount: parseInt(document.getElementById('totalAmount').value) || 0,
+                assistantPay: parseInt(document.getElementById('assistantPay').value) || 0,
+                note: document.getElementById('note').value || '',
+                status: 'pending',
+                payment: 'unpaid'
+            };
+            try {
+                if (editingId) {
+                    await updateDoc(doc(db, "cleaningRecords", editingId), record);
+                    alert('已更新成功');
+                    editingId = null;
+                } else {
+                    await addDoc(recordsCol, record);
+                    alert('已儲存成功');
+                }
+                e.target.reset(); 
+                toggleAcBrand();
+                showPage('listPage');
+            } catch (err) { alert('儲存失敗'); }
+        });
+
+        onSnapshot(recordsCol, (snap) => {
+            allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            filterRecords();
+        });
+
+        window.filterRecords = () => {
+            const kw = document.getElementById('searchKeyword').value.toLowerCase();
+            const mon = document.getElementById('monthFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const payment = document.getElementById('paymentFilter').value;
+            
+            let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
+            let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
+            let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
+            let mUnpaidDetails = []; 
+            
+            const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
+            const filterMonthName = mon ? mon.split('-')[1] : (new Date().getMonth() + 1).toString().padStart(2, '0');
+            
+            document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
+            document.getElementById('monthTitle').innerText = `${filterMonthName} 月份統計`;
+
+            allRecords.forEach(r => {
+                aAc += (r.acCount || 0);
+                aWm += (r.wmCount || 0);
+                aWt += (r.wtCount || 0);
+                aRev += (r.totalAmount || 0);
+                aExp += (r.assistantPay || 0);
+            });
+
+            const baseFiltered = allRecords.filter(i => {
+                const iY = i.bookingTime.split('-')[0];
+                const iM = i.bookingTime.substring(0, 7);
+                
+                if (iY === filterYear) { 
+                    yRev += i.totalAmount; 
+                    yExp += i.assistantPay;
+                    yAc += (i.acCount || 0);
+                    yWm += (i.wmCount || 0);
+                    yWt += (i.wtCount || 0);
+                }
+                if (mon && iM === mon) { 
+                    mRev += i.totalAmount; 
+                    mExp += i.assistantPay; 
+                    mAc += (i.acCount || 0);
+                    mWm += (i.wmCount || 0);
+                    mWt += (i.wtCount || 0);
+                    
+                    if (i.payment === 'unpaid') {
+                        mUnpaidDetails.push({ id: i.id, name: i.customerName, amount: i.totalAmount });
+                    }
+                }
+                
+                const searchStr = `${i.customerName} ${i.phone} ${i.address} ${i.acBrand} ${i.note}`.toLowerCase();
+                const matchSearch = searchStr.includes(kw);
+                const matchMonth = mon ? iM === mon : true;
+                const matchType = type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0);
+                const matchStatus = status === 'all' || i.status === status;
+                const matchPayment = payment === 'all' || i.payment === payment;
+
+                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
+            });
+
+            const unpaidSection = document.getElementById('unpaidSection');
+            const unpaidList = document.getElementById('unpaidList');
+            if (mUnpaidDetails.length > 0) {
+                unpaidSection.classList.remove('hidden');
+                unpaidList.innerHTML = mUnpaidDetails.map(item => `
+                    <div class="flex justify-between border-b border-amber-100/50 py-1">
+                        <button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-medium">
+                            • ${item.name}
+                        </button>
+                        <span class="font-bold">$${item.amount.toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                unpaidSection.classList.add('hidden');
+            }
+
+            const sorted = baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime));
+
+            document.getElementById('allAc').innerText = aAc.toLocaleString();
+            document.getElementById('allWm').innerText = aWm.toLocaleString();
+            document.getElementById('allWt').innerText = aWt.toLocaleString();
+            document.getElementById('allRev').innerText = `$${aRev.toLocaleString()}`;
+            document.getElementById('allExp').innerText = `$${aExp.toLocaleString()}`;
+            document.getElementById('allNet').innerText = `$${(aRev - aExp).toLocaleString()}`;
+
+            document.getElementById('mRev').innerText = `$${mRev.toLocaleString()}`;
+            document.getElementById('mExp').innerText = `$${mExp.toLocaleString()}`;
+            document.getElementById('mNet').innerText = `$${(mRev - mExp).toLocaleString()}`;
+            document.getElementById('mCounts').innerText = `冷${mAc} / 洗${mWm} / 水${mWt}`;
+            
+            document.getElementById('yRev').innerText = `$${yRev.toLocaleString()}`;
+            document.getElementById('yExp').innerText = `$${yExp.toLocaleString()}`;
+            document.getElementById('yNet').innerText = `$${(yRev - yExp).toLocaleString()}`;
+            document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
+
+            renderRecords(sorted);
+        };
+
+        function renderRecords(data) {
+            const list = document.getElementById('recordList');
+            if (data.length === 0) {
+                list.innerHTML = `<tr><td class="px-6 py-10 text-center text-slate-400 italic">此月份尚無紀錄</td></tr>`;
+                return;
+            }
+            list.innerHTML = data.map(i => {
+                let services = [];
+                if(i.acCount > 0) services.push(`冷氣${i.acCount}台 ${i.acBrand ? `(${i.acBrand})` : ''}`);
+                if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
+                if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
+
+                let net = i.totalAmount - i.assistantPay;
+                let isComp = i.status === 'completed';
+                let isPaid = i.payment === 'paid';
+                let statusClass = isComp ? 'completed-row' : '';
+
+                const hasValidAddress = i.address && i.address.trim() !== "" && i.address !== "未提供地址";
+                const hasValidPhone = i.phone && i.phone.trim() !== "";
+
+                let contactInfo = "";
+                if (hasValidPhone || hasValidAddress) {
+                    contactInfo = `<td data-label="聯絡資訊" class="px-6 py-4 text-slate-500 leading-relaxed">
+                        ${hasValidPhone ? `${i.phone}` : ''}
+                        ${hasValidPhone && hasValidAddress ? '<br>' : ''}
+                        ${hasValidAddress ? `<span class="text-xs">${i.address}</span>` : ''}
+                    </td>`;
+                }
+
+                return `
+                <tr id="rec-${i.id}" class="hover:bg-slate-50 transition ${statusClass}">
+                    <td data-label="預約時間" class="px-6 py-4 font-medium text-slate-500">${i.bookingTime.replace('T',' ')}</td>
+                    <td data-label="客戶" class="px-6 py-4 font-bold text-slate-900">${i.customerName}</td>
+                    ${contactInfo}
+                    <td data-label="服務明細" class="px-6 py-4 text-slate-600">
+                        ${services.join('、') || '無'}
+                        ${i.note ? `<br><span class="text-[11px] text-slate-400 note-display"># ${i.note}</span>` : ''}
+                    </td>
+                    <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
+                        收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700">淨 ${net.toLocaleString()}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center action-cell">
+                        <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
+                            <span>${isComp ? '✔️' : '⭕'}</span><span>${isComp ? '已完成' : '未完成'}</span>
+                        </button>
+                        <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
+                            <span>${isPaid ? '💰' : '⏳'}</span><span>${isPaid ? '待收款' : '已收款'}</span>
+                        </button>
+                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-bold">
+                            <span>✏️</span><span>修改</span>
+                        </button>
+                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border border-rose-100 text-[10px] font-bold">
+                            <span>🗑️</span><span>刪除</span>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
         }
 
-        function matchFilter(item, term) { return !term || item.desc?.toLowerCase().includes(term) || item.url?.toLowerCase().includes(term); }
-        function checkAndRender() { document.getElementById('loading').style.display = 'none'; document.getElementById('main-container').classList.remove('hidden'); renderMain(document.getElementById('searchInput').value); }
-        window.switchTab = (t) => { document.getElementById('panel-link').classList.toggle('hidden', t!=='link'); document.getElementById('panel-category').classList.toggle('hidden', t!=='category'); document.getElementById('tab-link').classList.toggle('active', t==='link'); document.getElementById('tab-category').classList.toggle('active', t==='category'); };
-        window.openEditModal = (k, d, u, c) => { document.getElementById('editKey').value = k; document.getElementById('editDesc').value = d; document.getElementById('editUrl').value = u; document.getElementById('editCatId').value = c || ""; document.getElementById('editModal').classList.remove('hidden'); };
-        window.closeEditModal = () => document.getElementById('editModal').classList.add('hidden');
-        
-        window.copyToClipboard = (b, d, u) => { 
-            const textToCopy = d && d.trim() !== "" ? `${d} - ${u}` : u;
-            navigator.clipboard.writeText(textToCopy).then(() => { 
-                const icon = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-check text-[#8fb4a2]"></i>'; 
-                setTimeout(() => b.innerHTML = icon, 1000); 
-            }); 
+        window.toggleDone = async (id, currentStatus) => {
+            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+            await updateDoc(doc(db, "cleaningRecords", id), { status: newStatus });
         };
 
-        function updateCategoryDropdowns() { let opts = '<option value="">未分類</option>'; state.categories.forEach(cat => opts += `<option value="${cat.id}">${cat.name}</option>`); document.getElementById('newLinkCat').innerHTML = document.getElementById('editCatId').innerHTML = opts; }
-        
-        window.addItem = () => { 
-            const desc = document.getElementById('newDesc').value.trim();
-            const url = document.getElementById('newUrl').value.trim();
-            const catId = document.getElementById('newLinkCat').value; 
-            if (!url) return; 
-            push(ref(db, `users/${state.userId}/links`), { 
-                desc: desc || "", 
-                url: url, 
-                categoryId: catId || null, 
-                order: 999 
-            }); 
-            document.getElementById('newDesc').value = document.getElementById('newUrl').value = ''; 
+        window.togglePayment = async (id, currentPayment) => {
+            const newPayment = currentPayment === 'paid' ? 'unpaid' : 'paid';
+            await updateDoc(doc(db, "cleaningRecords", id), { payment: newPayment });
         };
 
-        window.addCategory = () => { const name = document.getElementById('newCatName').value.trim(); if(!name) return; push(ref(db, `users/${state.userId}/categories`), { name, order: state.categories.length }); document.getElementById('newCatName').value = ''; switchTab('link'); };
-        
-        window.saveEdit = () => { 
-            const k = document.getElementById('editKey').value; 
-            update(ref(db, `users/${state.userId}/links/${k}`), { 
-                desc: document.getElementById('editDesc').value.trim() || "", 
-                url: document.getElementById('editUrl').value.trim(), 
-                categoryId: document.getElementById('editCatId').value || null 
-            }).then(closeEditModal); 
+        window.editRec = (id) => {
+            const r = allRecords.find(x => x.id === id);
+            if(!r) return;
+            editingId = id;
+            document.getElementById('bookingTime').value = r.bookingTime;
+            document.getElementById('customerName').value = r.customerName;
+            document.getElementById('phone').value = r.phone || "";
+            document.getElementById('address').value = (r.address === "未提供地址") ? "" : (r.address || "");
+            document.getElementById('acCount').value = r.acCount;
+            document.getElementById('wmCount').value = r.wmCount;
+            document.getElementById('wtCount').value = r.wtCount;
+            document.getElementById('acBrand').value = r.acBrand;
+            document.getElementById('totalAmount').value = r.totalAmount;
+            document.getElementById('assistantPay').value = r.assistantPay;
+            document.getElementById('note').value = r.note;
+            toggleAcBrand();
+            showPage('formPage');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.userId}/links/${document.getElementById('editKey').value}`)).then(closeEditModal);
-        document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
-        
-        window.onload = () => {
-            renderLoginHistory();
-            const lastUser = localStorage.getItem('url_manager_current_user');
-            if (lastUser) { document.getElementById('userInput').value = lastUser; handleLogin(); }
-        };
+        window.deleteRec = async (id) => { if(confirm('確定要刪除這筆紀錄嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
     </script>
 </body>
 </html>
