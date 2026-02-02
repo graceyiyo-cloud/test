@@ -186,7 +186,7 @@
         <div class="row">
             <div class="col">
                 <label>最終淨額 (可手動修改)</label>
-                <input type="number" id="netAmount" oninput="renderDetail()">
+                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
             </div>
         </div>
 
@@ -312,7 +312,9 @@
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
     let currentSortOrder = 'asc';
 
-    // --- 核心匯出邏輯：產生 XML 格式的 Excel 檔案 ---
+    // 全域變數存儲當前計算狀態
+    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
+
     function generateExcelFile(headers, data, filename) {
         let xml = '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?>';
         xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
@@ -511,16 +513,44 @@
         
         const net = (subtotal - retention) + adj;
         
-        document.getElementById('processFormula').innerHTML = `
-            <div>① 全額：${fmt.format(raw)} + 稅${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
-            <div>② 清潔費(${cRate}%)：${fmt.format(total)} × ${cRate}% = <strong>${fmt.format(cleanFee)}</strong></div>
-            <div class="subtotal-line">③ 小計 (①-②)：${fmt.format(total)} - ${fmt.format(cleanFee)} = <strong>${fmt.format(subtotal)}</strong></div>
-            <div>④ 保留款：${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong></div>
-            <div>⑤ ${adjNote}：<strong>${adj >= 0 ? '+' : ''}${fmt.format(adj)}</strong></div>
-            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">⑥ 淨額 (③-④+⑤)：<strong>${fmt.format(net)}</strong></div>
-        `;
+        // 儲存狀態以便手動更新
+        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote };
+        
         document.getElementById('netAmount').value = net;
+        renderFormula(net);
         renderDetail();
+    }
+
+    // 當淨額手動變更時，僅更新公式顯示與預覽
+    function updateFormulaOnly() {
+        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
+        renderFormula(manualNet);
+        renderDetail();
+    }
+
+    function renderFormula(currentNet) {
+        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)} + 稅${fmt.format(lastCalcState.tax)} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
+        
+        if (lastCalcState.cleanFee !== 0) {
+            html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
+        }
+        
+        html += `<div class="subtotal-line">③ 小計：${fmt.format(lastCalcState.total)} - ${fmt.format(lastCalcState.cleanFee)} = <strong>${fmt.format(lastCalcState.subtotal)}</strong></div>`;
+        
+        let stepCount = 4;
+        if (lastCalcState.retention !== 0) {
+            html += `<div>④ 保留款：${fmt.format(lastCalcState.subtotal)} × ${lastCalcState.rRate}% = <strong>${fmt.format(lastCalcState.retention)}</strong></div>`;
+            stepCount = 5;
+        }
+        
+        if (lastCalcState.adj !== 0) {
+            html += `<div>${stepCount === 5 ? '⑤' : '④'} ${lastCalcState.adjNote}：<strong>${lastCalcState.adj >= 0 ? '+' : ''}${fmt.format(lastCalcState.adj)}</strong></div>`;
+            stepCount++;
+        }
+        
+        html += `<div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">${stepCount === 6 ? '⑥' : (stepCount === 5 ? '⑤' : '④')} 淨額：<strong>${fmt.format(currentNet)}</strong></div>`;
+        
+        document.getElementById('processFormula').innerHTML = html;
     }
 
     function getMinguoDate(addMonths, useSlash = true) {
@@ -553,18 +583,17 @@
         const workNote = document.getElementById('workNote').value || "工程";
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = document.getElementById('retentionRate').value;
-        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
         
         let baseDesc = workNote;
         if (hasRetention) baseDesc += `-保留${rRate}%`;
-        // 注意：加扣款事由與金額僅在計算過程顯示，不帶入 desc 清單中
         
         const isInstallment = p1Pct < 100;
         const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
         db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 });
         if (isInstallment) { db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 }); }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
-        alert("儲存成功！");
+        
+        // 移除 alert 提示
         clearInputFields();
     }
 
@@ -632,7 +661,6 @@
     }
 
     function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
-
     function clearData() { if(confirm("確定清空所有排程？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
     function exportBankExcel() {
