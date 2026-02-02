@@ -54,8 +54,10 @@
             text-align: left;
             color: #475569;
         }
-        td[data-label="預約時間"]::before { content: "時間："; font-weight: 700; color: #64748b; }
-        td[data-label="服務明細"]::before { content: "明細："; font-weight: 700; color: #64748b; }
+        /* 移除「時間：」與「明細：」前綴文字 */
+        td[data-label="預約時間"]::before { content: ""; }
+        td[data-label="服務明細"]::before { content: ""; }
+        
         td[data-label="客戶"] { font-weight: 700; font-size: 1.1rem; color: #1e293b; padding-bottom: 0.5rem !important; }
         td[data-label="金額帳目"] { 
             padding-top: 0.75rem !important; 
@@ -300,7 +302,6 @@
 
         // 新增：跳轉到特定紀錄功能
         window.scrollToRecord = (id) => {
-            // 如果當前有過濾條件可能導致該紀錄被隱藏，先清除過濾(可選，這裡採取直接尋找)
             const element = document.getElementById(`rec-${id}`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -491,7 +492,7 @@
                             <span>${isComp ? '✔️' : '⭕'}</span><span>${isComp ? '已完成' : '未完成'}</span>
                         </button>
                         <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <span>${isPaid ? '💰' : '⏳'}</span><span>${isPaid ? '待收款' : '已收款'}</span>
+                            <span>${isPaid ? '💰' : '⏳'}</span><span>${isPaid ? '已收款' : '待收款'}</span>
                         </button>
                         <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200 text-[10px] font-bold">
                             <span>✏️</span><span>修改</span>
