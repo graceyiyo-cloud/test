@@ -43,7 +43,7 @@
         .input-with-unit { position: relative; display: flex; align-items: center; }
         .unit-label { margin-left: 5px; font-size: 0.8rem; color: #999; white-space: nowrap; width: 20px; }
 
-        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
         .section-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
         
         .formula { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; color: #666; }
@@ -69,6 +69,11 @@
         .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.5rem; line-height: 1; }
         
         .filter-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+
+        /* Modal 彈窗樣式 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
     </style>
 </head>
 <body>
@@ -159,7 +164,7 @@
 
 <div id="listPage" class="page" style="max-width: 850px;">
     <div class="list-card">
-        <div class="section-title">付款清單明細 (點擊文字可直接修改)</div>
+        <div class="section-title">付款清單明細 (點擊明細文字可看計算過程)</div>
         <div class="filter-row">
             <div>
                 <label style="margin:0">篩選公司：</label>
@@ -188,6 +193,14 @@
     </div>
 </div>
 
+<div id="infoModal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
+        <div class="section-title">計算過程紀錄</div>
+        <div id="modalBody" class="formula"></div>
+    </div>
+</div>
+
 <script>
     const fmt = new Intl.NumberFormat('zh-TW');
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
@@ -204,73 +217,122 @@
         const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
         const taxInput = document.getElementById('taxAmount');
         const retentionInput = document.getElementById('retentionAmount');
+        
         let tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
         if(!isManualTax) taxInput.value = tax || "";
+
         const total = raw + tax;
         const hasClean = document.getElementById('cleanCheck').checked;
         const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
         const cleanFee = hasClean ? Math.round(total * (cRate / 100)) : 0;
         const subtotal = total - cleanFee;
+
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
+        
         let retention = 0;
         if (hasRetention) {
             retention = isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100));
         }
         if(!isManualRetention) retentionInput.value = retention || "";
+
         const net = subtotal - retention;
+        
+        let retentionDisplay = isManualRetention ? 
+            `<strong>${fmt.format(retention)}</strong>` : 
+            `${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong>`;
+
         document.getElementById('processFormula').innerHTML = `
             <div>① 全額：${fmt.format(raw)} + ${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
             <div>② 清潔費(${cRate}%)：${fmt.format(total)} × ${cRate}% = <strong>${fmt.format(cleanFee)}</strong></div>
             <div class="subtotal-line">③ 小計 (①-②)：${fmt.format(total)} - ${fmt.format(cleanFee)} = <strong>${fmt.format(subtotal)}</strong></div>
-            <div>④ 保留款(${hasRetention ? rRate : 0}%)：${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong></div>
-            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">⑤ 淨額 (③-④)：${fmt.format(subtotal)} - ${fmt.format(retention)} = <strong>${fmt.format(net)}</strong></div>
+            <div>④ 保留款：${retentionDisplay}</div>
+            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">
+                ⑤ 淨額 (③-④)：${fmt.format(subtotal)} - ${fmt.format(retention)} = <strong>${fmt.format(net)}</strong>
+            </div>
         `;
         document.getElementById('netAmount').value = net;
         renderDetail();
     }
 
-    function getMinguoDate(addMonths) {
+    function getMinguoDate(addMonths, useSlash = true) {
         let d = new Date();
-        d.setMonth(d.getMonth() + addMonths);
+        d.setMonth(d.getMonth() + (isNaN(addMonths) ? 0 : addMonths));
         const y = d.getFullYear() - 1911;
         const m = (d.getMonth() + 1).toString().padStart(2, '0');
-        return `${y}/${m}/15`;
+        return useSlash ? `${y}/${m}/15` : `${y}${m}15`;
     }
 
     function renderDetail() {
         const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
+        const p1PctInput = document.getElementById('p1Pct').value;
+        const p1Pct = parseFloat(p1PctInput) || 0;
         const p1Mon = parseInt(document.getElementById('p1Mon').value) || 0;
         const pDetail = document.getElementById('paymentDetail');
-        if(net <= 0 || document.getElementById('p1Pct').value === "") { pDetail.innerHTML = ""; return; }
+        if(net <= 0 || p1PctInput === "") { pDetail.innerHTML = ""; return; }
         const pay1Amount = Math.round(net * (p1Pct / 100));
         const pay2Amount = net - pay1Amount;
         let html = `<div class="section-title">付款排程 (預覽)</div>`;
         html += `<div class="formula">第一期 (${p1Pct}%)：<strong>${fmt.format(pay1Amount)}</strong></div>`;
-        html += `<div class="date-line">${getMinguoDate(p1Mon)} &nbsp; $${fmt.format(pay1Amount)}</div>`;
+        html += `<div class="date-line">${getMinguoDate(p1Mon, true)} &nbsp; $${fmt.format(pay1Amount)}</div>`;
         if (p1Pct < 100) {
             const p2Mon = parseInt(document.getElementById('p2Mon').value) || 0;
             html += `<div class="formula" style="margin-top:10px;">第二期：<strong>${fmt.format(pay2Amount)}</strong></div>`;
-            html += `<div class="date-line">${getMinguoDate(p2Mon)} &nbsp; $${fmt.format(pay2Amount)}</div>`;
+            html += `<div class="date-line">${getMinguoDate(p2Mon, true)} &nbsp; $${fmt.format(pay2Amount)}</div>`;
         }
         pDetail.innerHTML = html;
     }
 
     function saveData() {
         const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
+        const p1PctInput = document.getElementById('p1Pct').value;
+        const p1Pct = parseFloat(p1PctInput) || 0;
         const company = document.getElementById('companySelect').value;
         const note = document.getElementById('workNote').value || "工程";
         const rRate = document.getElementById('retentionRate').value;
-        if (net <= 0 || isNaN(p1Pct)) { alert("請輸入金額與比例"); return; }
+        const formulaHtml = document.getElementById('processFormula').innerHTML; // 擷取當前算式
+        
+        if (net <= 0 || p1PctInput === "") { alert("請輸入金額與比例"); return; }
+        
         const timestamp = Date.now();
-        db.push({ id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0)), desc: `${note}-保留${rRate}%(2-1)`, amount: Math.round(net * (p1Pct / 100)), company: company });
+        const pay1Amount = Math.round(net * (p1Pct / 100));
+        
+        db.push({ 
+            id: timestamp + "_1",
+            date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), 
+            desc: `${note}-保留${rRate}%(2-1)`, 
+            amount: pay1Amount,
+            company: company,
+            formula: formulaHtml // 儲存算式
+        });
+        
         if (p1Pct < 100) {
-            db.push({ id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0)), desc: `${note}-保留${rRate}%(2-2)`, amount: net - Math.round(net * (p1Pct / 100)), company: company });
+            db.push({ 
+                id: timestamp + "_2",
+                date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), 
+                desc: `${note}-保留${rRate}%(2-2)`, 
+                amount: net - pay1Amount,
+                company: company,
+                formula: formulaHtml // 儲存算式
+            });
         }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
-        alert("儲存成功！");
+        alert("儲存成功！已自動清空欄位。");
+        clearInputFields();
+    }
+
+    function clearInputFields() {
+        document.getElementById('workNote').value = "";
+        document.getElementById('rawAmount').value = "";
+        document.getElementById('taxAmount').value = "";
+        document.getElementById('retentionAmount').value = "";
+        document.getElementById('netAmount').value = "";
+        document.getElementById('p1Pct').value = "";
+        document.getElementById('p1Mon').value = "";
+        document.getElementById('p2Pct').value = "";
+        document.getElementById('p2Mon').value = "";
+        document.getElementById('processFormula').innerHTML = "請輸入資料...";
+        document.getElementById('paymentDetail').innerHTML = "";
     }
 
     function renderTable() {
@@ -282,12 +344,20 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
+                <td><span class="editable" style="background-color: #f0f4f8;" onclick="showFormula('${item.id}')" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
                 <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
                 <td class="action-cell"><button class="btn-del" onclick="deleteRecord('${item.id}')">×</button></td>
             `;
             tbody.appendChild(row);
         });
+    }
+
+    function showFormula(id) {
+        const record = db.find(i => i.id === id);
+        if(record && record.formula) {
+            document.getElementById('modalBody').innerHTML = record.formula;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
     }
 
     function updateField(id, field, value) {
