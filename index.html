@@ -85,6 +85,9 @@
         .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.4; }
         .search-item:hover { background: #f8f8f8; color: var(--primary); }
         .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
+
+        /* 廠商表單專屬樣式 */
+        .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -226,14 +229,29 @@
 <div id="vendorPage" class="page" style="max-width: 850px;">
     <div class="list-card">
         <div class="section-title">廠商匯款資料管理</div>
+        
+        <div class="vendor-form">
+            <div class="section-title" style="border-left: 3px solid var(--accent); color: var(--accent);">手動新增廠商</div>
+            <div class="row">
+                <div class="col"><label>廠商名稱</label><input type="text" id="newVName" placeholder="公司名"></div>
+                <div class="col"><label>解款行</label><input type="text" id="newVBank" placeholder="代號+名稱"></div>
+            </div>
+            <div class="row">
+                <div class="col"><label>收款帳號</label><input type="text" id="newVAcc" placeholder="銀行帳號"></div>
+                <div class="col"><label>收款戶名</label><input type="text" id="newVOwner" placeholder="戶名"></div>
+            </div>
+            <button class="btn-save" style="margin-top: 5px; background: var(--accent);" onclick="manualAddVendor()">新增廠商資料</button>
+        </div>
+
         <div class="filter-row">
             <div class="filter-group">
                 <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
-                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">匯入廠商 CSV</button>
-                <span style="font-size: 0.7rem; color: #999;">(格式: 廠商名稱,解款行,帳號,戶名)</span>
+                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">批次匯入 CSV</button>
+                <button class="btn-excel" style="background: #5da9ad;" onclick="exportVendorCSV()">匯出廠商清單</button>
             </div>
             <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
         </div>
+        
         <table id="vendorTable">
             <thead>
                 <tr>
@@ -262,7 +280,7 @@
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
 
-    // --- 廠商搜尋功能 (包含帳號預覽) ---
+    // --- 廠商搜尋功能 ---
     function searchVendor(val) {
         const resultsDiv = document.getElementById('searchResults');
         if (!val) { resultsDiv.style.display = 'none'; return; }
@@ -288,7 +306,24 @@
         document.getElementById('searchResults').style.display = 'none';
     }
 
-    // --- CSV 匯入與廠商管理 ---
+    // --- 廠商管理功能 ---
+    function manualAddVendor() {
+        const name = document.getElementById('newVName').value.trim();
+        const bank = document.getElementById('newVBank').value.trim();
+        const acc = document.getElementById('newVAcc').value.trim();
+        const owner = document.getElementById('newVOwner').value.trim();
+
+        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
+
+        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
+        localStorage.setItem('vendorList', JSON.stringify(vendors));
+        renderVendorTable();
+        
+        // 清空欄位
+        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
+        alert("廠商新增成功！");
+    }
+
     function importVendorCSV(input) {
         const file = input.files[0];
         if (!file) return;
@@ -305,8 +340,18 @@
             localStorage.setItem('vendorList', JSON.stringify(vendors));
             renderVendorTable();
             alert("匯入成功！");
+            input.value = "";
         };
         reader.readAsText(file, 'UTF-8');
+    }
+
+    function exportVendorCSV() {
+        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
+        let csv = "\uFEFF廠商名稱,解款行,帳號,戶名\n" + vendors.map(v => `"${v.name}","${v.bankCode}","${v.account}","${v.owner}"`).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        link.download = `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
+        link.click();
     }
 
     function renderVendorTable() {
@@ -323,14 +368,14 @@
     }
 
     function deleteVendor(id) {
-        if(confirm("確定刪除？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
+        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
     }
 
     function clearVendors() {
-        if(confirm("確定清空廠商庫？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
+        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
     }
 
-    // --- 計算與換頁邏輯 ---
+    // --- 計算邏輯與排程 ---
     function switchPage(pageId, btn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -467,7 +512,7 @@
 
     function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
 
-    function clearData() { if(confirm("確定清空？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
+    function clearData() { if(confirm("確定清空所有排程？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
     function exportToExcel() {
         const filterComp = document.getElementById('filterCompany').value;
