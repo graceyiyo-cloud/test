@@ -174,6 +174,10 @@
 
         <div class="row">
             <div class="col">
+                <label>加扣款金額 (正數為加，負數為扣)</label>
+                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate(false, false)">
+            </div>
+            <div class="col">
                 <label>最終淨額 (可手動修改)</label>
                 <input type="number" id="netAmount" oninput="renderDetail()">
             </div>
@@ -492,6 +496,8 @@
         const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
         const taxInput = document.getElementById('taxAmount');
         const retentionInput = document.getElementById('retentionAmount');
+        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
+        
         let tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
         if(!isManualTax) taxInput.value = tax || "";
         const total = raw + tax;
@@ -503,13 +509,17 @@
         const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
         let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
         if(!isManualRetention) retentionInput.value = retention || "";
-        const net = subtotal - retention;
+        
+        // 最終淨額公式增加加扣款項
+        const net = (subtotal - retention) + adj;
+        
         document.getElementById('processFormula').innerHTML = `
             <div>① 全額：${fmt.format(raw)} + 稅${fmt.format(tax)} = <strong>${fmt.format(total)}</strong></div>
             <div>② 清潔費(${cRate}%)：${fmt.format(total)} × ${cRate}% = <strong>${fmt.format(cleanFee)}</strong></div>
             <div class="subtotal-line">③ 小計 (①-②)：${fmt.format(total)} - ${fmt.format(cleanFee)} = <strong>${fmt.format(subtotal)}</strong></div>
             <div>④ 保留款：${fmt.format(subtotal)} × ${hasRetention ? rRate : 0}% = <strong>${fmt.format(retention)}</strong></div>
-            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">⑤ 淨額 (③-④)：<strong>${fmt.format(net)}</strong></div>
+            <div>⑤ 加扣款：<strong>${adj >= 0 ? '+' : ''}${fmt.format(adj)}</strong></div>
+            <div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">⑥ 淨額 (③-④+⑤)：<strong>${fmt.format(net)}</strong></div>
         `;
         document.getElementById('netAmount').value = net;
         renderDetail();
@@ -545,8 +555,12 @@
         const workNote = document.getElementById('workNote').value || "工程";
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = document.getElementById('retentionRate').value;
+        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
+        
         let baseDesc = workNote;
         if (hasRetention) baseDesc += `-保留${rRate}%`;
+        if (adj !== 0) baseDesc += `(含調${adj})`;
+        
         const isInstallment = p1Pct < 100;
         const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
         db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 });
@@ -557,7 +571,10 @@
     }
 
     function clearInputFields() {
-        ['vendorSearch', 'workNote', 'rawAmount', 'taxAmount', 'retentionAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => document.getElementById(id).value = "");
+        ['vendorSearch', 'workNote', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = "";
+        });
         document.getElementById('processFormula').innerHTML = "請輸入資料...";
         document.getElementById('paymentDetail').innerHTML = "";
     }
