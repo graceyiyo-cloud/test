@@ -13,7 +13,6 @@
             --text: #4A4A4A;
             --border: #E0DED7;
             --danger: #e74c3c;
-            --success: #217346;
         }
 
         body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -39,11 +38,11 @@
         
         /* 搜尋建議框 */
         .search-container { position: relative; }
+        .search-wrapper { display: flex; gap: 5px; }
+        .btn-search { background: var(--primary); color: white; border: none; border-radius: 8px; width: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: none; }
         .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 0.9rem; }
         .suggestion-item:hover { background: #f0f2eb; }
-
-        .btn-search { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 0 15px; height: 45px; cursor: pointer; font-size: 1.2rem; }
 
         #netAmount { font-weight: bold; color: var(--accent); background-color: #FFF9F3; border: 1px solid var(--accent); }
         .config-box { background: #F9F9F8; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #EEE; }
@@ -63,8 +62,8 @@
         .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
 
         .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-excel { padding: 10px 15px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
-        .btn-bank-export { padding: 10px 15px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .btn-excel { padding: 10px 20px; background: #217346; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-remit { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; margin-left: 5px; }
         .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
         .btn-import { background: #6b7280; color: white; padding: 10px; border-radius: 8px; cursor: pointer; border: none; font-size: 0.8rem; }
         
@@ -74,11 +73,12 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         th { background-color: #f8f8f8; color: var(--primary); }
+        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: inline-block; width: 90%; }
         .amount-cell { text-align: right; font-family: monospace; }
         .action-cell { text-align: center; width: 40px; }
         .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.3rem; }
         
-        .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: flex-start; }
+        .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
         .filter-group { display: flex; align-items: center; gap: 5px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
@@ -107,15 +107,13 @@
                     <option value="上川">上川</option>
                 </select>
             </div>
-            <div class="col search-container" style="flex: 2;">
-                <label>搜尋廠商</label>
-                <div style="display: flex; gap: 5px;">
-                    <div style="flex: 1; position: relative;">
-                        <input type="text" id="vendorSearch" placeholder="輸入關鍵字" oninput="searchVendor(this.value)">
-                        <div id="vendorSuggestions" class="suggestions"></div>
-                    </div>
-                    <button class="btn-search" onclick="triggerSearch()">🔍</button>
+            <div class="col search-container">
+                <label>搜尋廠商 (自動帶入匯款資料)</label>
+                <div class="search-wrapper">
+                    <input type="text" id="vendorSearch" placeholder="輸入名稱關鍵字" oninput="searchVendor(this.value)">
+                    <button class="btn-search" onclick="searchVendor(document.getElementById('vendorSearch').value)">🔍</button>
                 </div>
+                <div id="vendorSuggestions" class="suggestions"></div>
             </div>
         </div>
 
@@ -208,8 +206,10 @@
                     <option value="上川">上川</option>
                 </select>
             </div>
-            <button class="btn-excel" onclick="exportToExcel()">匯出清單</button>
-            <button class="btn-bank-export" onclick="exportBankFormat()">匯出匯款資料</button>
+            <div>
+                <button class="btn-excel" onclick="exportToExcel()">匯出 Excel 清單</button>
+                <button class="btn-remit" onclick="exportRemittance()">匯出匯款資料</button>
+            </div>
         </div>
         <table id="recordTable">
             <thead>
@@ -234,11 +234,12 @@
         </div>
         <div class="row">
             <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendors(this)">
-            <button class="btn-import" onclick="document.getElementById('csvFileInput').click()">匯入廠商 CSV</button>
+            <button class="btn-import" onclick="document.getElementById('csvFileInput').click()">匯入廠商 Excel (CSV)</button>
             <button class="btn-reset" style="margin:0; padding:10px; width:auto;" onclick="clearVendors()">清空廠商</button>
         </div>
         <div class="section-title">廠商清單 (<span id="vendorCount">0</span>)</div>
-        <div id="vendorListDisplay" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem;"></div>
+        <div id="vendorListDisplay" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem;">
+            </div>
     </div>
 </div>
 
@@ -256,6 +257,7 @@
     let vendors = JSON.parse(localStorage.getItem('vendorDB')) || [];
     let selectedVendor = null;
 
+    // 分頁切換
     function switchPage(pageId, btn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -265,18 +267,21 @@
         if(pageId === 'vendorPage') { renderVendorList(); }
     }
 
+    // 廠商管理相關
     function importVendors(input) {
         const file = input.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
             const text = e.target.result;
-            const rows = text.split('\n').slice(1);
-            rows.forEach(row => {
+            const rows = text.split('\n');
+            const newVendors = [];
+            rows.slice(1).forEach(row => {
                 const cols = row.split(',').map(s => s.trim());
                 if(cols.length >= 4 && cols[0]) {
-                    vendors.push({ name: cols[0], bank: cols[1], account: cols[2], payee: cols[3] });
+                    newVendors.push({ name: cols[0], bank: cols[1], account: cols[2], payee: cols[3] });
                 }
             });
+            vendors = [...vendors, ...newVendors];
             localStorage.setItem('vendorDB', JSON.stringify(vendors));
             renderVendorList();
             alert('匯入完成！');
@@ -301,22 +306,23 @@
         const suggestions = document.getElementById('vendorSuggestions');
         if(!keyword) { suggestions.style.display = 'none'; return; }
         const matches = vendors.filter(v => v.name.includes(keyword));
-        if(matches.length === 0) { suggestions.style.display = 'none'; return; }
-        suggestions.innerHTML = matches.map(v => `<div class="suggestion-item" onclick="selectVendor('${v.name}')">${v.name}</div>`).join('');
+        
+        if(matches.length === 0) { 
+            suggestions.style.display = 'none'; 
+            return; 
+        }
+        
+        suggestions.innerHTML = matches.map(v => `
+            <div class="suggestion-item" onclick="selectVendor('${v.name}')">${v.name}</div>
+        `).join('');
         suggestions.style.display = 'block';
-    }
-
-    function triggerSearch() {
-        const kw = document.getElementById('vendorSearch').value;
-        if(!kw) { alert("請輸入廠商關鍵字"); return; }
-        const match = vendors.find(v => v.name.includes(kw));
-        if(match) { selectVendor(match.name); } else { alert("找不到相關廠商"); }
     }
 
     function selectVendor(name) {
         selectedVendor = vendors.find(v => v.name === name);
         document.getElementById('vendorSearch').value = name;
         document.getElementById('vendorSuggestions').style.display = 'none';
+        
         const display = document.getElementById('vendorInfoDisplay');
         display.style.display = 'block';
         document.getElementById('vBank').innerText = `行庫：${selectedVendor.bank}`;
@@ -324,6 +330,7 @@
         document.getElementById('vName').innerText = `戶名：${selectedVendor.payee}`;
     }
 
+    // 計算與渲染邏輯
     function calculate(isManualTax, isManualRetention) {
         const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
         const taxInput = document.getElementById('taxAmount');
@@ -374,24 +381,26 @@
         const net = parseFloat(document.getElementById('netAmount').value) || 0;
         const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
         if (net <= 0 || isNaN(p1Pct)) { alert("請輸入金額與比例"); return; }
+        
         const timestamp = Date.now();
         const now = new Date();
         const saveMonthLabel = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}`;
         const pay1 = Math.round(net * (p1Pct/100));
+        
         const vendorText = selectedVendor ? ` (行庫${selectedVendor.bank} 帳號${selectedVendor.account} 戶名${selectedVendor.payee})` : "";
         const note = document.getElementById('workNote').value || "工程";
 
-        const baseRecord = {
+        const baseData = {
             company: document.getElementById('companySelect').value,
             saveMonth: saveMonthLabel,
             formula: document.getElementById('processFormula').innerHTML,
-            bankCode: selectedVendor ? selectedVendor.bank : "",
-            bankAcc: selectedVendor ? selectedVendor.account : "",
-            payeeName: selectedVendor ? selectedVendor.payee : ""
+            vendorBank: selectedVendor ? selectedVendor.bank : "",
+            vendorAccount: selectedVendor ? selectedVendor.account : "",
+            vendorPayee: selectedVendor ? selectedVendor.payee : ""
         };
 
         db.push({ 
-            ...baseRecord,
+            ...baseData,
             id: timestamp + "_1",
             date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), 
             desc: `${note}-保留款(2-1)${vendorText}`, 
@@ -400,7 +409,7 @@
         
         if (p1Pct < 100) {
             db.push({ 
-                ...baseRecord,
+                ...baseData,
                 id: timestamp + "_2",
                 date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), 
                 desc: `${note}-保留款(2-2)${vendorText}`, 
@@ -458,13 +467,14 @@
         downloadCSV(csv, `結算清單_${fMon}.csv`);
     }
 
-    function exportBankFormat() {
+    function exportRemittance() {
         const fComp = document.getElementById('filterCompany').value;
         const fMon = document.getElementById('filterMonth').value;
         const data = db.filter(i => (fComp === "全部" || i.company === fComp) && (fMon === "全部" || i.saveMonth === fMon));
-        let csv = "\uFEFF匯款日期,解款行,解款人帳號,收款人戶名,匯款金額\n";
-        csv += data.map(i => `${i.date},${i.bankCode || ""},${i.bankAcc || ""},${i.payeeName || ""},${i.amount}`).join("\n");
-        downloadCSV(csv, `匯款清冊_${fMon}.csv`);
+        
+        let csv = "\uFEFF匯款日期,解款行,收款人帳號,收款人戶名,匯款金額\n";
+        csv += data.map(i => `${i.date},${i.vendorBank},${i.vendorAccount},${i.vendorPayee},${i.amount}`).join("\n");
+        downloadCSV(csv, `匯款資料_${fMon}.csv`);
     }
 
     function downloadCSV(csv, fileName) {
@@ -478,4 +488,4 @@
 </script>
 
 </body>
-</html>
+</html>ㄒ
