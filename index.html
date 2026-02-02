@@ -15,6 +15,7 @@
             --danger: #e74c3c;
             --success: #217346;
             --info: #5da9ad;
+            --dark: #2c3e50;
         }
 
         body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -89,13 +90,12 @@
         .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
         
         .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
-        .filter-group { display: flex; align-items: center; gap: 5px; }
+        .filter-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
 
-        .search-container { position: relative; }
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
         .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.4; }
         .search-item:hover { background: #f8f8f8; color: var(--primary); }
@@ -125,7 +125,7 @@
                     <option value="上川">上川</option>
                 </select>
             </div>
-            <div class="col search-container">
+            <div class="col" style="position: relative;">
                 <label>搜尋廠商 (預覽包含帳號)</label>
                 <input type="text" id="vendorSearch" placeholder="搜尋廠商關鍵字..." oninput="searchVendor(this.value)">
                 <div id="searchResults" class="search-results"></div>
@@ -220,7 +220,7 @@
             </div>
             <div class="filter-group">
                 <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
-                <button class="btn-info" style="background: #2c3e50;" onclick="exportBankData()">匯出匯款資料</button>
+                <button class="btn-info" style="background: var(--dark);" onclick="exportBankData()">匯出匯款資料</button>
                 <button class="btn-excel" onclick="exportClaimDetail()">匯出請款明細</button>
             </div>
         </div>
@@ -265,6 +265,9 @@
                 <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
                 <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">批次匯入 CSV</button>
                 <button class="btn-excel" style="background: #5da9ad;" onclick="exportVendorCSV()">匯出廠商清單</button>
+                <button class="btn-info" style="background: var(--dark); margin-bottom: 15px;" onclick="exportFullBackup()">備份全系統資料 (.json)</button>
+                <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importFullBackup(this)">
+                <button class="btn-info" style="background: var(--accent); margin-bottom: 15px;" onclick="document.getElementById('backupFileInput').click()">還原系統資料</button>
             </div>
             <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
         </div>
@@ -296,17 +299,26 @@
     const fmt = new Intl.NumberFormat('zh-TW');
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
-    let currentSortOrder = 'asc'; // 記錄當前排序順序
+    let currentSortOrder = 'asc';
+
+    // 輔助函式：處理 Excel CSV 帳號亂碼 (加前綴引號)
+    function cleanForCsv(str) {
+        if (!str) return "";
+        let s = str.toString().replace(/"/g, '""');
+        // 如果是純數字且長度大於10，加上單引號強制轉文字
+        if (/^\d{10,}$/.test(s)) return `="${s}"`; 
+        return `"${s}"`;
+    }
 
     function searchVendor(val) {
         const resultsDiv = document.getElementById('searchResults');
         if (!val) { resultsDiv.style.display = 'none'; return; }
-        const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || v.account.includes(val));
+        const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || (v.account && v.account.includes(val)));
         if (filtered.length > 0) {
             resultsDiv.innerHTML = filtered.map(v => `
                 <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
                     <div><strong>${v.name}</strong> (${v.owner})</div>
-                    <div class="search-subtext">行庫：${v.bankCode} | 帳號：${v.account}</div>
+                    <div class="search-subtext">行庫：${v.bankCode || ''} | 帳號：${v.account || ''}</div>
                 </div>
             `).join('');
             resultsDiv.style.display = 'block';
@@ -317,10 +329,40 @@
 
     function selectVendor(name, bank, acc, owner) {
         document.getElementById('vendorSearch').value = name;
-        document.getElementById('tempBankCode').value = bank;
-        document.getElementById('tempAccount').value = acc;
-        document.getElementById('tempOwner').value = owner;
+        document.getElementById('tempBankCode').value = bank || "";
+        document.getElementById('tempAccount').value = acc || "";
+        document.getElementById('tempOwner').value = owner || "";
         document.getElementById('searchResults').style.display = 'none';
+    }
+
+    function exportFullBackup() {
+        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
+        link.click();
+    }
+
+    function importFullBackup(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.paymentRecords && imported.vendorList) {
+                    db = imported.paymentRecords;
+                    vendors = imported.vendorList;
+                    localStorage.setItem('paymentRecords', JSON.stringify(db));
+                    localStorage.setItem('vendorList', JSON.stringify(vendors));
+                    alert("系統還原成功！頁面即將重新整理。");
+                    location.reload();
+                } else { alert("備份檔案格式不正確。"); }
+            } catch (err) { alert("讀取檔案失敗：" + err); }
+        };
+        reader.readAsText(file);
     }
 
     function autoFillRecordsByOwner() {
@@ -339,9 +381,7 @@
             localStorage.setItem('paymentRecords', JSON.stringify(db));
             renderTable();
             alert(`成功補齊 ${count} 筆匯款資料！`);
-        } else {
-            alert("未找到相符戶名的廠商資料，或資料皆已完整。");
-        }
+        } else { alert("未找到相符戶名的廠商資料，或資料皆已完整。"); }
     }
 
     function manualAddVendor() {
@@ -365,7 +405,7 @@
             const text = e.target.result;
             const rows = text.split('\n').filter(r => r.trim() !== "");
             rows.slice(1).forEach(row => {
-                const cols = row.split(',').map(s => s.trim());
+                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
                 if (cols.length >= 4) {
                     vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
                 }
@@ -380,7 +420,7 @@
 
     function exportVendorCSV() {
         if(vendors.length === 0) return alert("目前無廠商資料可匯出");
-        let csv = "\uFEFF廠商名稱,解款行,帳號,戶名\n" + vendors.map(v => `"${v.name}","${v.bankCode}","${v.account}","${v.owner}"`).join("\n");
+        let csv = "\uFEFF廠商名稱,解款行,帳號,戶名\n" + vendors.map(v => `${cleanForCsv(v.name)},${cleanForCsv(v.bankCode)},${cleanForCsv(v.account)},${cleanForCsv(v.owner)}`).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
         link.download = `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
@@ -392,9 +432,9 @@
         tbody.innerHTML = vendors.map(v => `
             <tr>
                 <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
                 <td class="action-cell">
                     <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改，離開後自動儲存')">改</button>
                     <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
@@ -405,10 +445,7 @@
 
     function updateVendorField(id, field, value) {
         const idx = vendors.findIndex(v => v.id == id);
-        if(idx !== -1) {
-            vendors[idx][field] = value.trim();
-            localStorage.setItem('vendorList', JSON.stringify(vendors));
-        }
+        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
     }
 
     function deleteVendor(id) {
@@ -488,18 +525,9 @@
         let baseDesc = workNote;
         if (hasRetention) baseDesc += `-保留${rRate}%`;
         const isInstallment = p1Pct < 100;
-        const recordBase = {
-            company: document.getElementById('companySelect').value,
-            bank: document.getElementById('tempBankCode').value || "",
-            acc: document.getElementById('tempAccount').value || "",
-            owner: document.getElementById('tempOwner').value || "",
-            formula: document.getElementById('processFormula').innerHTML,
-            saveMonth: saveMonthLabel
-        };
+        const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
         db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 });
-        if (isInstallment) {
-            db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 });
-        }
+        if (isInstallment) { db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 }); }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
         alert("儲存成功！");
         clearInputFields();
@@ -511,17 +539,12 @@
         document.getElementById('paymentDetail').innerHTML = "";
     }
 
-    // --- 新增：切換排序邏輯 ---
     function toggleSort(field) {
         currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
         db.sort((a, b) => {
             let valA = a[field] || "";
             let valB = b[field] || "";
-            if (currentSortOrder === 'asc') {
-                return valA.localeCompare(valB, 'zh-TW');
-            } else {
-                return valB.localeCompare(valA, 'zh-TW');
-            }
+            return currentSortOrder === 'asc' ? valA.localeCompare(valB, 'zh-TW') : valB.localeCompare(valA, 'zh-TW');
         });
         renderTable();
     }
@@ -531,8 +554,6 @@
         const filterMon = document.getElementById('filterMonth').value;
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = "";
-        
-        // 此處 db 已根據排序邏輯排列
         db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon))
           .forEach(item => {
             const tr = document.createElement('tr');
@@ -560,7 +581,7 @@
 
     function updateField(id, field, value) {
         const idx = db.findIndex(i => i.id === id);
-        if(idx !== -1) { db[idx][field] = value; localStorage.setItem('paymentRecords', JSON.stringify(db)); }
+        if(idx !== -1) { db[idx][field] = value.trim(); localStorage.setItem('paymentRecords', JSON.stringify(db)); }
     }
 
     function updateAmountField(id, el) {
@@ -574,15 +595,14 @@
 
     function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
 
-    function clearData() { if(confirm("確定清空？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
+    function clearData() { if(confirm("確定清空所有排程？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
     function exportBankData() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
         const data = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        if(data.length === 0) return alert("目前篩選條件下無資料可匯出");
-
-        let csv = "\uFEFF日期,解款行,帳號,戶名,金額\n" + data.map(i => `${i.date},"${i.bank}","${i.acc}","${i.owner}",${i.amount}`).join("\n");
+        if(data.length === 0) return alert("目前無資料可匯出");
+        let csv = "\uFEFF日期,解款行,帳號,戶名,金額\n" + data.map(i => `${cleanForCsv(i.date)},${cleanForCsv(i.bank)},${cleanForCsv(i.acc)},${cleanForCsv(i.owner)},${i.amount}`).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
         link.download = `匯款資料_${filterMon}_${filterComp}.csv`;
@@ -593,9 +613,8 @@
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
         const data = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        if(data.length === 0) return alert("目前篩選條件下無資料可匯出");
-
-        let csv = "\uFEFF日期,明細內容,金額\n" + data.map(i => `${i.date},"${i.desc}",${i.amount}`).join("\n");
+        if(data.length === 0) return alert("目前無資料可匯出");
+        let csv = "\uFEFF日期,明細內容,金額\n" + data.map(i => `${cleanForCsv(i.date)},${cleanForCsv(i.desc)},${i.amount}`).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
         link.download = `請款明細_${filterMon}_${filterComp}.csv`;
@@ -613,7 +632,7 @@
         document.getElementById('filterMonth').value = currentLabel;
     }
 
-    document.addEventListener('click', e => { if (!e.target.closest('.search-container')) document.getElementById('searchResults').style.display = 'none'; });
+    document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
 
     window.onload = () => { initMonthFilter(); };
 </script>
