@@ -13,6 +13,7 @@
             --text: #4A4A4A;
             --border: #E0DED7;
             --danger: #e74c3c;
+            --success: #217346;
         }
 
         body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -54,7 +55,7 @@
         .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
 
         .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-excel { padding: 10px 20px; background: #217346; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-excel { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
         .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
         
         .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
@@ -75,18 +76,11 @@
         .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
 
-        /* 搜尋相關樣式 */
+        /* 新增：廠商搜尋相關樣式 */
         .search-container { position: relative; }
-        .search-results { 
-            position: absolute; top: 100%; left: 0; right: 0; 
-            background: white; border: 1px solid var(--border); 
-            border-radius: 8px; z-index: 100; max-height: 200px; 
-            overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            display: none;
-        }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         .search-item:hover { background: #f8f8f8; color: var(--primary); }
-        .search-item .sub-info { font-size: 0.75rem; color: #999; }
     </style>
 </head>
 <body>
@@ -94,20 +88,12 @@
 <div class="tabs">
     <button class="tab-btn active" onclick="switchPage('calcPage', this)">計算工具</button>
     <button class="tab-btn" onclick="switchPage('listPage', this)">付款清單</button>
+    <button class="tab-btn" onclick="switchPage('vendorPage', this)">廠商資料</button>
 </div>
 
 <div id="calcPage" class="page active">
     <div class="card">
         <h2>工程結算明細</h2>
-        
-        <div class="row">
-            <div class="col search-container">
-                <label>廠商搜尋 (關鍵字)</label>
-                <input type="text" id="vendorSearch" placeholder="輸入廠商名稱關鍵字..." oninput="searchVendor(this.value)">
-                <div id="searchResults" class="search-results"></div>
-            </div>
-        </div>
-
         <div class="row">
             <div class="col">
                 <label>付款公司</label>
@@ -118,9 +104,10 @@
                     <option value="上川">上川</option>
                 </select>
             </div>
-            <div class="col">
-                <label>工程內容 (明細)</label>
-                <input type="text" id="workNote" placeholder="例如：頂美段-弘龍-木地板已完成54戶請款">
+            <div class="col search-container">
+                <label>搜尋廠商 / 工程內容 (明細)</label>
+                <input type="text" id="workNote" placeholder="輸入廠商關鍵字..." oninput="searchVendor(this.value)">
+                <div id="searchResults" class="search-results"></div>
             </div>
         </div>
 
@@ -181,7 +168,6 @@
 
         <button class="btn-save" onclick="saveData()">儲存此筆排程</button>
         <button class="btn-reset" onclick="location.reload()">重新整理</button>
-        <button class="btn-reset" onclick="importVendorsPrompt()">匯入廠商資料 (CSV/文字)</button>
     </div>
 </div>
 
@@ -220,6 +206,32 @@
     </div>
 </div>
 
+<div id="vendorPage" class="page" style="max-width: 850px;">
+    <div class="list-card">
+        <div class="section-title">廠商匯款資料管理</div>
+        <div class="filter-row">
+            <div class="filter-group">
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
+                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">匯入廠商 CSV</button>
+                <span style="font-size: 0.7rem; color: #999;">(格式: 廠商名稱,解款行代號,解款人帳號,收款人戶名)</span>
+            </div>
+            <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
+        </div>
+        <table id="vendorTable">
+            <thead>
+                <tr>
+                    <th>廠商名稱</th>
+                    <th>解款行</th>
+                    <th>帳號</th>
+                    <th>戶名</th>
+                    <th class="action-cell">刪除</th>
+                </tr>
+            </thead>
+            <tbody id="vendorTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
 <div id="infoModal" class="modal" onclick="document.getElementById('infoModal').style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
@@ -231,10 +243,70 @@
 <script>
     const fmt = new Intl.NumberFormat('zh-TW');
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
-    // 廠商資料庫
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
 
-    // --- 廠商搜尋功能 ---
+    // --- 廠商管理功能 ---
+
+    function importVendorCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').slice(1); // 跳過標題
+            rows.forEach(row => {
+                const cols = row.split(',').map(s => s.trim());
+                if (cols.length >= 4 && cols[0]) {
+                    vendors.push({
+                        id: Date.now() + Math.random(),
+                        name: cols[0],
+                        bankCode: cols[1],
+                        account: cols[2],
+                        owner: cols[3]
+                    });
+                }
+            });
+            localStorage.setItem('vendorList', JSON.stringify(vendors));
+            renderVendorTable();
+            alert("匯入完成！");
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function renderVendorTable() {
+        const tbody = document.getElementById('vendorTableBody');
+        tbody.innerHTML = "";
+        vendors.forEach(v => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${v.name}</td>
+                <td>${v.bankCode}</td>
+                <td>${v.account}</td>
+                <td>${v.owner}</td>
+                <td class="action-cell"><button class="btn-del" onclick="deleteVendor('${v.id}')">×</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function deleteVendor(id) {
+        if(confirm("確定刪除此廠商？")) {
+            vendors = vendors.filter(v => v.id != id);
+            localStorage.setItem('vendorList', JSON.stringify(vendors));
+            renderVendorTable();
+        }
+    }
+
+    function clearVendors() {
+        if(confirm("確定清空所有廠商資料？")) {
+            vendors = [];
+            localStorage.removeItem('vendorList');
+            renderVendorTable();
+        }
+    }
+
+    // --- 搜尋功能 ---
+
     function searchVendor(val) {
         const resultsDiv = document.getElementById('searchResults');
         if (!val) { resultsDiv.style.display = 'none'; return; }
@@ -242,9 +314,8 @@
         const filtered = vendors.filter(v => v.name.includes(val));
         if (filtered.length > 0) {
             resultsDiv.innerHTML = filtered.map(v => `
-                <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankId}', '${v.bankAcc}', '${v.bankName}')">
-                    <div>${v.name}</div>
-                    <div class="sub-info">${v.bankId} / ${v.bankAcc} / ${v.bankName}</div>
+                <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
+                    <strong>${v.name}</strong> - ${v.owner} (${v.bankCode})
                 </div>
             `).join('');
             resultsDiv.style.display = 'block';
@@ -253,33 +324,14 @@
         }
     }
 
-    function selectVendor(name, bankId, bankAcc, bankName) {
-        // 自動填充到明細欄位
-        const currentNote = document.getElementById('workNote').value;
-        const info = `${name}(${bankId}-${bankAcc}-${bankName})`;
-        document.getElementById('workNote').value = info + (currentNote ? ' ' + currentNote : '');
-        document.getElementById('vendorSearch').value = name;
+    function selectVendor(name, bank, acc, owner) {
+        const noteInput = document.getElementById('workNote');
+        noteInput.value = `${name}-${bank}-${acc}-${owner}`;
         document.getElementById('searchResults').style.display = 'none';
     }
 
-    function importVendorsPrompt() {
-        const raw = prompt("請貼入廠商資料 (格式：廠商名稱,行庫代號,行庫帳號,收款戶名)\n多筆請換行：");
-        if (raw) {
-            const lines = raw.split('\n');
-            const newVendors = lines.map(line => {
-                const parts = line.split(',');
-                if(parts.length >= 4) {
-                    return { name: parts[0].trim(), bankId: parts[1].trim(), bankAcc: parts[2].trim(), bankName: parts[3].trim() };
-                }
-                return null;
-            }).filter(v => v);
-            vendors = [...vendors, ...newVendors];
-            localStorage.setItem('vendorList', JSON.stringify(vendors));
-            alert(`已成功匯入 ${newVendors.length} 筆廠商資料`);
-        }
-    }
+    // --- 原有邏輯保留與微調 ---
 
-    // --- 原有邏輯 ---
     function initMonthFilter() {
         const filterMonth = document.getElementById('filterMonth');
         const months = new Set();
@@ -306,6 +358,8 @@
         if(pageId === 'listPage') {
             initMonthFilter();
             renderTable();
+        } else if (pageId === 'vendorPage') {
+            renderVendorTable();
         }
     }
 
@@ -423,7 +477,6 @@
 
     function clearInputFields() {
         document.getElementById('workNote').value = "";
-        document.getElementById('vendorSearch').value = "";
         document.getElementById('rawAmount').value = "";
         document.getElementById('taxAmount').value = "";
         document.getElementById('retentionAmount').value = "";
@@ -510,14 +563,15 @@
         link.click();
     }
 
+    // 點擊外部關閉搜尋結果
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById('searchResults').style.display = 'none';
+        }
+    });
+
     window.onload = () => {
         initMonthFilter();
-        // 點擊外面隱藏搜尋結果
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) {
-                document.getElementById('searchResults').style.display = 'none';
-            }
-        });
     };
 </script>
 
