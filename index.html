@@ -14,6 +14,7 @@
             --border: #E0DED7;
             --danger: #e74c3c;
             --success: #217346;
+            --info: #5da9ad;
         }
 
         body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -27,7 +28,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
-        .list-card { background: var(--card); width: 100%; max-width: 1000px; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .list-card { background: var(--card); width: 100%; max-width: 1100px; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
         
         h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
         .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
@@ -66,8 +67,12 @@
         th { background-color: #f8f8f8; color: var(--primary); }
         .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: inline-block; width: 95%; }
         .amount-cell { text-align: right; font-family: monospace; }
-        .action-cell { text-align: center; width: 40px; }
-        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; }
+        
+        /* 調整操作欄位寬度與按鈕樣式 */
+        .action-cell { text-align: center; width: 80px; }
+        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; }
+        .btn-calc:hover { background: var(--info); color: white; }
+        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
         
         .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
         .filter-group { display: flex; align-items: center; gap: 5px; }
@@ -180,9 +185,9 @@
     </div>
 </div>
 
-<div id="listPage" class="page" style="max-width: 1000px;">
+<div id="listPage" class="page" style="max-width: 1100px;">
     <div class="list-card">
-        <div class="section-title">付款清單明細 (點擊明細文字可看計算過程)</div>
+        <div class="section-title">付款清單明細</div>
         <div class="filter-row">
             <div class="filter-group">
                 <label style="margin:0">資料月份：</label>
@@ -203,13 +208,13 @@
         <table id="recordTable">
             <thead>
                 <tr>
-                    <th style="width: 10%;">日期</th>
-                    <th style="width: 28%;">明細內容</th>
-                    <th style="width: 15%;">金額</th>
-                    <th style="width: 12%;">解款行</th>
-                    <th style="width: 18%;">帳號</th>
+                    <th style="width: 9%;">日期</th>
+                    <th style="width: 25%;">明細內容</th>
+                    <th style="width: 12%;">金額</th>
+                    <th style="width: 10%;">解款行</th>
+                    <th style="width: 17%;">帳號</th>
                     <th style="width: 12%;">戶名</th>
-                    <th class="action-cell">刪</th>
+                    <th class="action-cell">功能</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -324,7 +329,7 @@
         if(confirm("確定清空廠商庫？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
     }
 
-    // --- 計算邏輯 (保留原樣) ---
+    // --- 計算邏輯 ---
     function switchPage(pageId, btn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -426,12 +431,15 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
-                <td><span class="editable" style="background-color: #f0f4f8;" onclick="showFormula('${item.id}')" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
                 <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'bank', this.innerText)" contenteditable="true">${item.bank || ''}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'acc', this.innerText)" contenteditable="true">${item.acc || ''}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'owner', this.innerText)" contenteditable="true">${item.owner || ''}</span></td>
-                <td class="action-cell"><button class="btn-del" onclick="deleteRecord('${item.id}')">×</button></td>
+                <td class="action-cell">
+                    <button class="btn-calc" onclick="showFormula('${item.id}')" title="查看計算過程">算</button>
+                    <button class="btn-del" onclick="deleteRecord('${item.id}')">×</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
