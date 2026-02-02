@@ -66,19 +66,25 @@
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
-        /* 付款清單維持單行縮略 */
-        #recordTable td { text-overflow: ellipsis; white-space: nowrap; }
-        /* 廠商資料表格允許換行 */
+        
+        /* 付款清單：文字超過可反白拉動，且不換行 */
+        #recordTable td { text-overflow: clip; white-space: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+        #recordTable td::-webkit-scrollbar { display: none; }
+        
+        /* 廠商資料表格換行邏輯 */
         #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
         
         th { background-color: #f8f8f8; color: var(--primary); }
-        /* 修正編輯框樣式，移除點點干擾 */
-        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; }
+        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; border: 1px transparent solid; }
+        .editable:focus { border-color: var(--accent); outline: none; background-color: #fff; }
+        
         .amount-cell { text-align: right; font-family: monospace; }
         
-        .action-cell { text-align: center; width: 80px; }
-        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; }
+        .action-cell { text-align: center; width: 90px; }
+        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
         .btn-calc:hover { background: var(--info); color: white; }
+        .btn-edit-tool { color: var(--accent); border: 1px solid var(--accent); background: white; cursor: pointer; border-radius: 4px; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
+        .btn-edit-tool:hover { background: var(--accent); color: white; }
         .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
         
         .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
@@ -264,11 +270,11 @@
         <table id="vendorTable">
             <thead>
                 <tr>
-                    <th style="width: 30%;">廠商名稱</th>
+                    <th style="width: 25%;">廠商名稱</th>
                     <th style="width: 20%;">解款行</th>
-                    <th style="width: 25%;">帳號</th>
-                    <th style="width: 15%;">戶名</th>
-                    <th class="action-cell">刪除</th>
+                    <th style="width: 20%;">帳號</th>
+                    <th style="width: 20%;">戶名</th>
+                    <th class="action-cell">功能</th>
                 </tr>
             </thead>
             <tbody id="vendorTableBody"></tbody>
@@ -382,13 +388,24 @@
         const tbody = document.getElementById('vendorTableBody');
         tbody.innerHTML = vendors.map(v => `
             <tr>
-                <td>${v.name}</td>
-                <td>${v.bankCode}</td>
-                <td>${v.account}</td>
-                <td>${v.owner}</td>
-                <td class="action-cell"><button class="btn-del" onclick="deleteVendor('${v.id}')">×</button></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner}</span></td>
+                <td class="action-cell">
+                    <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改，離開後自動儲存')">改</button>
+                    <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
+                </td>
             </tr>
         `).join('');
+    }
+
+    function updateVendorField(id, field, value) {
+        const idx = vendors.findIndex(v => v.id == id);
+        if(idx !== -1) {
+            vendors[idx][field] = value.trim();
+            localStorage.setItem('vendorList', JSON.stringify(vendors));
+        }
     }
 
     function deleteVendor(id) {
