@@ -24,11 +24,13 @@
         .tab-btn.active { background: var(--primary); color: white; }
 
         .page { display: none; width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
+        /* 付款清單頁面滿版設定 */
+        #listPage.page.active { display: block; width: 98vw; max-width: none; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
-        .list-card { background: var(--card); width: 100%; max-width: 1100px; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .list-card { background: var(--card); width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
         
         h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
         .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
@@ -86,7 +88,6 @@
         .search-item:hover { background: #f8f8f8; color: var(--primary); }
         .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
 
-        /* 廠商表單專屬樣式 */
         .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
     </style>
 </head>
@@ -188,7 +189,7 @@
     </div>
 </div>
 
-<div id="listPage" class="page" style="max-width: 1100px;">
+<div id="listPage" class="page">
     <div class="list-card">
         <div class="section-title">付款清單明細</div>
         <div class="filter-row">
@@ -211,12 +212,13 @@
         <table id="recordTable">
             <thead>
                 <tr>
-                    <th style="width: 9%;">日期</th>
+                    <th style="width: 8%;">日期</th>
                     <th style="width: 25%;">明細內容</th>
-                    <th style="width: 12%;">金額</th>
+                    <th style="width: 10%;">金額</th>
                     <th style="width: 10%;">解款行</th>
-                    <th style="width: 17%;">帳號</th>
-                    <th style="width: 12%;">戶名</th>
+                    <th style="width: 16%;">帳號</th>
+                    <th style="width: 11%;">戶名</th>
+                    <th style="width: 11%;">付款公司</th>
                     <th class="action-cell">功能</th>
                 </tr>
             </thead>
@@ -312,14 +314,10 @@
         const bank = document.getElementById('newVBank').value.trim();
         const acc = document.getElementById('newVAcc').value.trim();
         const owner = document.getElementById('newVOwner').value.trim();
-
         if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
-
         vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
         localStorage.setItem('vendorList', JSON.stringify(vendors));
         renderVendorTable();
-        
-        // 清空欄位
         ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
         alert("廠商新增成功！");
     }
@@ -439,9 +437,14 @@
         const saveMonthLabel = `${new Date().getFullYear()}.${(new Date().getMonth()+1).toString().padStart(2, '0')}`;
         const p1Pct = parseFloat(document.getElementById('p1Pct').value);
         const pay1 = Math.round(net * (p1Pct / 100));
-        const vendorName = document.getElementById('vendorSearch').value;
-        const workNote = document.getElementById('workNote').value;
-        const fullDesc = vendorName ? `${vendorName}-${workNote}` : workNote;
+        
+        const workNote = document.getElementById('workNote').value || "工程";
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = document.getElementById('retentionRate').value;
+        
+        // 核心邏輯：建立基礎明細（工程內容 + 保留款標記）
+        let baseDesc = workNote;
+        if (hasRetention) baseDesc += `-保留${rRate}%`;
 
         const recordBase = {
             company: document.getElementById('companySelect').value,
@@ -452,9 +455,25 @@
             saveMonth: saveMonthLabel
         };
 
-        db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: `${fullDesc}(2-1)`, amount: pay1 });
-        if (p1Pct < 100) {
-            db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${fullDesc}(2-2)`, amount: net - pay1 });
+        // 判斷是否需要 (2-1)、(2-2) 標記
+        const isInstallment = p1Pct < 100;
+
+        db.push({ 
+            ...recordBase, 
+            id: timestamp + "_1", 
+            date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), 
+            desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, 
+            amount: pay1 
+        });
+
+        if (isInstallment) {
+            db.push({ 
+                ...recordBase, 
+                id: timestamp + "_2", 
+                date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), 
+                desc: `${baseDesc}(2-2)`, 
+                amount: net - pay1 
+            });
         }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
         alert("儲存成功！");
@@ -482,6 +501,7 @@
                 <td><span class="editable" onblur="updateField('${item.id}', 'bank', this.innerText)" contenteditable="true">${item.bank || ''}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'acc', this.innerText)" contenteditable="true">${item.acc || ''}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'owner', this.innerText)" contenteditable="true">${item.owner || ''}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'company', this.innerText)" contenteditable="true">${item.company || ''}</span></td>
                 <td class="action-cell">
                     <button class="btn-calc" onclick="showFormula('${item.id}')" title="查看計算過程">算</button>
                     <button class="btn-del" onclick="deleteRecord('${item.id}')">×</button>
@@ -518,7 +538,7 @@
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
         const data = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        let csv = "\uFEFF日期,明細內容,金額,解款行,帳號,戶名\n" + data.map(i => `${i.date},"${i.desc}",${i.amount},${i.bank},${i.acc},${i.owner}`).join("\n");
+        let csv = "\uFEFF日期,明細內容,金額,解款行,帳號,戶名,付款公司\n" + data.map(i => `${i.date},"${i.desc}",${i.amount},${i.bank},${i.acc},${i.owner},${i.company}`).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
         link.download = `付款清單_${filterMon}.csv`;
