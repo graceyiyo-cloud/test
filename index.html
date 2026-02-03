@@ -102,6 +102,14 @@
         .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
 
         .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
+
+        /* 新增樣式：拖曳視覺與統計欄位 */
+        .draggable-row { cursor: grab; transition: background 0.2s; }
+        .draggable-row:active { cursor: grabbing; }
+        .draggable-row.dragging { opacity: 0.5; background: #f0f0f0; }
+        .drag-over { border-top: 3px dashed var(--primary) !important; }
+        .summary-bar { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: right; font-size: 1.1rem; color: var(--dark); border: 1px solid #eee; }
+        .summary-bar strong { color: var(--danger); font-size: 1.3rem; }
     </style>
 </head>
 <body>
@@ -148,7 +156,7 @@
                 <input type="number" id="rawAmount" placeholder="請輸入金額" oninput="calculate(false, false)">
             </div>
             <div class="col">
-                <label>稅額 (5%)</label>
+                <label class="check-label"><input type="checkbox" id="taxCheck" checked onchange="calculate(false, false)"> 稅額 (5%)</label>
                 <input type="number" id="taxAmount" oninput="calculate(true, false)">
             </div>
         </div>
@@ -239,6 +247,7 @@
         <table id="recordTable">
             <thead>
                 <tr>
+                    <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" checked onclick="toggleSelectAll(this)"></th>
                     <th style="width: 35px;">No.</th>
                     <th style="width: 8.5ch;">日期</th>
                     <th style="width: auto;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
@@ -252,6 +261,9 @@
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
+        <div class="summary-bar" id="listSummary">
+            篩選總金額：<span id="filteredTotal">$0</span> | 勾選總金額：<strong id="checkedTotal">$0</strong>
+        </div>
     </div>
 </div>
 
@@ -312,6 +324,7 @@
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
     let currentSortOrder = 'asc';
+    let checkedIds = new Set(); // 用於暫存被勾選的 ID
 
     let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
 
@@ -495,12 +508,18 @@
     function calculate(isManualTax, isManualRetention) {
         const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
         const taxInput = document.getElementById('taxAmount');
+        const taxChecked = document.getElementById('taxCheck').checked;
         const retentionInput = document.getElementById('retentionAmount');
         const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
         const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
         
-        let tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
-        if(!isManualTax) taxInput.value = tax || "";
+        let tax = 0;
+        if (taxChecked) {
+            tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
+        }
+        
+        if(!isManualTax) taxInput.value = taxChecked ? (tax || "") : "";
+        
         const total = raw + tax;
         const hasClean = document.getElementById('cleanCheck').checked;
         const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
@@ -525,7 +544,7 @@
     }
 
     function renderFormula(currentNet) {
-        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)} + 稅${fmt.format(lastCalcState.tax)} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
+        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)}${lastCalcState.tax > 0 ? ' + 稅' + fmt.format(lastCalcState.tax) : ''} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
         if (lastCalcState.cleanFee !== 0) {
             html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
         }
@@ -577,8 +596,16 @@
         if (hasRetention) baseDesc += `-保留${rRate}%`;
         const isInstallment = p1Pct < 100;
         const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
-        db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 });
-        if (isInstallment) { db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 }); }
+        
+        const item1 = { ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 };
+        db.push(item1);
+        checkedIds.add(item1.id);
+
+        if (isInstallment) { 
+            const item2 = { ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 };
+            db.push(item2); 
+            checkedIds.add(item2.id);
+        }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
         clearInputFields();
     }
@@ -602,6 +629,38 @@
         renderTable();
     }
 
+    // 新增：切換勾選與計算總額
+    function toggleItem(id, isChecked) {
+        if (isChecked) checkedIds.add(id);
+        else checkedIds.delete(id);
+        updateSummary();
+    }
+
+    function toggleSelectAll(el) {
+        const checkboxes = document.querySelectorAll('.item-check');
+        checkboxes.forEach(cb => {
+            cb.checked = el.checked;
+            toggleItem(cb.dataset.id, el.checked);
+        });
+    }
+
+    function updateSummary() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
+        
+        let filteredSum = 0;
+        let checkedSum = 0;
+        
+        filtered.forEach(i => {
+            filteredSum += i.amount;
+            if (checkedIds.has(i.id)) checkedSum += i.amount;
+        });
+
+        document.getElementById('filteredTotal').innerText = '$' + fmt.format(filteredSum);
+        document.getElementById('checkedTotal').innerText = '$' + fmt.format(checkedSum);
+    }
+
     function renderTable() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
@@ -609,10 +668,26 @@
         tbody.innerHTML = "";
         
         let counter = 1;
-        db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon))
-          .forEach(item => {
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
+        
+        filtered.forEach(item => {
+            if (!checkedIds.has(item.id) && document.getElementById('selectAll').checked) {
+                checkedIds.add(item.id);
+            }
             const tr = document.createElement('tr');
+            tr.className = "draggable-row";
+            tr.draggable = true;
+            tr.dataset.id = item.id;
+            
+            // 綁定拖曳事件
+            tr.ondragstart = (e) => { e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', item.id); };
+            tr.ondragend = (e) => { e.target.classList.remove('dragging'); removeDragOverStyles(); };
+            tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drag-over'); };
+            tr.ondragleave = (e) => { tr.classList.remove('drag-over'); };
+            tr.ondrop = (e) => { e.preventDefault(); handleDrop(e.dataTransfer.getData('text/plain'), item.id); };
+
             tr.innerHTML = `
+                <td style="text-align:center;"><input type="checkbox" class="item-check" data-id="${item.id}" ${checkedIds.has(item.id) ? 'checked' : ''} onchange="toggleItem('${item.id}', this.checked)"></td>
                 <td style="text-align:center; color:#999;">${counter++}</td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
@@ -628,6 +703,22 @@
             `;
             tbody.appendChild(tr);
         });
+        updateSummary();
+    }
+
+    // 新增：拖曳邏輯處理
+    function removeDragOverStyles() {
+        document.querySelectorAll('.draggable-row').forEach(row => row.classList.remove('drag-over'));
+    }
+
+    function handleDrop(draggedId, targetId) {
+        if (draggedId === targetId) return;
+        const dragIdx = db.findIndex(i => i.id === draggedId);
+        const targetIdx = db.findIndex(i => i.id === targetId);
+        const [draggedItem] = db.splice(dragIdx, 1);
+        db.splice(targetIdx, 0, draggedItem);
+        localStorage.setItem('paymentRecords', JSON.stringify(db));
+        renderTable();
     }
 
     function showFormula(id) {
@@ -646,17 +737,18 @@
             let val = parseInt(el.innerText.replace(/,/g, '')) || 0;
             db[idx].amount = val; localStorage.setItem('paymentRecords', JSON.stringify(db));
             el.innerText = fmt.format(val);
+            updateSummary();
         }
     }
 
-    function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
-    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
+    function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); checkedIds.delete(id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
+    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; checkedIds.clear(); localStorage.removeItem('paymentRecords'); renderTable(); } }
 
     function exportBankExcel() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        if(filtered.length === 0) return alert("目前無資料可匯出");
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
+        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
         const headers = ["日期", "解款行", "帳號", "戶名", "金額"];
         const data = filtered.map(i => [i.date, i.bank, i.acc, i.owner, i.amount]);
         generateExcelFile(headers, data, `匯款資料_${filterMon}_${filterComp}`);
@@ -665,8 +757,8 @@
     function exportClaimExcel() {
         const filterComp = document.getElementById('filterCompany').value;
         const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        if(filtered.length === 0) return alert("目前無資料可匯出");
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
+        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
         const headers = ["日期", "明細內容", "金額"];
         const data = filtered.map(i => [i.date, i.desc, i.amount]);
         generateExcelFile(headers, data, `請款明細_${filterMon}_${filterComp}`);
@@ -684,7 +776,11 @@
     }
 
     document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
-    window.onload = () => { initMonthFilter(); };
+    window.onload = () => { 
+        // 初始化時，將現有 db 的 ID 都預設勾選
+        db.forEach(i => checkedIds.add(i.id));
+        initMonthFilter(); 
+    };
 </script>
 
 </body>
