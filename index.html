@@ -231,6 +231,7 @@
             </div>
             <div class="filter-group">
                 <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
+                <button class="btn-info" style="background: var(--danger); border-color: var(--danger);" onclick="clearData()">清空所有排程</button>
                 <button class="btn-info" style="background: var(--dark);" onclick="exportBankExcel()">匯出匯款資料</button>
                 <button class="btn-excel" onclick="exportClaimExcel()">匯出請款明細</button>
             </div>
@@ -238,6 +239,7 @@
         <table id="recordTable">
             <thead>
                 <tr>
+                    <th style="width: 4%;">No.</th>
                     <th style="width: 8%;">日期</th>
                     <th style="width: 25%;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
                     <th style="width: 10%;">金額</th>
@@ -250,7 +252,6 @@
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
-        <button class="btn-reset" onclick="clearData()" style="color: var(--danger);">清空所有資料</button>
     </div>
 </div>
 
@@ -312,7 +313,6 @@
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
     let currentSortOrder = 'asc';
 
-    // 全域變數存儲當前計算狀態
     let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
 
     function generateExcelFile(headers, data, filename) {
@@ -512,16 +512,12 @@
         if(!isManualRetention) retentionInput.value = retention || "";
         
         const net = (subtotal - retention) + adj;
-        
-        // 儲存狀態以便手動更新
         lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote };
-        
         document.getElementById('netAmount').value = net;
         renderFormula(net);
         renderDetail();
     }
 
-    // 當淨額手動變更時，僅更新公式顯示與預覽
     function updateFormulaOnly() {
         const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
         renderFormula(manualNet);
@@ -530,26 +526,20 @@
 
     function renderFormula(currentNet) {
         let html = `<div>① 全額：${fmt.format(lastCalcState.raw)} + 稅${fmt.format(lastCalcState.tax)} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
-        
         if (lastCalcState.cleanFee !== 0) {
             html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
         }
-        
         html += `<div class="subtotal-line">③ 小計：${fmt.format(lastCalcState.total)} - ${fmt.format(lastCalcState.cleanFee)} = <strong>${fmt.format(lastCalcState.subtotal)}</strong></div>`;
-        
         let stepCount = 4;
         if (lastCalcState.retention !== 0) {
             html += `<div>④ 保留款：${fmt.format(lastCalcState.subtotal)} × ${lastCalcState.rRate}% = <strong>${fmt.format(lastCalcState.retention)}</strong></div>`;
             stepCount = 5;
         }
-        
         if (lastCalcState.adj !== 0) {
             html += `<div>${stepCount === 5 ? '⑤' : '④'} ${lastCalcState.adjNote}：<strong>${lastCalcState.adj >= 0 ? '+' : ''}${fmt.format(lastCalcState.adj)}</strong></div>`;
             stepCount++;
         }
-        
         html += `<div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">${stepCount === 6 ? '⑥' : (stepCount === 5 ? '⑤' : '④')} 淨額：<strong>${fmt.format(currentNet)}</strong></div>`;
-        
         document.getElementById('processFormula').innerHTML = html;
     }
 
@@ -583,17 +573,13 @@
         const workNote = document.getElementById('workNote').value || "工程";
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = document.getElementById('retentionRate').value;
-        
         let baseDesc = workNote;
         if (hasRetention) baseDesc += `-保留${rRate}%`;
-        
         const isInstallment = p1Pct < 100;
         const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
         db.push({ ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 });
         if (isInstallment) { db.push({ ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 }); }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
-        
-        // 移除 alert 提示
         clearInputFields();
     }
 
@@ -621,10 +607,13 @@
         const filterMon = document.getElementById('filterMonth').value;
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = "";
+        
+        let counter = 1;
         db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon))
           .forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td style="text-align:center; color:#999;">${counter++}</td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
                 <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
                 <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
@@ -661,7 +650,7 @@
     }
 
     function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
-    function clearData() { if(confirm("確定清空所有排程？")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
+    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; localStorage.removeItem('paymentRecords'); renderTable(); } }
 
     function exportBankExcel() {
         const filterComp = document.getElementById('filterCompany').value;
