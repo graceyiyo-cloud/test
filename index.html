@@ -65,6 +65,11 @@
         .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         .check-label input[type="checkbox"] { width: auto; margin: 0; }
 
+        /* 新增控制切換按鈕樣式 */
+        .toggle-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #eee; }
+        .toggle-btn { flex: 1; padding: 8px; border: none; background: #eee; cursor: pointer; font-size: 0.75rem; color: #777; transition: 0.2s; }
+        .toggle-btn.active { background: var(--accent); color: white; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
         
@@ -151,30 +156,47 @@
 
         <div class="row">
             <div class="col">
-                <label>未稅金額</label>
-                <input type="number" id="rawAmount" placeholder="請輸入金額" oninput="calculate(false, false)">
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label style="margin-bottom:0">輸入金額</label>
+                    <div class="toggle-group" id="receiptToggle">
+                        <button class="toggle-btn active" onclick="setDocType('發票')">發票</button>
+                        <button class="toggle-btn" onclick="setDocType('收據')">收據</button>
+                    </div>
+                    <div class="toggle-group" id="taxModeToggle">
+                        <button class="toggle-btn active" onclick="setTaxMode('未稅')">未稅輸入</button>
+                        <button class="toggle-btn" onclick="setTaxMode('含稅')">含稅輸入</button>
+                    </div>
+                </div>
+                <input type="number" id="inputAmount" placeholder="請輸入金額" oninput="calculate()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>未稅金額 (推算)</label>
+                <input type="number" id="rawAmount" readonly tabindex="-1">
             </div>
             <div class="col">
-                <label class="check-label"><input type="checkbox" id="taxCheck" checked onchange="calculate(false, false)"> 稅額 (5%)</label>
-                <input type="number" id="taxAmount" oninput="calculate(true, false)">
+                <label>稅額 (5%)</label>
+                <input type="number" id="taxAmount" readonly tabindex="-1">
             </div>
         </div>
 
         <div class="config-box">
             <div class="row">
                 <div class="col">
-                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate(false, false)"> 清潔保險 (%)</label>
-                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate(false, false)">
+                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate()"> 清潔保險 (%)</label>
+                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate()">
                 </div>
                 <div class="col">
-                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate(false, false)"> 保留款 (%)</label>
-                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate(false, false)">
+                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate()"> 保留款 (%)</label>
+                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate()">
                 </div>
             </div>
             <div class="row">
                 <div class="col">
                     <label>保留款金額 (可手動修改)</label>
-                    <input type="number" id="retentionAmount" oninput="calculate(true, true)">
+                    <input type="number" id="retentionAmount" oninput="calculate(true)">
                 </div>
             </div>
         </div>
@@ -182,11 +204,11 @@
         <div class="row">
             <div class="col">
                 <label>加扣款事由</label>
-                <input type="text" id="adjustmentNote" placeholder="例如：代購材料扣款" oninput="calculate(false, false)">
+                <input type="text" id="adjustmentNote" placeholder="例如：代購材料扣款" oninput="calculate()">
             </div>
             <div class="col">
                 <label>加扣款金額</label>
-                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate(false, false)">
+                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate()">
             </div>
         </div>
 
@@ -330,8 +352,39 @@
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
     let currentSortOrder = 'asc';
     let checkedIds = new Set();
+    
+    // 全域狀態：憑證與稅額模式
+    let currentDocType = '發票';
+    let currentTaxMode = '未稅';
 
     let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
+
+    function setDocType(type) {
+        currentDocType = type;
+        const btns = document.querySelectorAll('#receiptToggle .toggle-btn');
+        btns[0].classList.toggle('active', type === '發票');
+        btns[1].classList.toggle('active', type === '收據');
+        
+        // 如果是收據，強制變成未稅模式並隱藏稅額按鈕
+        const taxGroup = document.getElementById('taxModeToggle');
+        if (type === '收據') {
+            taxGroup.style.opacity = '0.3';
+            taxGroup.style.pointerEvents = 'none';
+            setTaxMode('未稅');
+        } else {
+            taxGroup.style.opacity = '1';
+            taxGroup.style.pointerEvents = 'auto';
+        }
+        calculate();
+    }
+
+    function setTaxMode(mode) {
+        currentTaxMode = mode;
+        const btns = document.querySelectorAll('#taxModeToggle .toggle-btn');
+        btns[0].classList.toggle('active', mode === '未稅');
+        btns[1].classList.toggle('active', mode === '含稅');
+        calculate();
+    }
 
     function generateExcelFile(headers, data, filename) {
         let xml = '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?>';
@@ -384,7 +437,10 @@
         const lastRecord = [...db].reverse().find(r => r.owner === owner);
         if (lastRecord && lastRecord.settings) {
             const s = lastRecord.settings;
-            document.getElementById('taxCheck').checked = s.taxCheck;
+            // 延續發票收據與稅額模式
+            if (s.docType) setDocType(s.docType);
+            if (s.taxMode) setTaxMode(s.taxMode);
+            
             document.getElementById('cleanCheck').checked = s.cleanCheck;
             document.getElementById('cleanRate').value = s.cleanRate;
             document.getElementById('retentionCheck').checked = s.retentionCheck;
@@ -393,8 +449,7 @@
             document.getElementById('p1Mon').value = s.p1Mon;
             document.getElementById('p2Pct').value = s.p2Pct;
             document.getElementById('p2Mon').value = s.p2Mon;
-            // 注意：這裡不帶入基準日，基準日遵循「上一筆填寫」的原則
-            calculate(false, false);
+            calculate();
         }
     }
 
@@ -526,20 +581,32 @@
         if(pageId === 'vendorPage') { renderVendorTable(); }
     }
 
-    function calculate(isManualTax, isManualRetention) {
-        const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
-        const taxInput = document.getElementById('taxAmount');
-        const taxChecked = document.getElementById('taxCheck').checked;
+    function calculate(isManualRetention = false) {
+        const inputVal = parseFloat(document.getElementById('inputAmount').value) || 0;
         const retentionInput = document.getElementById('retentionAmount');
         const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
         const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
         
+        let raw = 0;
         let tax = 0;
-        if (taxChecked) {
-            tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
+
+        if (currentDocType === '發票') {
+            if (currentTaxMode === '未稅') {
+                raw = inputVal;
+                tax = Math.round(raw * 0.05);
+            } else {
+                // 含稅推算未稅: 未稅 = 含稅 / 1.05
+                raw = Math.round(inputVal / 1.05);
+                tax = inputVal - raw;
+            }
+        } else {
+            // 收據模式：稅額永遠為 0
+            raw = inputVal;
+            tax = 0;
         }
-        
-        if(!isManualTax) taxInput.value = taxChecked ? (tax || "") : "";
+
+        document.getElementById('rawAmount').value = raw;
+        document.getElementById('taxAmount').value = tax;
         
         const total = raw + tax;
         const hasClean = document.getElementById('cleanCheck').checked;
@@ -549,6 +616,7 @@
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
         let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
+        
         if(!isManualRetention) retentionInput.value = retention || "";
         
         const net = (subtotal - retention) + adj;
@@ -633,14 +701,15 @@
         const workNote = document.getElementById('workNote').value || "工程";
         const hasRetention = document.getElementById('retentionCheck').checked;
         const rRate = document.getElementById('retentionRate').value;
-        const currentBaseDate = document.getElementById('baseDate').value; // 獲取當前基準日
+        const currentBaseDate = document.getElementById('baseDate').value; 
         
         let baseDesc = workNote;
         if (hasRetention) baseDesc += `-保留${rRate}%`;
         const isInstallment = p1Pct < 100;
 
         const settings = {
-            taxCheck: document.getElementById('taxCheck').checked,
+            docType: currentDocType,
+            taxMode: currentTaxMode,
             cleanCheck: document.getElementById('cleanCheck').checked,
             cleanRate: document.getElementById('cleanRate').value,
             retentionCheck: document.getElementById('retentionCheck').checked,
@@ -649,7 +718,7 @@
             p1Mon: document.getElementById('p1Mon').value,
             p2Pct: document.getElementById('p2Pct').value,
             p2Mon: document.getElementById('p2Mon').value,
-            baseDate: currentBaseDate // 儲存基準日到設定中
+            baseDate: currentBaseDate 
         };
 
         const recordBase = { 
@@ -675,24 +744,23 @@
         }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
         
-        // 傳遞目前填寫的基準日，以便清空欄位時保留它
-        clearInputFields(currentBaseDate);
+        clearInputFields(currentBaseDate, currentDocType, currentTaxMode);
     }
 
-    function clearInputFields(keptBaseDate) {
-        ['vendorSearch', 'workNote', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
+    function clearInputFields(keptBaseDate, keptDocType, keptTaxMode) {
+        ['vendorSearch', 'workNote', 'inputAmount', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.value = "";
         });
         document.getElementById('processFormula').innerHTML = "請輸入資料...";
         document.getElementById('paymentDetail').innerHTML = "";
         
-        // 如果有傳入需要保留的基準日，就填入；否則（如初始化時）才用當天日期
-        if (keptBaseDate) {
-            document.getElementById('baseDate').value = keptBaseDate;
-        } else {
-            initBaseDate();
-        }
+        if (keptBaseDate) document.getElementById('baseDate').value = keptBaseDate;
+        else initBaseDate();
+
+        // 延續點選狀態
+        if (keptDocType) setDocType(keptDocType);
+        if (keptTaxMode) setTaxMode(keptTaxMode);
     }
 
     function toggleSort(field) {
