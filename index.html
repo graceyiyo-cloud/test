@@ -3,934 +3,430 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>工程階層結算系統</title>
+    <title>URL_Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
     <style>
-        :root {
-            --bg: #F7F6F2;
-            --card: #FFFFFF;
-            --primary: #8E9775;
-            --accent: #AF8F6F;
-            --text: #4A4A4A;
-            --border: #E0DED7;
-            --danger: #e74c3c;
-            --success: #217346;
-            --info: #5da9ad;
-            --dark: #2c3e50;
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f7f3e9; 
+            background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #4a3f35;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ghibli-shadow {
+            box-shadow: 0 4px 10px -2px rgba(74, 63, 53, 0.08);
+            border: 2px solid #d1c7b7;
+        }
+        
+        #filter-bar-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: 8px 0; 
+            cursor: default;
+        }
+        #filter-bar-container::-webkit-scrollbar { height: 4px; }
+        #filter-bar-container::-webkit-scrollbar-thumb { background: #d1c7b7; border-radius: 10px; }
+        #filter-bar { display: flex; flex-wrap: nowrap; gap: 12px; padding: 0 4px; min-width: max-content; }
+        
+        .filter-chip {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            white-space: nowrap; 
+            flex-shrink: 0; 
+            font-size: 0.85rem; 
+            font-weight: 900; 
+            border-width: 2.5px; 
+            border-style: solid;
+            cursor: pointer; 
+            user-select: none; 
+            padding: 6px 20px; 
+            border-radius: 9999px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .filter-chip:not(.active) {
+            background-color: rgba(255, 255, 255, 0.5) !important;
         }
 
-        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .filter-chip.active { 
+            color: #ffffff !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-1.5px);
+        }
         
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; width: 100%; max-width: 500px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: #E0DED7; cursor: pointer; border-radius: 8px 8px 0 0; color: #777; font-weight: bold; transition: 0.3s; }
-        .tab-btn.active { background: var(--primary); color: white; }
+        .item-title { font-size: 1.05rem; font-weight: 800; color: #4a3f35; }
+        .item-url { font-size: 0.75rem; color: #5c8a97; margin-top: 2px; word-break: break-all; white-space: normal; }
+        
+        .item-tag {
+            border-width: 1.5px; border-style: solid;
+            padding: 1px 7px; border-radius: 6px; 
+            font-size: 0.6rem; 
+            font-weight: 900; 
+            margin-left: 8px; vertical-align: middle;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        
+        .ghibli-input { background-color: rgba(255, 255, 255, 0.9); border: 2px solid #d1c7b7; transition: all 0.3s; }
+        .ghibli-input:focus { outline: none; border-color: #8fb4a2; box-shadow: 0 0 0 3px rgba(143, 180, 162, 0.15); }
+        .tab-btn { background-color: #e8e2d5; color: #6b5e51; border: 2px solid #d1c7b7; border-bottom: none; font-size: 0.8rem; }
+        .tab-btn.active { background-color: #fff; color: #4a3f35; font-weight: bold; }
+        .loading-spinner { border: 4px solid #e8e2d5; border-top: 4px solid #8fb4a2; border-radius: 50%; width: 30px; height: 30px; animation: spin 1.5s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #login-overlay { background-color: #f7f3e9; background-image: radial-gradient(#e0d7c1 1px, transparent 1px); background-size: 24px 24px; }
 
-        .page { display: none; width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
-        #listPage.page.active { display: block; width: 98vw; max-width: none; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
-        .list-card { background: var(--card); width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
-        
-        h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
-        .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
-        .col { flex: 1; display: flex; flex-direction: column; }
-        
-        label { font-size: 0.8rem; margin-bottom: 5px; color: #999; }
-        input, select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none; background: #FAFAFA; width: 100%; box-sizing: border-box; }
-        input:focus, select:focus { border-color: var(--primary); background: #FFF; }
-        
-        #netAmount { font-weight: bold; color: var(--accent); background-color: #FFF9F3; border: 1px solid var(--accent); }
-        .config-box { background: #F9F9F8; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #EEE; }
-        .payment-box { border-top: 2px solid var(--primary); padding-top: 15px; margin-top: 20px; }
-        
-        .input-with-unit { position: relative; display: flex; align-items: center; }
-        .unit-label { margin-left: 5px; font-size: 0.8rem; color: #999; white-space: nowrap; width: 20px; }
-
-        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
-        .section-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
-        
-        .formula { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; color: #666; }
-        .formula strong { color: #333; font-weight: 600; }
-        .subtotal-line { background: #F0F2EB; padding: 4px 8px; border-radius: 4px; color: var(--primary) !important; }
-        
-        .payment-result { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #DDD; }
-        .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
-
-        .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-excel { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-        .btn-info { padding: 10px 20px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-        .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
-        
-        .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        .check-label input[type="checkbox"] { width: auto; margin: 0; }
-
-        /* 新增控制切換按鈕樣式 */
-        .toggle-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #eee; }
-        .toggle-btn { flex: 1; padding: 8px; border: none; background: #eee; cursor: pointer; font-size: 0.75rem; color: #777; transition: 0.2s; }
-        .toggle-btn.active { background: var(--accent); color: white; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
-        
-        #recordTable td { text-overflow: clip; white-space: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
-        #recordTable td::-webkit-scrollbar { display: none; }
-        
-        #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
-        
-        th { background-color: #f8f8f8; color: var(--primary); }
-        .sortable { cursor: pointer; user-select: none; position: relative; }
-        .sortable:hover { background-color: #f0f0f0; }
-        
-        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; border: 1px transparent solid; }
-        .editable:focus { border-color: var(--accent); outline: none; background-color: #fff; }
-        
-        .amount-cell { text-align: right; font-family: monospace; }
-        
-        .action-cell { text-align: center; width: 90px; }
-        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
-        .btn-calc:hover { background: var(--info); color: white; }
-        .btn-edit-tool { color: var(--accent); border: 1px solid var(--accent); background: white; cursor: pointer; border-radius: 4px; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
-        .btn-edit-tool:hover { background: var(--accent); color: white; }
-        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
-        
-        .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
-        .filter-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
-
-        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
-        .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.4; }
-        .search-item:hover { background: #f8f8f8; color: var(--primary); }
-        .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
-
-        .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
-
-        .draggable-row { cursor: grab; transition: background 0.2s; }
-        .draggable-row:active { cursor: grabbing; }
-        .draggable-row.dragging { opacity: 0.5; background: #f0f0f0; }
-        .drag-over { border-top: 3px dashed var(--primary) !important; }
-        .summary-bar { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: right; font-size: 1.1rem; color: var(--dark); border: 1px solid #eee; }
-        .summary-bar strong { color: var(--danger); font-size: 1.3rem; }
+        /* 拖曳排序導引線樣式 */
+        .sortable-placeholder {
+            background-color: #8fb4a220;
+            border: 2px dashed #8fb4a2 !important;
+            border-radius: 16px;
+            height: 80px;
+            margin-bottom: 12px;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+        }
     </style>
 </head>
-<body>
+<body class="pb-20 min-h-screen flex flex-col items-center">
 
-<div class="tabs">
-    <button class="tab-btn active" onclick="switchPage('calcPage', this)">計算工具</button>
-    <button class="tab-btn" onclick="switchPage('listPage', this)">付款清單</button>
-    <button class="tab-btn" onclick="switchPage('vendorPage', this)">廠商資料</button>
-</div>
-
-<div id="calcPage" class="page active">
-    <div class="card">
-        <h2>工程結算明細</h2>
-        <div class="row">
-            <div class="col">
-                <label>付款公司</label>
-                <select id="companySelect">
-                    <option value="瀞川">瀞川</option>
-                    <option value="聿川">聿川</option>
-                    <option value="長川">長川</option>
-                    <option value="上川">上川</option>
-                </select>
+    <div id="login-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4">
+        <div class="w-full max-w-xs text-center">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
+                    <i class="fa-solid fa-door-open text-[#8fb4a2] mr-1"></i>USER LOGIN
+                </h1>
+                <p class="text-sm font-black text-[#8fb4a2] tracking-[0.2em] mt-1 opacity-80">URL_MANAGER</p>
             </div>
-            <div class="col" style="position: relative;">
-                <label>搜尋廠商 (預覽包含帳號)</label>
-                <input type="text" id="vendorSearch" placeholder="搜尋廠商關鍵字..." oninput="searchVendor(this.value)">
-                <div id="searchResults" class="search-results"></div>
-                <input type="hidden" id="tempBankCode">
-                <input type="hidden" id="tempAccount">
-                <input type="hidden" id="tempOwner">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>工程內容 (明細)</label>
-                <input type="text" id="workNote" placeholder="例如：木地板已完成54戶請款">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <label style="margin-bottom:0">輸入金額</label>
-                    <div class="toggle-group" id="receiptToggle">
-                        <button class="toggle-btn active" onclick="setDocType('發票')">發票</button>
-                        <button class="toggle-btn" onclick="setDocType('收據')">收據</button>
-                    </div>
-                    <div class="toggle-group" id="taxModeToggle">
-                        <button class="toggle-btn active" onclick="setTaxMode('未稅')">未稅輸入</button>
-                        <button class="toggle-btn" onclick="setTaxMode('含稅')">含稅輸入</button>
-                    </div>
-                </div>
-                <input type="number" id="inputAmount" placeholder="請輸入金額" oninput="calculate()">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>未稅金額 (推算)</label>
-                <input type="number" id="rawAmount" readonly tabindex="-1">
-            </div>
-            <div class="col">
-                <label>稅額 (5%)</label>
-                <input type="number" id="taxAmount" readonly tabindex="-1">
-            </div>
-        </div>
-
-        <div class="config-box">
-            <div class="row">
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate()"> 清潔保險 (%)</label>
-                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate()">
-                </div>
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate()"> 保留款 (%)</label>
-                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate()">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <label>保留款金額 (可手動修改)</label>
-                    <input type="number" id="retentionAmount" oninput="calculate(true)">
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>加扣款事由</label>
-                <input type="text" id="adjustmentNote" placeholder="例如：代購材料扣款" oninput="calculate()">
-            </div>
-            <div class="col">
-                <label>加扣款金額</label>
-                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate()">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>最終淨額 (可手動修改)</label>
-                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
-            </div>
-        </div>
-
-        <div class="payment-box">
-            <div class="row">
-                <div class="col">
-                    <label>付款基準日 (格式: 1150212)</label>
-                    <input type="text" id="baseDate" placeholder="例如: 1150212" oninput="renderDetail()">
-                </div>
-            </div>
-            <label>付款比例 / 期數 (月)</label>
-            <div class="row">
-                <div class="col"><div class="input-with-unit"><input type="number" id="p1Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
-                <div class="col"><div class="input-with-unit"><input type="number" id="p1Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
-            </div>
-            <div class="row">
-                <div class="col"><div class="input-with-unit"><input type="number" id="p2Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
-                <div class="col"><div class="input-with-unit"><input type="number" id="p2Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
-            </div>
-        </div>
-
-        <div class="display-area">
-            <div class="section-title">階層計算列示</div>
-            <div id="processFormula" class="formula">請輸入資料...</div>
-            <div class="payment-result" id="paymentDetail"></div>
-        </div>
-
-        <button class="btn-save" onclick="saveData()">儲存此筆排程</button>
-        <button class="btn-reset" onclick="location.reload()">重新整理</button>
-    </div>
-</div>
-
-<div id="listPage" class="page">
-    <div class="list-card">
-        <div class="section-title">付款清單明細</div>
-        <div class="filter-row">
-            <div class="filter-group">
-                <label style="margin:0">資料月份：</label>
-                <select id="filterMonth" style="width: auto; padding: 5px;" onchange="renderTable()"></select>
-                <label style="margin:0; margin-left:10px;">篩選公司：</label>
-                <select id="filterCompany" style="width: auto; padding: 5px;" onchange="renderTable()">
-                    <option value="全部">全部顯示</option>
-                    <option value="瀞川">瀞川</option>
-                    <option value="聿川">聿川</option>
-                    <option value="長川">長川</option>
-                    <option value="上川">上川</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
-                <button class="btn-info" style="background: var(--danger); border-color: var(--danger);" onclick="clearData()">清空所有排程</button>
-                <button class="btn-info" style="background: var(--dark);" onclick="exportBankExcel()">匯出匯款資料</button>
-                <button class="btn-excel" onclick="exportClaimExcel()">匯出請款明細</button>
-            </div>
-        </div>
-        <table id="recordTable">
-            <thead>
-                <tr>
-                    <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" checked onclick="toggleSelectAll(this)"></th>
-                    <th style="width: 35px;">No.</th>
-                    <th style="width: 8.5ch;">日期</th>
-                    <th style="width: auto;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
-                    <th style="width: 90px;">金額</th>
-                    <th style="width: 8.5ch;">解款行</th>
-                    <th style="width: 17ch;">帳號</th>
-                    <th style="width: 20em;">戶名</th>
-                    <th style="width: 3.2em;">付款公司</th>
-                    <th class="action-cell">功能</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-        <div class="summary-bar" id="listSummary">
-            篩選總金額：<span id="filteredTotal">$0</span> | 勾選總金額：<strong id="checkedTotal">$0</strong>
-        </div>
-    </div>
-</div>
-
-<div id="vendorPage" class="page" style="max-width: 850px;">
-    <div class="list-card">
-        <div class="section-title">廠商匯款資料管理</div>
-        
-        <div class="vendor-form">
-            <div class="section-title" style="border-left: 3px solid var(--accent); color: var(--accent);">手動新增廠商</div>
-            <div class="row">
-                <div class="col"><label>廠商名稱</label><input type="text" id="newVName" placeholder="公司名"></div>
-                <div class="col"><label>解款行</label><input type="text" id="newVBank" placeholder="代號+名稱"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>收款帳號</label><input type="text" id="newVAcc" placeholder="銀行帳號"></div>
-                <div class="col"><label>收款戶名</label><input type="text" id="newVOwner" placeholder="戶名"></div>
-            </div>
-            <button class="btn-save" style="margin-top: 5px; background: var(--accent);" onclick="manualAddVendor()">新增廠商資料</button>
-        </div>
-
-        <div class="filter-row">
-            <div class="filter-group">
-                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
-                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">批次匯入 CSV</button>
-                <button class="btn-excel" style="background: #5da9ad;" onclick="exportVendorExcel()">匯出廠商清單</button>
-                <button class="btn-info" style="background: var(--dark); margin-bottom: 15px;" onclick="exportFullBackup()">備份全系統資料 (.json)</button>
-                <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importFullBackup(this)">
-                <button class="btn-info" style="background: var(--accent); margin-bottom: 15px;" onclick="document.getElementById('backupFileInput').click()">還原系統資料</button>
-            </div>
-            <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
-        </div>
-        
-        <table id="vendorTable">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">廠商名稱</th>
-                    <th style="width: 20%;">解款行</th>
-                    <th style="width: 20%;">帳號</th>
-                    <th style="width: 20%;">戶名</th>
-                    <th class="action-cell">功能</th>
-                </tr>
-            </thead>
-            <tbody id="vendorTableBody"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="infoModal" class="modal" onclick="document.getElementById('infoModal').style.display='none'">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
-        <div class="section-title">計算過程紀錄</div>
-        <div id="modalBody" class="formula"></div>
-    </div>
-</div>
-
-<script>
-    const fmt = new Intl.NumberFormat('zh-TW');
-    let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
-    let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
-    let currentSortOrder = 'asc';
-    let checkedIds = new Set();
-    
-    // 全域狀態：憑證與稅額模式
-    let currentDocType = '發票';
-    let currentTaxMode = '未稅';
-
-    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
-
-    function setDocType(type) {
-        currentDocType = type;
-        const btns = document.querySelectorAll('#receiptToggle .toggle-btn');
-        btns[0].classList.toggle('active', type === '發票');
-        btns[1].classList.toggle('active', type === '收據');
-        
-        // 如果是收據，強制變成未稅模式並隱藏稅額按鈕
-        const taxGroup = document.getElementById('taxModeToggle');
-        if (type === '收據') {
-            taxGroup.style.opacity = '0.3';
-            taxGroup.style.pointerEvents = 'none';
-            setTaxMode('未稅');
-        } else {
-            taxGroup.style.opacity = '1';
-            taxGroup.style.pointerEvents = 'auto';
-        }
-        calculate();
-    }
-
-    function setTaxMode(mode) {
-        currentTaxMode = mode;
-        const btns = document.querySelectorAll('#taxModeToggle .toggle-btn');
-        btns[0].classList.toggle('active', mode === '未稅');
-        btns[1].classList.toggle('active', mode === '含稅');
-        calculate();
-    }
-
-    function generateExcelFile(headers, data, filename) {
-        let xml = '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?>';
-        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
-        xml += '<Worksheet ss:Name="Sheet1"><Table>';
-        xml += '<Row>';
-        headers.forEach(h => xml += `<Cell><Data ss:Type="String">${h}</Data></Cell>`);
-        xml += '</Row>';
-        data.forEach(row => {
-            xml += '<Row>';
-            row.forEach(cell => {
-                const isNumber = !isNaN(cell) && cell !== "" && typeof cell === 'number';
-                const type = isNumber ? 'Number' : 'String';
-                xml += `<Cell><Data ss:Type="${type}">${cell}</Data></Cell>`;
-            });
-            xml += '</Row>';
-        });
-        xml += '</Table></Worksheet></Workbook>';
-        const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename + ".xls";
-        link.click();
-    }
-
-    function searchVendor(val) {
-        const resultsDiv = document.getElementById('searchResults');
-        if (!val) { resultsDiv.style.display = 'none'; return; }
-        const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || (v.account && v.account.includes(val)));
-        if (filtered.length > 0) {
-            resultsDiv.innerHTML = filtered.map(v => `
-                <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
-                    <div><strong>${v.name}</strong> (${v.owner})</div>
-                    <div class="search-subtext">行庫：${v.bankCode || ''} | 帳號：${v.account || ''}</div>
-                </div>
-            `).join('');
-            resultsDiv.style.display = 'block';
-        } else {
-            resultsDiv.style.display = 'none';
-        }
-    }
-
-    function selectVendor(name, bank, acc, owner) {
-        document.getElementById('vendorSearch').value = name;
-        document.getElementById('tempBankCode').value = bank || "";
-        document.getElementById('tempAccount').value = acc || "";
-        document.getElementById('tempOwner').value = owner || "";
-        document.getElementById('searchResults').style.display = 'none';
-
-        const lastRecord = [...db].reverse().find(r => r.owner === owner);
-        if (lastRecord && lastRecord.settings) {
-            const s = lastRecord.settings;
-            // 延續發票收據與稅額模式
-            if (s.docType) setDocType(s.docType);
-            if (s.taxMode) setTaxMode(s.taxMode);
             
-            document.getElementById('cleanCheck').checked = s.cleanCheck;
-            document.getElementById('cleanRate').value = s.cleanRate;
-            document.getElementById('retentionCheck').checked = s.retentionCheck;
-            document.getElementById('retentionRate').value = s.retentionRate;
-            document.getElementById('p1Pct').value = s.p1Pct;
-            document.getElementById('p1Mon').value = s.p1Mon;
-            document.getElementById('p2Pct').value = s.p2Pct;
-            document.getElementById('p2Mon').value = s.p2Mon;
-            calculate();
-        }
-    }
+            <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
+                <input type="text" id="userInput" placeholder="請輸入使用者代號" 
+                       class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
+                <div id="login-history" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-1"></div>
+                <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
+                    進入系統
+                </button>
+            </div>
+            <p class="text-[10px] text-[#b7ad9d] mt-4 font-bold">系統將記住此代號以便下次自動登入</p>
+        </div>
+    </div>
 
-    function exportFullBackup() {
-        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
-        link.click();
-    }
+    <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
+        
+        <div class="mb-4">
+            <div class="text-center mb-1">
+                <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-link text-[#8fb4a2] text-xl"></i>URL_MANAGER
+                </h1>
+            </div>
 
-    function importFullBackup(input) {
-        const file = input.files[0];
-        if (!file) return;
-        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (imported.paymentRecords && imported.vendorList) {
-                    db = imported.paymentRecords;
-                    vendors = imported.vendorList;
-                    localStorage.setItem('paymentRecords', JSON.stringify(db));
-                    localStorage.setItem('vendorList', JSON.stringify(vendors));
-                    alert("系統還原成功！");
-                    location.reload();
-                } else { alert("備份檔案格式不正確。"); }
-            } catch (err) { alert("讀取檔案失敗：" + err); }
+            <div class="border-b-2 border-[#d1c7b7] mb-3"></div>
+
+            <div class="flex justify-between items-center px-2 py-0.5">
+                <div class="flex items-center text-[#4a3f35] max-w-[65%]">
+                    <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm flex-shrink-0"></i>
+                    <span id="display-user-id" class="text-[11px] font-black break-all">---</span>
+                </div>
+                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-0.5 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
+                    <span class="text-[10px]">切換帳號</span>
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="flex gap-1">
+                <button onclick="switchTab('link')" id="tab-link" class="tab-btn active px-5 py-2 rounded-t-xl font-bold">新增連結</button>
+                <button onclick="switchTab('category')" id="tab-category" class="tab-btn px-5 py-2 rounded-t-xl font-bold">新增分類</button>
+            </div>
+            <div class="bg-white p-4 border-2 border-[#d1c7b7] ghibli-shadow rounded-b-2xl rounded-tr-2xl">
+                <div id="panel-link" class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <select id="newLinkCat" class="ghibli-input w-1/3 px-2 py-2.5 rounded-lg text-xs font-bold text-[#6b5e51]"></select>
+                        <input type="text" id="newDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-2/3 px-3 py-2.5 text-xs rounded-lg">
+                    </div>
+                    <input type="text" id="newUrl" placeholder="輸入網址" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
+                    <button onclick="addItem()" class="w-full bg-[#8fb4a2] text-white py-2.5 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">新增連結 <i class="fa-solid fa-plus ml-1"></i></button>
+                </div>
+                <div id="panel-category" class="hidden flex flex-col gap-3">
+                    <input type="text" id="newCatName" placeholder="輸入新分類名稱" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
+                    <button onclick="addCategory()" class="w-full bg-[#5c8a97] text-white py-2.5 rounded-xl hover:bg-[#4d7885] font-bold text-sm transition-colors">建立分類 <i class="fa-solid fa-folder ml-1"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="filter-bar-container" class="mb-4"><div id="filter-bar"></div></div>
+        <div class="relative mb-4">
+            <i class="fa-solid fa-search absolute left-4 top-3 text-[#b7ad9d] text-xs"></i>
+            <input type="text" id="searchInput" placeholder="搜尋標題或網址..." class="ghibli-input w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-xs font-bold">
+        </div>
+        <div id="loading" class="loading-spinner mx-auto my-10"></div>
+        <div id="main-container" class="space-y-3 hidden pb-10"></div>
+        <p id="empty-msg" class="text-center text-[#b7ad9d] mt-10 hidden font-bold text-xs">[ 無資料 ]</p>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-[#4a3f35]/50 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
+        <div class="bg-white p-6 w-full max-w-sm ghibli-shadow rounded-2xl relative">
+            <button onclick="closeEditModal()" class="absolute top-3 right-4 text-[#b7ad9d] hover:text-[#4a3f35] text-lg"><i class="fa-solid fa-times"></i></button>
+            <h3 class="text-sm font-bold text-[#4a3f35] mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯連結</h3>
+            <input type="hidden" id="editKey">
+            <div class="space-y-3">
+                <select id="editCatId" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs font-bold"></select>
+                <input type="text" id="editDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs">
+                <input type="text" id="editUrl" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-[10px] font-mono">
+            </div>
+            <div class="flex justify-between items-center mt-6 gap-3">
+                <button onclick="deleteCurrentItem()" class="px-4 py-2 text-red-400 font-bold text-xs">刪除</button>
+                <button onclick="saveEdit()" class="px-7 py-2.5 bg-[#8fb4a2] text-white font-bold rounded-xl text-xs">儲存更新</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
+            authDomain: "url-sorting.firebaseapp.com",
+            projectId: "url-sorting",
+            databaseURL: "https://url-sorting-default-rtdb.firebaseio.com"
         };
-        reader.readAsText(file);
-    }
 
-    function autoFillRecordsByOwner() {
-        let count = 0;
-        db.forEach(item => {
-            if ((!item.bank || !item.acc) && item.owner) {
-                const match = vendors.find(v => v.owner === item.owner.trim());
-                if (match) {
-                    item.bank = match.bankCode;
-                    item.acc = match.account;
-                    count++;
-                }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let state = { userId: '', links: [], categories: [], currentFilter: 'all' };
+        let linkSortables = [], catSortable = null;
+        const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
+
+        function renderLoginHistory() {
+            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            const container = document.getElementById('login-history');
+            container.innerHTML = '';
+            
+            history.forEach(id => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center bg-[#f0ede4] rounded-full px-3 py-1 gap-1 border border-[#d1c7b7]';
+                
+                const idBtn = document.createElement('button');
+                idBtn.className = 'text-[10px] text-[#6b5e51] font-bold hover:text-[#4a3f35]';
+                idBtn.textContent = id;
+                idBtn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'text-[10px] text-red-300 hover:text-red-500 ml-1 pl-1 border-l border-[#d1c7b7]';
+                delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeHistoryId(id);
+                };
+                
+                wrapper.appendChild(idBtn);
+                wrapper.appendChild(delBtn);
+                container.appendChild(wrapper);
+            });
+        }
+
+        window.removeHistoryId = (id) => {
+            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            history = history.filter(item => item !== id);
+            localStorage.setItem('url_manager_history', JSON.stringify(history));
+            renderLoginHistory();
+        };
+
+        window.handleLogin = () => {
+            const id = document.getElementById('userInput').value.trim();
+            if (!id) return;
+            state.userId = id;
+            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
+            if (!history.includes(id)) {
+                history.unshift(id);
+                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 10)));
             }
-        });
-        if (count > 0) {
-            localStorage.setItem('paymentRecords', JSON.stringify(db));
-            renderTable();
-            alert(`成功補齊 ${count} 筆匯款資料！`);
-        } else { alert("未找到相符戶名的廠商資料。"); }
-    }
+            localStorage.setItem('url_manager_current_user', id);
+            document.getElementById('display-user-id').textContent = id;
+            document.getElementById('login-overlay').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            initDataListeners();
+        };
 
-    function manualAddVendor() {
-        const name = document.getElementById('newVName').value.trim();
-        const bank = document.getElementById('newVBank').value.trim();
-        const acc = document.getElementById('newVAcc').value.trim();
-        const owner = document.getElementById('newVOwner').value.trim();
-        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
-        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
-        localStorage.setItem('vendorList', JSON.stringify(vendors));
-        renderVendorTable();
-        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
-        alert("廠商新增成功！");
-    }
+        window.handleLogout = () => {
+            if (confirm('切換使用者？')) {
+                localStorage.removeItem('url_manager_current_user');
+                location.reload();
+            }
+        };
 
-    function importVendorCSV(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const rows = text.split('\n').filter(r => r.trim() !== "");
-            rows.slice(1).forEach(row => {
-                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
-                if (cols.length >= 4) {
-                    vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
+        function initDataListeners() {
+            onValue(ref(db, `users/${state.userId}/links`), (snapshot) => {
+                const data = snapshot.val();
+                state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
+                renderFilterBar(); checkAndRender();
+            });
+            onValue(ref(db, `users/${state.userId}/categories`), (snapshot) => {
+                const data = snapshot.val();
+                state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+                updateCategoryDropdowns(); renderFilterBar(); checkAndRender();
+            });
+        }
+
+        function getCatColor(id) {
+            if (id === 'all') return "#4a3f35";
+            if (id === 'uncategorized') return "#9b8b7a";
+            let hash = 0; for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+            return ghibliColors[Math.abs(hash) % ghibliColors.length];
+        }
+
+        function renderFilterBar() {
+            const bar = document.getElementById('filter-bar'); bar.innerHTML = '';
+            if(catSortable) catSortable.destroy();
+            bar.appendChild(createFilterChip('全部', 'all'));
+            state.categories.forEach(cat => {
+                const chip = createFilterChip(cat.name, cat.id);
+                chip.dataset.catId = cat.id; bar.appendChild(chip);
+            });
+            if (state.links.some(l => !l.categoryId || !state.categories.find(c => c.id === l.categoryId)))
+                bar.appendChild(createFilterChip('未分類', 'uncategorized'));
+            catSortable = Sortable.create(bar, {
+                animation: 200, delay: 200, filter: '.static-chip',
+                onEnd: () => {
+                    const updates = {}; let idx = 0;
+                    Array.from(bar.children).forEach(el => { if(el.dataset.catId) updates[`users/${state.userId}/categories/${el.dataset.catId}/order`] = idx++; });
+                    update(ref(db), updates);
                 }
             });
-            localStorage.setItem('vendorList', JSON.stringify(vendors));
-            renderVendorTable();
-            alert("匯入成功！");
-            input.value = "";
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
+        }
 
-    function exportVendorExcel() {
-        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
-        const headers = ["廠商名稱", "解款行", "帳號", "戶名"];
-        const data = vendors.map(v => [v.name, v.bankCode, v.account, v.owner]);
-        generateExcelFile(headers, data, `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}`);
-    }
+        function createFilterChip(text, filterId) {
+            const btn = document.createElement('button');
+            const isActive = state.currentFilter === filterId, color = getCatColor(filterId);
+            btn.className = `filter-chip ${isActive ? 'active' : ''}`;
+            btn.textContent = text;
+            btn.style.borderColor = color;
+            btn.style.backgroundColor = isActive ? color : "#ffffff";
+            btn.style.color = isActive ? "#ffffff" : color;
+            
+            if (filterId === 'all' || filterId === 'uncategorized') btn.classList.add('static-chip');
+            btn.onclick = () => { state.currentFilter = filterId; renderFilterBar(); checkAndRender(); };
+            return btn;
+        }
 
-    function renderVendorTable() {
-        const tbody = document.getElementById('vendorTableBody');
-        tbody.innerHTML = vendors.map(v => `
-            <tr>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
-                <td class="action-cell">
-                    <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改')">改</button>
-                    <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
-                </td>
-            </tr>
-        `).join('');
-    }
+        function renderMain(filterText = '') {
+            const container = document.getElementById('main-container'); 
+            container.innerHTML = '';
+            
+            // 清除舊的 Sortable 實例
+            linkSortables.forEach(s => s.destroy());
+            linkSortables = [];
 
-    function updateVendorField(id, field, value) {
-        const idx = vendors.findIndex(v => v.id == id);
-        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
-    }
+            const term = filterText.toLowerCase(); let hasData = false;
+            const renderBlock = (cat, links, isUncat) => {
+                if (links.length > 0) {
+                    const ul = document.createElement('ul'); ul.className = 'space-y-3 min-h-[10px]';
+                    links.forEach(link => {
+                        const li = document.createElement('li');
+                        li.dataset.id = link.id; // 用於排序識別
+                        li.className = `bg-white p-4 ghibli-shadow rounded-2xl flex items-center gap-3 transition-all hover:bg-[#faf9f6]`;
+                        
+                        const catColor = isUncat ? '#9b8b7a' : getCatColor(cat.id);
+                        const tag = (state.currentFilter === 'all' || state.currentFilter === 'uncategorized') 
+                            ? `<span class="item-tag" style="color:${catColor}; border-color:${catColor}; background-color:${catColor}10">${cat.name}</span>` 
+                            : '';
 
-    function deleteVendor(id) {
-        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
-    }
+                        const displayDesc = link.desc && link.desc.trim() !== "" ? link.desc : "[ 無標題 ]";
 
-    function clearVendors() {
-        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
-    }
+                        li.innerHTML = `<div class="flex-grow min-w-0"><div class="flex items-center"><span class="item-title truncate">${displayDesc}</span>${tag}</div><div class="item-url font-mono"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div></div><div class="flex flex-col gap-1 flex-shrink-0 border-l-2 border-[#f0ede4] pl-2"><button onclick="copyToClipboard(this, '${link.desc || ''}', '${link.url}')" class="text-[#b7ad9d] hover:text-[#8fb4a2] p-1.5"><i class="fa-regular fa-copy"></i></button><button onclick="openEditModal('${link.id}', '${link.desc || ''}', '${link.url}', '${link.categoryId || ''}')" class="text-[#b7ad9d] hover:text-[#5c8a97] p-1.5"><i class="fa-solid fa-pen"></i></button></div>`;
+                        ul.appendChild(li);
+                    });
+                    container.appendChild(ul); 
+                    hasData = true;
 
-    function switchPage(pageId, btn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        btn.classList.add('active');
-        if(pageId === 'listPage') { initMonthFilter(); renderTable(); }
-        if(pageId === 'vendorPage') { renderVendorTable(); }
-    }
+                    // 為每個列表初始化排序功能
+                    const s = Sortable.create(ul, {
+                        animation: 250,
+                        ghostClass: "sortable-ghost",
+                        placeholderClass: "sortable-placeholder",
+                        delay: 150, // 增加延遲避免與點擊網址衝突
+                        onEnd: () => {
+                            const updates = {};
+                            Array.from(ul.children).forEach((el, idx) => {
+                                updates[`users/${state.userId}/links/${el.dataset.id}/order`] = idx;
+                            });
+                            update(ref(db), updates);
+                        }
+                    });
+                    linkSortables.push(s);
+                }
+            };
 
-    function calculate(isManualRetention = false) {
-        const inputVal = parseFloat(document.getElementById('inputAmount').value) || 0;
-        const retentionInput = document.getElementById('retentionAmount');
-        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
-        const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
-        
-        let raw = 0;
-        let tax = 0;
-
-        if (currentDocType === '發票') {
-            if (currentTaxMode === '未稅') {
-                raw = inputVal;
-                tax = Math.round(raw * 0.05);
+            if (state.currentFilter === 'all') {
+                state.categories.forEach(cat => renderBlock(cat, state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term)), false));
+                renderBlock({id:'uncategorized', name:'未分類'}, state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term)), true);
             } else {
-                // 含稅推算未稅: 未稅 = 含稅 / 1.05
-                raw = Math.round(inputVal / 1.05);
-                tax = inputVal - raw;
+                const activeCat = state.currentFilter === 'uncategorized' ? {id:'uncategorized', name:'未分類'} : state.categories.find(c => c.id === state.currentFilter);
+                if (activeCat) renderBlock(activeCat, state.links.filter(l => ((state.currentFilter==='uncategorized') ? (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) : (l.categoryId===state.currentFilter)) && matchFilter(l, term)), state.currentFilter==='uncategorized');
             }
-        } else {
-            // 收據模式：稅額永遠為 0
-            raw = inputVal;
-            tax = 0;
+            document.getElementById('empty-msg').classList.toggle('hidden', hasData);
         }
 
-        document.getElementById('rawAmount').value = raw;
-        document.getElementById('taxAmount').value = tax;
+        function matchFilter(item, term) { return !term || item.desc?.toLowerCase().includes(term) || item.url?.toLowerCase().includes(term); }
+        function checkAndRender() { document.getElementById('loading').style.display = 'none'; document.getElementById('main-container').classList.remove('hidden'); renderMain(document.getElementById('searchInput').value); }
+        window.switchTab = (t) => { document.getElementById('panel-link').classList.toggle('hidden', t!=='link'); document.getElementById('panel-category').classList.toggle('hidden', t!=='category'); document.getElementById('tab-link').classList.toggle('active', t==='link'); document.getElementById('tab-category').classList.toggle('active', t==='category'); };
+        window.openEditModal = (k, d, u, c) => { document.getElementById('editKey').value = k; document.getElementById('editDesc').value = d; document.getElementById('editUrl').value = u; document.getElementById('editCatId').value = c || ""; document.getElementById('editModal').classList.remove('hidden'); };
+        window.closeEditModal = () => document.getElementById('editModal').classList.add('hidden');
         
-        const total = raw + tax;
-        const hasClean = document.getElementById('cleanCheck').checked;
-        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
-        const cleanFee = hasClean ? Math.round(total * (cRate / 100)) : 0;
-        const subtotal = total - cleanFee;
-        const hasRetention = document.getElementById('retentionCheck').checked;
-        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
-        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
-        
-        if(!isManualRetention) retentionInput.value = retention || "";
-        
-        const net = (subtotal - retention) + adj;
-        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote };
-        document.getElementById('netAmount').value = net;
-        renderFormula(net);
-        renderDetail();
-    }
-
-    function updateFormulaOnly() {
-        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
-        renderFormula(manualNet);
-        renderDetail();
-    }
-
-    function renderFormula(currentNet) {
-        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)}${lastCalcState.tax > 0 ? ' + 稅' + fmt.format(lastCalcState.tax) : ''} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
-        if (lastCalcState.cleanFee !== 0) {
-            html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
-        }
-        html += `<div class="subtotal-line">③ 小計：${fmt.format(lastCalcState.total)} - ${fmt.format(lastCalcState.cleanFee)} = <strong>${fmt.format(lastCalcState.subtotal)}</strong></div>`;
-        let stepCount = 4;
-        if (lastCalcState.retention !== 0) {
-            html += `<div>④ 保留款：${fmt.format(lastCalcState.subtotal)} × ${lastCalcState.rRate}% = <strong>${fmt.format(lastCalcState.retention)}</strong></div>`;
-            stepCount = 5;
-        }
-        if (lastCalcState.adj !== 0) {
-            html += `<div>${stepCount === 5 ? '⑤' : '④'} ${lastCalcState.adjNote}：<strong>${lastCalcState.adj >= 0 ? '+' : ''}${fmt.format(lastCalcState.adj)}</strong></div>`;
-            stepCount++;
-        }
-        html += `<div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">${stepCount === 6 ? '⑥' : (stepCount === 5 ? '⑤' : '④')} 淨額：<strong>${fmt.format(currentNet)}</strong></div>`;
-        document.getElementById('processFormula').innerHTML = html;
-    }
-
-    function getCalculatedDate(addMonths, useSlash = true) {
-        const rawBase = document.getElementById('baseDate').value;
-        if (!/^\d{7}$/.test(rawBase)) return "格式錯誤";
-
-        let year = parseInt(rawBase.substring(0, 3)) + 1911;
-        let month = parseInt(rawBase.substring(3, 5)) - 1;
-        let day = parseInt(rawBase.substring(5, 7));
-
-        let d = new Date(year, month, day);
-        
-        if (addMonths > 0) {
-            d.setMonth(d.getMonth() + addMonths);
-            d.setDate(15);
-        }
-
-        const resY = d.getFullYear() - 1911;
-        const resM = (d.getMonth() + 1).toString().padStart(2, '0');
-        const resD = d.getDate().toString().padStart(2, '0');
-
-        return useSlash ? `${resY}/${resM}/${resD}` : `${resY}${resM}${resD}`;
-    }
-
-    function renderDetail() {
-        const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
-        const pDetail = document.getElementById('paymentDetail');
-        if(net <= 0 || isNaN(p1Pct)) { pDetail.innerHTML = ""; return; }
-        
-        const pay1 = Math.round(net * (p1Pct / 100));
-        const date1 = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), true);
-        
-        let html = `<div class="section-title">付款排程 (預覽)</div><div class="date-line">${date1} &nbsp; $${fmt.format(pay1)}</div>`;
-        if (p1Pct < 100) {
-            const pay2 = net - pay1;
-            const date2 = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), true);
-            html += `<div class="date-line">${date2} &nbsp; $${fmt.format(pay2)}</div>`;
-        }
-        pDetail.innerHTML = html;
-    }
-
-    function saveData() {
-        const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        if (net <= 0 || !document.getElementById('p1Pct').value) { alert("請輸入金額與比例"); return; }
-        const timestamp = Date.now();
-        const saveMonthLabel = `${new Date().getFullYear()}.${(new Date().getMonth()+1).toString().padStart(2, '0')}`;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value);
-        const pay1 = Math.round(net * (p1Pct / 100));
-        const workNote = document.getElementById('workNote').value || "工程";
-        const hasRetention = document.getElementById('retentionCheck').checked;
-        const rRate = document.getElementById('retentionRate').value;
-        const currentBaseDate = document.getElementById('baseDate').value; 
-        
-        let baseDesc = workNote;
-        if (hasRetention) baseDesc += `-保留${rRate}%`;
-        const isInstallment = p1Pct < 100;
-
-        const settings = {
-            docType: currentDocType,
-            taxMode: currentTaxMode,
-            cleanCheck: document.getElementById('cleanCheck').checked,
-            cleanRate: document.getElementById('cleanRate').value,
-            retentionCheck: document.getElementById('retentionCheck').checked,
-            retentionRate: document.getElementById('retentionRate').value,
-            p1Pct: document.getElementById('p1Pct').value,
-            p1Mon: document.getElementById('p1Mon').value,
-            p2Pct: document.getElementById('p2Pct').value,
-            p2Mon: document.getElementById('p2Mon').value,
-            baseDate: currentBaseDate 
+        window.copyToClipboard = (b, d, u) => { 
+            const textToCopy = d && d.trim() !== "" ? `${d} - ${u}` : u;
+            navigator.clipboard.writeText(textToCopy).then(() => { 
+                const icon = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-check text-[#8fb4a2]"></i>'; 
+                setTimeout(() => b.innerHTML = icon, 1000); 
+            }); 
         };
 
-        const recordBase = { 
-            company: document.getElementById('companySelect').value, 
-            bank: document.getElementById('tempBankCode').value || "", 
-            acc: document.getElementById('tempAccount').value || "", 
-            owner: document.getElementById('tempOwner').value || "", 
-            formula: document.getElementById('processFormula').innerHTML, 
-            saveMonth: saveMonthLabel,
-            settings: settings 
+        function updateCategoryDropdowns() { let opts = '<option value="">未分類</option>'; state.categories.forEach(cat => opts += `<option value="${cat.id}">${cat.name}</option>`); document.getElementById('newLinkCat').innerHTML = document.getElementById('editCatId').innerHTML = opts; }
+        
+        window.addItem = () => { 
+            const desc = document.getElementById('newDesc').value.trim();
+            const url = document.getElementById('newUrl').value.trim();
+            const catId = document.getElementById('newLinkCat').value; 
+            if (!url) return; 
+            push(ref(db, `users/${state.userId}/links`), { 
+                desc: desc || "", 
+                url: url, 
+                categoryId: catId || null, 
+                order: 999 
+            }); 
+            document.getElementById('newDesc').value = document.getElementById('newUrl').value = ''; 
         };
+
+        window.addCategory = () => { const name = document.getElementById('newCatName').value.trim(); if(!name) return; push(ref(db, `users/${state.userId}/categories`), { name, order: state.categories.length }); document.getElementById('newCatName').value = ''; switchTab('link'); };
         
-        const date1_save = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), false);
-        const item1 = { ...recordBase, id: timestamp + "_1", date: date1_save, desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 };
-        db.push(item1);
-        checkedIds.add(item1.id);
+        window.saveEdit = () => { 
+            const k = document.getElementById('editKey').value; 
+            update(ref(db, `users/${state.userId}/links/${k}`), { 
+                desc: document.getElementById('editDesc').value.trim() || "", 
+                url: document.getElementById('editUrl').value.trim(), 
+                categoryId: document.getElementById('editCatId').value || null 
+            }).then(closeEditModal); 
+        };
 
-        if (isInstallment) { 
-            const date2_save = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), false);
-            const item2 = { ...recordBase, id: timestamp + "_2", date: date2_save, desc: `${baseDesc}(2-2)`, amount: net - pay1 };
-            db.push(item2); 
-            checkedIds.add(item2.id);
-        }
-        localStorage.setItem('paymentRecords', JSON.stringify(db));
+        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.userId}/links/${document.getElementById('editKey').value}`)).then(closeEditModal);
+        document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
         
-        clearInputFields(currentBaseDate, currentDocType, currentTaxMode);
-    }
-
-    function clearInputFields(keptBaseDate, keptDocType, keptTaxMode) {
-        ['vendorSearch', 'workNote', 'inputAmount', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.value = "";
-        });
-        document.getElementById('processFormula').innerHTML = "請輸入資料...";
-        document.getElementById('paymentDetail').innerHTML = "";
-        
-        if (keptBaseDate) document.getElementById('baseDate').value = keptBaseDate;
-        else initBaseDate();
-
-        // 延續點選狀態
-        if (keptDocType) setDocType(keptDocType);
-        if (keptTaxMode) setTaxMode(keptTaxMode);
-    }
-
-    function toggleSort(field) {
-        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
-        db.sort((a, b) => {
-            let valA = a[field] || "";
-            let valB = b[field] || "";
-            return currentSortOrder === 'asc' ? valA.localeCompare(valB, 'zh-TW') : valB.localeCompare(valA, 'zh-TW');
-        });
-        renderTable();
-    }
-
-    function toggleItem(id, isChecked) {
-        if (isChecked) checkedIds.add(id);
-        else checkedIds.delete(id);
-        updateSummary();
-    }
-
-    function toggleSelectAll(el) {
-        const checkboxes = document.querySelectorAll('.item-check');
-        checkboxes.forEach(cb => {
-            cb.checked = el.checked;
-            toggleItem(cb.dataset.id, el.checked);
-        });
-    }
-
-    function updateSummary() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        
-        let filteredSum = 0;
-        let checkedSum = 0;
-        
-        filtered.forEach(i => {
-            filteredSum += i.amount;
-            if (checkedIds.has(i.id)) checkedSum += i.amount;
-        });
-
-        document.getElementById('filteredTotal').innerText = '$' + fmt.format(filteredSum);
-        document.getElementById('checkedTotal').innerText = '$' + fmt.format(checkedSum);
-    }
-
-    function renderTable() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = "";
-        
-        let counter = 1;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        
-        filtered.forEach(item => {
-            if (!checkedIds.has(item.id) && document.getElementById('selectAll').checked) {
-                checkedIds.add(item.id);
-            }
-            const tr = document.createElement('tr');
-            tr.className = "draggable-row";
-            tr.draggable = true;
-            tr.dataset.id = item.id;
-            
-            tr.ondragstart = (e) => { e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', item.id); };
-            tr.ondragend = (e) => { e.target.classList.remove('dragging'); removeDragOverStyles(); };
-            tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drag-over'); };
-            tr.ondragleave = (e) => { tr.classList.remove('drag-over'); };
-            tr.ondrop = (e) => { e.preventDefault(); handleDrop(e.dataTransfer.getData('text/plain'), item.id); };
-
-            tr.innerHTML = `
-                <td style="text-align:center;"><input type="checkbox" class="item-check" data-id="${item.id}" ${checkedIds.has(item.id) ? 'checked' : ''} onchange="toggleItem('${item.id}', this.checked)"></td>
-                <td style="text-align:center; color:#999;">${counter++}</td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
-                <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'bank', this.innerText)" contenteditable="true">${item.bank || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'acc', this.innerText)" contenteditable="true">${item.acc || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'owner', this.innerText)" contenteditable="true">${item.owner || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'company', this.innerText)" contenteditable="true">${item.company || ''}</span></td>
-                <td class="action-cell">
-                    <button class="btn-calc" onclick="showFormula('${item.id}')" title="查看計算過程">算</button>
-                    <button class="btn-del" onclick="deleteRecord('${item.id}')">×</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        updateSummary();
-    }
-
-    function removeDragOverStyles() {
-        document.querySelectorAll('.draggable-row').forEach(row => row.classList.remove('drag-over'));
-    }
-
-    function handleDrop(draggedId, targetId) {
-        if (draggedId === targetId) return;
-        const dragIdx = db.findIndex(i => i.id === draggedId);
-        const targetIdx = db.findIndex(i => i.id === targetId);
-        const [draggedItem] = db.splice(dragIdx, 1);
-        db.splice(targetIdx, 0, draggedItem);
-        localStorage.setItem('paymentRecords', JSON.stringify(db));
-        renderTable();
-    }
-
-    function showFormula(id) {
-        const record = db.find(i => i.id === id);
-        if(record) { document.getElementById('modalBody').innerHTML = record.formula; document.getElementById('infoModal').style.display = 'flex'; }
-    }
-
-    function updateField(id, field, value) {
-        const idx = db.findIndex(i => i.id === id);
-        if(idx !== -1) { db[idx][field] = value.trim(); localStorage.setItem('paymentRecords', JSON.stringify(db)); }
-    }
-
-    function updateAmountField(id, el) {
-        const idx = db.findIndex(i => i.id === id);
-        if(idx !== -1) {
-            let val = parseInt(el.innerText.replace(/,/g, '')) || 0;
-            db[idx].amount = val; localStorage.setItem('paymentRecords', JSON.stringify(db));
-            el.innerText = fmt.format(val);
-            updateSummary();
-        }
-    }
-
-    function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); checkedIds.delete(id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
-    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; checkedIds.clear(); localStorage.removeItem('paymentRecords'); renderTable(); } }
-
-    function exportBankExcel() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
-        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
-        const headers = ["日期", "解款行", "帳號", "戶名", "金額"];
-        const data = filtered.map(i => [i.date, i.bank, i.acc, i.owner, i.amount]);
-        generateExcelFile(headers, data, `匯款資料_${filterMon}_${filterComp}`);
-    }
-
-    function exportClaimExcel() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
-        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
-        const headers = ["日期", "明細內容", "金額"];
-        const data = filtered.map(i => [i.date, i.desc, i.amount]);
-        generateExcelFile(headers, data, `請款明細_${filterMon}_${filterComp}`);
-    }
-
-    function initMonthFilter() {
-        const months = new Set();
-        db.forEach(item => { if(item.saveMonth) months.add(item.saveMonth); });
-        const now = new Date();
-        const currentLabel = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}`;
-        months.add(currentLabel);
-        const sorted = Array.from(months).sort().reverse();
-        document.getElementById('filterMonth').innerHTML = `<option value="全部">全部月份</option>` + sorted.map(m => `<option value="${m}">${m}</option>`).join('');
-        document.getElementById('filterMonth').value = currentLabel;
-    }
-
-    function initBaseDate() {
-        const now = new Date();
-        const y = now.getFullYear() - 1911;
-        const m = (now.getMonth() + 1).toString().padStart(2, '0');
-        const d = now.getDate().toString().padStart(2, '0');
-        document.getElementById('baseDate').value = `${y}${m}${d}`;
-    }
-
-    document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
-    window.onload = () => { 
-        db.forEach(i => checkedIds.add(i.id));
-        initMonthFilter(); 
-        initBaseDate();
-    };
-</script>
-
+        window.onload = () => {
+            renderLoginHistory();
+            const lastUser = localStorage.getItem('url_manager_current_user');
+            if (lastUser) { document.getElementById('userInput').value = lastUser; handleLogin(); }
+        };
+    </script>
 </body>
 </html>
