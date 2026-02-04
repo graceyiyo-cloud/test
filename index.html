@@ -3,381 +3,866 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的雲端書櫃</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        paper: '#f2f0e9', ink: '#373a36', sub: '#6b705c',
-                        wood: { 100: '#e9e7da', 200: '#dad7cd', 300: '#a3b18a', 400: '#588157', 500: '#3a5a40', 600: '#344e41' },
-                        sage: { 50: '#f0f4ef', 100: '#e0e9e1', 200: '#c5d5c5', 500: '#84a59d', 600: '#6b8a82', text: '#4a5d5a' },
-                        dried: { 50: '#f7f2f2', 100: '#ede0e0', 200: '#d9bfbf', 500: '#b5838d', 600: '#a0717a', text: '#6d4c51' },
-                        stone: { 50: '#f5f5f4', 100: '#e7e7e2', 200: '#dcdcc6', 400: '#a7a797', 500: '#7f7f6f', 600: '#5f5f54', text: '#4a4a40' },
-                        gold: { 400: '#d4a373', 500: '#bc8a5f' }
-                    }
-                }
-            }
-        }
-    </script>
-
+    <title>工程階層結算系統</title>
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; font-weight: 400; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        .soft-shadow { box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08); }
-        input, textarea, select { font-size: 1rem !important; font-weight: 400; }
+        :root {
+            --bg: #F7F6F2;
+            --card: #FFFFFF;
+            --primary: #8E9775;
+            --accent: #AF8F6F;
+            --text: #4A4A4A;
+            --border: #E0DED7;
+            --danger: #e74c3c;
+            --success: #217346;
+            --info: #5da9ad;
+            --dark: #2c3e50;
+        }
+
+        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; width: 100%; max-width: 500px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #E0DED7; cursor: pointer; border-radius: 8px 8px 0 0; color: #777; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .page { display: none; width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
+        #listPage.page.active { display: block; width: 98vw; max-width: none; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
+        .list-card { background: var(--card); width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
+        
+        h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
+        .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
+        .col { flex: 1; display: flex; flex-direction: column; }
+        
+        label { font-size: 0.8rem; margin-bottom: 5px; color: #999; }
+        input, select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none; background: #FAFAFA; width: 100%; box-sizing: border-box; }
+        input:focus, select:focus { border-color: var(--primary); background: #FFF; }
+        
+        #netAmount { font-weight: bold; color: var(--accent); background-color: #FFF9F3; border: 1px solid var(--accent); }
+        .config-box { background: #F9F9F8; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #EEE; }
+        .payment-box { border-top: 2px solid var(--primary); padding-top: 15px; margin-top: 20px; }
+        
+        .input-with-unit { position: relative; display: flex; align-items: center; }
+        .unit-label { margin-left: 5px; font-size: 0.8rem; color: #999; white-space: nowrap; width: 20px; }
+
+        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
+        .section-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
+        
+        .formula { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; color: #666; }
+        .formula strong { color: #333; font-weight: 600; }
+        .subtotal-line { background: #F0F2EB; padding: 4px 8px; border-radius: 4px; color: var(--primary) !important; }
+        
+        .payment-result { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #DDD; }
+        .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
+
+        .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-excel { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-info { padding: 10px 20px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
+        
+        .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .check-label input[type="checkbox"] { width: auto; margin: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
+        
+        #recordTable td { text-overflow: clip; white-space: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+        #recordTable td::-webkit-scrollbar { display: none; }
+        
+        #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
+        
+        th { background-color: #f8f8f8; color: var(--primary); }
+        .sortable { cursor: pointer; user-select: none; position: relative; }
+        .sortable:hover { background-color: #f0f0f0; }
+        
+        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; border: 1px transparent solid; }
+        .editable:focus { border-color: var(--accent); outline: none; background-color: #fff; }
+        
+        .amount-cell { text-align: right; font-family: monospace; }
+        
+        .action-cell { text-align: center; width: 90px; }
+        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
+        .btn-calc:hover { background: var(--info); color: white; }
+        .btn-edit-tool { color: var(--accent); border: 1px solid var(--accent); background: white; cursor: pointer; border-radius: 4px; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
+        .btn-edit-tool:hover { background: var(--accent); color: white; }
+        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
+        
+        .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
+        .filter-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
+
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
+        .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.4; }
+        .search-item:hover { background: #f8f8f8; color: var(--primary); }
+        .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
+
+        .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
+
+        .draggable-row { cursor: grab; transition: background 0.2s; }
+        .draggable-row:active { cursor: grabbing; }
+        .draggable-row.dragging { opacity: 0.5; background: #f0f0f0; }
+        .drag-over { border-top: 3px dashed var(--primary) !important; }
+        .summary-bar { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: right; font-size: 1.1rem; color: var(--dark); border: 1px solid #eee; }
+        .summary-bar strong { color: var(--danger); font-size: 1.3rem; }
     </style>
 </head>
-<body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink">
-    <div id="root"></div>
+<body>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { 
-            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, Calendar, User, 
-            LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, 
-            Trophy, Hourglass, Star, X, RotateCcw, AlertTriangle, LogOut, Edit3, 
-            ChevronDown, ExternalLink, Pin, PinOff, ChevronUp 
-        } from 'https://esm.sh/lucide-react@0.344.0';
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchPage('calcPage', this)">計算工具</button>
+    <button class="tab-btn" onclick="switchPage('listPage', this)">付款清單</button>
+    <button class="tab-btn" onclick="switchPage('vendorPage', this)">廠商資料</button>
+</div>
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU", authDomain: "my-reading-tracker-58f69.firebaseapp.com",
-            projectId: "my-reading-tracker-58f69", storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
-            messagingSenderId: "370802674969", appId: "1:370802674969:web:efb1c045e0028925154988", measurementId: "G-52EWLNG7ST"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-reading-app';
-        const ESTIMATE_WORDS_PER_PAGE = 350;
-
-        const StarRating = ({ rating, setRating, interactive = false, size = 16 }) => (
-            <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((index) => {
-                    const filled = rating >= index;
-                    const half = rating >= index - 0.5 && !filled;
-                    return (
-                        <div key={index} className={`relative ${interactive ? 'cursor-pointer' : ''}`}
-                            onClick={(e) => {
-                                if (!interactive) return;
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setRating((e.clientX - rect.left) < rect.width / 2 ? index - 0.5 : index);
-                            }}>
-                            <Star size={interactive ? 24 : size} className="text-stone-200" />
-                            <div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
-                                <Star size={interactive ? 24 : size} className="fill-gold-400 text-gold-400" />
-                            </div>
-                        </div>
-                    );
-                })}
+<div id="calcPage" class="page active">
+    <div class="card">
+        <h2>工程結算明細</h2>
+        <div class="row">
+            <div class="col">
+                <label>付款公司</label>
+                <select id="companySelect">
+                    <option value="瀞川">瀞川</option>
+                    <option value="聿川">聿川</option>
+                    <option value="長川">長川</option>
+                    <option value="上川">上川</option>
+                </select>
             </div>
-        );
+            <div class="col" style="position: relative;">
+                <label>搜尋廠商 (預覽包含帳號)</label>
+                <input type="text" id="vendorSearch" placeholder="搜尋廠商關鍵字..." oninput="searchVendor(this.value)">
+                <div id="searchResults" class="search-results"></div>
+                <input type="hidden" id="tempBankCode">
+                <input type="hidden" id="tempAccount">
+                <input type="hidden" id="tempOwner">
+            </div>
+        </div>
 
-        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const [filterText, setFilterText] = useState('');
-            const filtered = useMemo(() => allCategories.filter(c => c.toLowerCase().includes(filterText.toLowerCase())), [allCategories, filterText]);
-            const handleKeyDown = async (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const tags = filterText.trim().split(/[，,\s]+/).filter(t => t !== "");
-                    for (const tag of tags) { if (!selectedCategories.includes(tag)) { if (allCategories.includes(tag)) onToggle(tag); else await onAddNew(tag); } }
-                    setFilterText('');
-                }
-            };
-            return (
-                <div className="w-full">
-                    <div className="flex flex-wrap gap-2 items-center p-2 border-b border-stone-200">
-                        {selectedCategories.map(cat => (
-                            <span key={cat} className="bg-wood-400 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                {cat} <X size={12} className="cursor-pointer" onClick={() => onToggle(cat)}/>
-                            </span>
-                        ))}
-                        <button type="button" onClick={() => setIsOpen(!isOpen)} className="text-xs text-wood-500 hover:bg-wood-100 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
-                            {isOpen ? '收起' : <><Plus size={12}/> 選擇分類</>}
-                        </button>
-                    </div>
-                    {isOpen && (
-                        <div className="mt-2 p-3 bg-white rounded-xl border border-stone-200 animate-fade-in relative z-10">
-                            <input placeholder="搜尋或新增..." value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-3 p-2 border rounded-lg text-sm outline-none" />
-                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto no-scrollbar">
-                                {filtered.map(cat => (
-                                    <div key={cat} className="group relative">
-                                        <button type="button" onClick={() => onToggle(cat)} className={`text-xs px-3 py-1.5 rounded-full border transition ${selectedCategories.includes(cat) ? 'bg-wood-500 text-white' : 'bg-white text-stone-600 border-stone-200'}`}>{cat}</button>
-                                        <button type="button" onClick={(e) => { e.stopPropagation(); if(confirm(`刪除「${cat}」？`)) onDelete(cat, e); }} className="absolute -top-1 -right-1 bg-white text-stone-300 rounded-full p-0.5 border border-stone-100 opacity-0 group-hover:opacity-100"><X size={10}/></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+        <div class="row">
+            <div class="col">
+                <label>工程內容 (明細)</label>
+                <input type="text" id="workNote" placeholder="例如：木地板已完成54戶請款">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>未稅金額</label>
+                <input type="number" id="rawAmount" placeholder="請輸入金額" oninput="calculate(false, false)">
+            </div>
+            <div class="col">
+                <label class="check-label"><input type="checkbox" id="taxCheck" checked onchange="calculate(false, false)"> 稅額 (5%)</label>
+                <input type="number" id="taxAmount" oninput="calculate(true, false)">
+            </div>
+        </div>
+
+        <div class="config-box">
+            <div class="row">
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate(false, false)"> 清潔保險 (%)</label>
+                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate(false, false)">
                 </div>
-            );
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate(false, false)"> 保留款 (%)</label>
+                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate(false, false)">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label>保留款金額 (可手動修改)</label>
+                    <input type="number" id="retentionAmount" oninput="calculate(true, true)">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>加扣款事由</label>
+                <input type="text" id="adjustmentNote" placeholder="例如：代購材料扣款" oninput="calculate(false, false)">
+            </div>
+            <div class="col">
+                <label>加扣款金額</label>
+                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate(false, false)">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>最終淨額 (可手動修改)</label>
+                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
+            </div>
+        </div>
+
+        <div class="payment-box">
+            <div class="row">
+                <div class="col">
+                    <label>付款基準日 (格式: 1150212)</label>
+                    <input type="text" id="baseDate" placeholder="例如: 1150212" oninput="renderDetail()">
+                </div>
+            </div>
+            <label>付款比例 / 期數 (月)</label>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
+            </div>
+        </div>
+
+        <div class="display-area">
+            <div class="section-title">階層計算列示</div>
+            <div id="processFormula" class="formula">請輸入資料...</div>
+            <div class="payment-result" id="paymentDetail"></div>
+        </div>
+
+        <button class="btn-save" onclick="saveData()">儲存此筆排程</button>
+        <button class="btn-reset" onclick="location.reload()">重新整理</button>
+    </div>
+</div>
+
+<div id="listPage" class="page">
+    <div class="list-card">
+        <div class="section-title">付款清單明細</div>
+        <div class="filter-row">
+            <div class="filter-group">
+                <label style="margin:0">資料月份：</label>
+                <select id="filterMonth" style="width: auto; padding: 5px;" onchange="renderTable()"></select>
+                <label style="margin:0; margin-left:10px;">篩選公司：</label>
+                <select id="filterCompany" style="width: auto; padding: 5px;" onchange="renderTable()">
+                    <option value="全部">全部顯示</option>
+                    <option value="瀞川">瀞川</option>
+                    <option value="聿川">聿川</option>
+                    <option value="長川">長川</option>
+                    <option value="上川">上川</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
+                <button class="btn-info" style="background: var(--danger); border-color: var(--danger);" onclick="clearData()">清空所有排程</button>
+                <button class="btn-info" style="background: var(--dark);" onclick="exportBankExcel()">匯出匯款資料</button>
+                <button class="btn-excel" onclick="exportClaimExcel()">匯出請款明細</button>
+            </div>
+        </div>
+        <table id="recordTable">
+            <thead>
+                <tr>
+                    <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" checked onclick="toggleSelectAll(this)"></th>
+                    <th style="width: 35px;">No.</th>
+                    <th style="width: 8.5ch;">日期</th>
+                    <th style="width: auto;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
+                    <th style="width: 90px;">金額</th>
+                    <th style="width: 8.5ch;">解款行</th>
+                    <th style="width: 17ch;">帳號</th>
+                    <th style="width: 20em;">戶名</th>
+                    <th style="width: 3.2em;">付款公司</th>
+                    <th class="action-cell">功能</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div class="summary-bar" id="listSummary">
+            篩選總金額：<span id="filteredTotal">$0</span> | 勾選總金額：<strong id="checkedTotal">$0</strong>
+        </div>
+    </div>
+</div>
+
+<div id="vendorPage" class="page" style="max-width: 850px;">
+    <div class="list-card">
+        <div class="section-title">廠商匯款資料管理</div>
+        
+        <div class="vendor-form">
+            <div class="section-title" style="border-left: 3px solid var(--accent); color: var(--accent);">手動新增廠商</div>
+            <div class="row">
+                <div class="col"><label>廠商名稱</label><input type="text" id="newVName" placeholder="公司名"></div>
+                <div class="col"><label>解款行</label><input type="text" id="newVBank" placeholder="代號+名稱"></div>
+            </div>
+            <div class="row">
+                <div class="col"><label>收款帳號</label><input type="text" id="newVAcc" placeholder="銀行帳號"></div>
+                <div class="col"><label>收款戶名</label><input type="text" id="newVOwner" placeholder="戶名"></div>
+            </div>
+            <button class="btn-save" style="margin-top: 5px; background: var(--accent);" onclick="manualAddVendor()">新增廠商資料</button>
+        </div>
+
+        <div class="filter-row">
+            <div class="filter-group">
+                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
+                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">批次匯入 CSV</button>
+                <button class="btn-excel" style="background: #5da9ad;" onclick="exportVendorExcel()">匯出廠商清單</button>
+                <button class="btn-info" style="background: var(--dark); margin-bottom: 15px;" onclick="exportFullBackup()">備份全系統資料 (.json)</button>
+                <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importFullBackup(this)">
+                <button class="btn-info" style="background: var(--accent); margin-bottom: 15px;" onclick="document.getElementById('backupFileInput').click()">還原系統資料</button>
+            </div>
+            <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
+        </div>
+        
+        <table id="vendorTable">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">廠商名稱</th>
+                    <th style="width: 20%;">解款行</th>
+                    <th style="width: 20%;">帳號</th>
+                    <th style="width: 20%;">戶名</th>
+                    <th class="action-cell">功能</th>
+                </tr>
+            </thead>
+            <tbody id="vendorTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="infoModal" class="modal" onclick="document.getElementById('infoModal').style.display='none'">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
+        <div class="section-title">計算過程紀錄</div>
+        <div id="modalBody" class="formula"></div>
+    </div>
+</div>
+
+<script>
+    const fmt = new Intl.NumberFormat('zh-TW');
+    let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
+    let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
+    let currentSortOrder = 'asc';
+    let checkedIds = new Set();
+
+    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
+
+    function generateExcelFile(headers, data, filename) {
+        let xml = '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?>';
+        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+        xml += '<Worksheet ss:Name="Sheet1"><Table>';
+        xml += '<Row>';
+        headers.forEach(h => xml += `<Cell><Data ss:Type="String">${h}</Data></Cell>`);
+        xml += '</Row>';
+        data.forEach(row => {
+            xml += '<Row>';
+            row.forEach(cell => {
+                const isNumber = !isNaN(cell) && cell !== "" && typeof cell === 'number';
+                const type = isNumber ? 'Number' : 'String';
+                xml += `<Cell><Data ss:Type="${type}">${cell}</Data></Cell>`;
+            });
+            xml += '</Row>';
+        });
+        xml += '</Table></Worksheet></Workbook>';
+        const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename + ".xls";
+        link.click();
+    }
+
+    function searchVendor(val) {
+        const resultsDiv = document.getElementById('searchResults');
+        if (!val) { resultsDiv.style.display = 'none'; return; }
+        const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || (v.account && v.account.includes(val)));
+        if (filtered.length > 0) {
+            resultsDiv.innerHTML = filtered.map(v => `
+                <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
+                    <div><strong>${v.name}</strong> (${v.owner})</div>
+                    <div class="search-subtext">行庫：${v.bankCode || ''} | 帳號：${v.account || ''}</div>
+                </div>
+            `).join('');
+            resultsDiv.style.display = 'block';
+        } else {
+            resultsDiv.style.display = 'none';
+        }
+    }
+
+    function selectVendor(name, bank, acc, owner) {
+        document.getElementById('vendorSearch').value = name;
+        document.getElementById('tempBankCode').value = bank || "";
+        document.getElementById('tempAccount').value = acc || "";
+        document.getElementById('tempOwner').value = owner || "";
+        document.getElementById('searchResults').style.display = 'none';
+
+        const lastRecord = [...db].reverse().find(r => r.owner === owner);
+        if (lastRecord && lastRecord.settings) {
+            const s = lastRecord.settings;
+            document.getElementById('taxCheck').checked = s.taxCheck;
+            document.getElementById('cleanCheck').checked = s.cleanCheck;
+            document.getElementById('cleanRate').value = s.cleanRate;
+            document.getElementById('retentionCheck').checked = s.retentionCheck;
+            document.getElementById('retentionRate').value = s.retentionRate;
+            document.getElementById('p1Pct').value = s.p1Pct;
+            document.getElementById('p1Mon').value = s.p1Mon;
+            document.getElementById('p2Pct').value = s.p2Pct;
+            document.getElementById('p2Mon').value = s.p2Mon;
+            // 注意：這裡不帶入基準日，基準日遵循「上一筆填寫」的原則
+            calculate(false, false);
+        }
+    }
+
+    function exportFullBackup() {
+        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
+        link.click();
+    }
+
+    function importFullBackup(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.paymentRecords && imported.vendorList) {
+                    db = imported.paymentRecords;
+                    vendors = imported.vendorList;
+                    localStorage.setItem('paymentRecords', JSON.stringify(db));
+                    localStorage.setItem('vendorList', JSON.stringify(vendors));
+                    alert("系統還原成功！");
+                    location.reload();
+                } else { alert("備份檔案格式不正確。"); }
+            } catch (err) { alert("讀取檔案失敗：" + err); }
         };
+        reader.readAsText(file);
+    }
 
-        function App() {
-            const [user, setUser] = useState(null);
-            const [books, setBooks] = useState([]);
-            const [categories, setCategories] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [customId, setCustomId] = useState(localStorage.getItem('reading_tracker_id') || '');
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
-            const [toast, setToast] = useState(null);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [statusFilter, setStatusFilter] = useState('all');
-            const [ratingFilter, setRatingFilter] = useState(0);
-            const [isAddFormOpen, setIsAddFormOpen] = useState(false);
-            const [isSearching, setIsSearching] = useState(false);
-            const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
-            const [modalType, setModalType] = useState(null);
-            const [modalData, setModalData] = useState({});
-            const [activeBookId, setActiveBookId] = useState(null);
-            const [editingId, setEditingId] = useState(null);
-            const [editForm, setEditForm] = useState({});
-            const [expandedBooks, setExpandedBooks] = useState({});
-            const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+    function autoFillRecordsByOwner() {
+        let count = 0;
+        db.forEach(item => {
+            if ((!item.bank || !item.acc) && item.owner) {
+                const match = vendors.find(v => v.owner === item.owner.trim());
+                if (match) {
+                    item.bank = match.bankCode;
+                    item.acc = match.account;
+                    count++;
+                }
+            }
+        });
+        if (count > 0) {
+            localStorage.setItem('paymentRecords', JSON.stringify(db));
+            renderTable();
+            alert(`成功補齊 ${count} 筆匯款資料！`);
+        } else { alert("未找到相符戶名的廠商資料。"); }
+    }
 
-            useEffect(() => {
-                const unsubscribe = onAuthStateChanged(auth, (curr) => {
-                    setUser(curr);
-                    if (curr && customId) setIsLoggedIn(true);
-                    else if (!curr) signInAnonymously(auth);
-                });
-                return () => unsubscribe();
-            }, []);
+    function manualAddVendor() {
+        const name = document.getElementById('newVName').value.trim();
+        const bank = document.getElementById('newVBank').value.trim();
+        const acc = document.getElementById('newVAcc').value.trim();
+        const owner = document.getElementById('newVOwner').value.trim();
+        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
+        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
+        localStorage.setItem('vendorList', JSON.stringify(vendors));
+        renderVendorTable();
+        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
+        alert("廠商新增成功！");
+    }
 
-            useEffect(() => {
-                if (!user || !isLoggedIn || !customId) { setLoading(false); return; }
-                const unsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), (snapshot) => {
-                    const list = [];
-                    let fetchedCats = [...DEFAULT_CATEGORIES];
-                    snapshot.docs.forEach(doc => {
-                        if (doc.id === 'settings') { if (doc.data().categories) fetchedCats = doc.data().categories; }
-                        else list.push({ id: doc.id, ...doc.data() });
-                    });
-                    setCategories(fetchedCats);
-                    setBooks(list.sort((a, b) => (b.isPinned ? 1 : -1) || (a.status === 'reading' ? -1 : 1) || new Date(b.addDate) - new Date(a.addDate)));
-                    setLoading(false);
-                });
-                return () => unsub();
-            }, [user, isLoggedIn, customId]);
+    function importVendorCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').filter(r => r.trim() !== "");
+            rows.slice(1).forEach(row => {
+                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
+                if (cols.length >= 4) {
+                    vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
+                }
+            });
+            localStorage.setItem('vendorList', JSON.stringify(vendors));
+            renderVendorTable();
+            alert("匯入成功！");
+            input.value = "";
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
 
-            const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
-            const handleLogin = (e) => {
-                e.preventDefault();
-                if (customId.trim().length < 3) return showToast("ID 過短", "error");
-                localStorage.setItem('reading_tracker_id', customId);
-                setIsLoggedIn(true);
-            };
+    function exportVendorExcel() {
+        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
+        const headers = ["廠商名稱", "解款行", "帳號", "戶名"];
+        const data = vendors.map(v => [v.name, v.bankCode, v.account, v.owner]);
+        generateExcelFile(headers, data, `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}`);
+    }
 
-            const searchBookInfo = async (target, setter) => {
-                if (!target.title) return;
-                setIsSearching(true);
-                try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}&maxResults=1`);
-                    const data = await res.json();
-                    if (data.items?.length > 0) {
-                        const info = data.items[0].volumeInfo;
-                        setter(prev => ({ ...prev, author: prev.author || info.authors?.[0] || '', wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, synopsis: info.description || '' }));
-                        showToast("找到資料！");
-                    } else showToast("無搜尋結果", "error");
-                } catch (err) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
-            };
+    function renderVendorTable() {
+        const tbody = document.getElementById('vendorTableBody');
+        tbody.innerHTML = vendors.map(v => `
+            <tr>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
+                <td class="action-cell">
+                    <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改')">改</button>
+                    <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-            const handleUpdateCategories = async (newCats) => {
-                setCategories(newCats);
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), { categories: newCats }, { merge: true });
-            };
+    function updateVendorField(id, field, value) {
+        const idx = vendors.findIndex(v => v.id == id);
+        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
+    }
 
-            const stats = useMemo(() => {
-                const res = { reading: 0, finished: 0, dropped: 0, years: {} };
-                books.forEach(b => {
-                    if (b.status === 'reading') res.reading++;
-                    else {
-                        if (b.status === 'finished') res.finished++; else res.dropped++;
-                        const y = b.status === 'finished' ? b.finishDate?.split('-')[0] : b.dropDate?.split('-')[0];
-                        if (y) {
-                            if (!res.years[y]) res.years[y] = { f: 0, d: 0 };
-                            if (b.status === 'finished') res.years[y].f++; else res.years[y].d++;
-                        }
-                    }
-                });
-                return { ...res, sortedYears: Object.keys(res.years).sort((a, b) => b - a) };
-            }, [books]);
+    function deleteVendor(id) {
+        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
+    }
 
-            const filteredBooks = useMemo(() => {
-                const term = searchTerm.toLowerCase();
-                return books.filter(b => (statusFilter === 'all' || b.status === statusFilter) && (ratingFilter === 0 || (b.rating || 0) >= ratingFilter) && (b.title.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term) || b.category?.some(c => c.toLowerCase().includes(term))));
-            }, [books, statusFilter, ratingFilter, searchTerm]);
+    function clearVendors() {
+        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
+    }
 
-            const updateBook = async (id, data) => {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, id), data);
-                setEditingId(null); showToast("更新成功");
-            };
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        btn.classList.add('active');
+        if(pageId === 'listPage') { initMonthFilter(); renderTable(); }
+        if(pageId === 'vendorPage') { renderVendorTable(); }
+    }
 
-            return (
-                <div className="min-h-screen max-w-3xl mx-auto p-4 md:p-6 space-y-6 pb-20 bg-paper">
-                    {toast && <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl animate-fade-in text-white flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>{toast.message}</div>}
-                    
-                    <header className="flex justify-between items-center py-4 border-b border-stone-200">
-                        <div className="flex items-center gap-2 text-xl tracking-widest text-ink"><BookOpen className="text-wood-400"/> 閱讀手帳</div>
-                        <div className="flex items-center gap-4 text-xs text-sub">
-                            <span>ID: {customId}</span>
-                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); }}><LogOut size={18}/></button>
-                        </div>
-                    </header>
+    function calculate(isManualTax, isManualRetention) {
+        const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
+        const taxInput = document.getElementById('taxAmount');
+        const taxChecked = document.getElementById('taxCheck').checked;
+        const retentionInput = document.getElementById('retentionAmount');
+        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
+        const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
+        
+        let tax = 0;
+        if (taxChecked) {
+            tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
+        }
+        
+        if(!isManualTax) taxInput.value = taxChecked ? (tax || "") : "";
+        
+        const total = raw + tax;
+        const hasClean = document.getElementById('cleanCheck').checked;
+        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
+        const cleanFee = hasClean ? Math.round(total * (cRate / 100)) : 0;
+        const subtotal = total - cleanFee;
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
+        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
+        if(!isManualRetention) retentionInput.value = retention || "";
+        
+        const net = (subtotal - retention) + adj;
+        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote };
+        document.getElementById('netAmount').value = net;
+        renderFormula(net);
+        renderDetail();
+    }
 
-                    <section className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow">
-                                <div><p className="text-xs text-sub mb-1">正在閱讀</p><p className="text-2xl text-ink">{stats.reading}</p></div>
-                                <Hourglass className="text-wood-100 -mr-4" size={48} />
-                            </div>
-                            <div className="bg-sage-50 p-4 rounded-2xl border border-sage-100 flex justify-between items-center overflow-hidden soft-shadow">
-                                <div><p className="text-xs text-wood-500 mb-1">累計完食</p><p className="text-2xl text-ink">{stats.finished}</p></div>
-                                <Trophy className="text-wood-200 -mr-4" size={48} />
-                            </div>
-                        </div>
-                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
-                            {stats.sortedYears.map(y => (
-                                <div key={y} className="bg-white/60 p-3 rounded-xl border border-stone-100 flex flex-col items-center min-w-[120px] shrink-0 soft-shadow">
-                                    <span className="text-xs text-wood-400 mb-2">{y} 年度</span>
-                                    <div className="flex gap-4 w-full justify-center items-center text-center">
-                                        <div><div className="text-sage-500 text-lg">{stats.years[y].f}</div><div className="text-[9px] text-sub">完食</div></div>
-                                        <div className="h-4 w-[1px] bg-stone-200"></div>
-                                        <div><div className="text-dried-500 text-lg">{stats.years[y].d}</div><div className="text-[9px] text-sub">棄書</div></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+    function updateFormulaOnly() {
+        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
+        renderFormula(manualNet);
+        renderDetail();
+    }
 
-                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
-                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="p-5 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors">
-                            <div className="flex items-center gap-2 text-ink"><PenTool className="text-wood-400" size={18} /> 紀錄新發現</div>
-                            {isAddFormOpen ? <ChevronUp className="text-stone-400"/> : <Plus className="text-wood-400"/>}
-                        </div>
-                        {isAddFormOpen && (
-                            <form onSubmit={addBook} className="p-6 pt-0 space-y-4 border-t border-stone-50 pt-6 animate-fade-in">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                    <div className="md:col-span-5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300" required /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300" /></div>
-                                    <div className="md:col-span-3 flex items-end"><button type="button" onClick={()=>searchBookInfo(newBook, setNewBook)} disabled={isSearching || !newBook.title} className="w-full h-10 bg-stone-100 hover:bg-stone-200 text-wood-500 rounded-lg text-sm flex items-center justify-center gap-2 transition disabled:opacity-50">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16}/>} 搜尋</button></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結</label><input placeholder="URL" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
-                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-20 outline-none resize-none" /></div>
-                                </div>
-                                <div className="flex justify-end gap-3"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 transition-all">存入書櫃</button></div>
-                            </form>
-                        )}
-                    </section>
+    function renderFormula(currentNet) {
+        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)}${lastCalcState.tax > 0 ? ' + 稅' + fmt.format(lastCalcState.tax) : ''} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
+        if (lastCalcState.cleanFee !== 0) {
+            html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
+        }
+        html += `<div class="subtotal-line">③ 小計：${fmt.format(lastCalcState.total)} - ${fmt.format(lastCalcState.cleanFee)} = <strong>${fmt.format(lastCalcState.subtotal)}</strong></div>`;
+        let stepCount = 4;
+        if (lastCalcState.retention !== 0) {
+            html += `<div>④ 保留款：${fmt.format(lastCalcState.subtotal)} × ${lastCalcState.rRate}% = <strong>${fmt.format(lastCalcState.retention)}</strong></div>`;
+            stepCount = 5;
+        }
+        if (lastCalcState.adj !== 0) {
+            html += `<div>${stepCount === 5 ? '⑤' : '④'} ${lastCalcState.adjNote}：<strong>${lastCalcState.adj >= 0 ? '+' : ''}${fmt.format(lastCalcState.adj)}</strong></div>`;
+            stepCount++;
+        }
+        html += `<div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">${stepCount === 6 ? '⑥' : (stepCount === 5 ? '⑤' : '④')} 淨額：<strong>${fmt.format(currentNet)}</strong></div>`;
+        document.getElementById('processFormula').innerHTML = html;
+    }
 
-                    <div className="space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex gap-1.5 bg-white p-1 rounded-xl shadow-inner border border-stone-200">
-                                {['all', 'reading', 'finished', 'dropped'].map(f => (
-                                    <button key={f} onClick={() => setStatusFilter(f)} className={`px-4 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm' : 'text-stone-400'}`}>
-                                        {f==='all'?'全部':f==='reading'?'待讀':f==='finished'?'已完食':'棄書'}
-                                    </button>
-                                ))}
-                            </div>
-                            <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border ${ratingFilter > 0 ? 'bg-gold-400 text-white' : 'bg-white text-stone-500 border-stone-200'}`}>
-                                <Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
-                                {isRatingMenuOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden">
-                                        {[0, 4.5, 4, 3].map(val => (
-                                            <button key={val} onClick={() => setRatingFilter(val)} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub">{val === 0 ? '全部評分' : `${val} 星+`}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </button>
-                        </div>
-                        <div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow" /></div>
-                    </div>
+    function getCalculatedDate(addMonths, useSlash = true) {
+        const rawBase = document.getElementById('baseDate').value;
+        if (!/^\d{7}$/.test(rawBase)) return "格式錯誤";
 
-                    <div className="grid gap-5">
-                        {filteredBooks.map(book => (
-                            <div key={book.id} className="bg-white p-5 rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-5 relative overflow-hidden group/card">
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${book.status==='finished'?'bg-sage-500':book.status==='dropped'?'bg-dried-500':'bg-stone-200'}`}></div>
-                                <div className="flex-1 space-y-2">
-                                    {editingId === book.id ? (
-                                        <div className="space-y-4 p-1 animate-fade-in">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-2 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
-                                                <div className="space-y-1"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-2 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
-                                            </div>
-                                            <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-2 border-b outline-none bg-transparent" /></div>
-                                                <div className="space-y-1"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-2 border-b outline-none bg-transparent" /></div>
-                                            </div>
-                                            <textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-20 text-xs bg-stone-50 outline-none" />
-                                            <div className="flex justify-end gap-2"><button onClick={()=>setEditingId(null)} className="px-4 py-2 text-xs text-sub">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-6 py-2 rounded-lg text-xs">儲存</button></div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="flex flex-wrap gap-1.5">{book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors">{c}</span>)}{book.isPinned && <Pin size={10} className="text-wood-500 fill-wood-400"/>}</div>
-                                            <h3 className="text-xl font-bold text-ink leading-tight">{book.title}</h3>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70">
-                                                <span className="flex items-center gap-1"><User size={12}/> {book.author || '佚名'}</span>
-                                                <span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
-                                                <span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span>
-                                            </div>
-                                            {book.status === 'finished' && (
-                                                <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100">
-                                                    <div className="flex justify-between items-center mb-1"><span className="text-[10px] text-sage-600 flex items-center gap-1"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
-                                                    {book.review && <p className="text-xs text-sage-text italic">「{book.review}」</p>}
-                                                </div>
-                                            )}
-                                            {book.status === 'dropped' && <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text"><p className="flex items-center gap-1"><BookX size={12}/> 第 {book.dropChapter || '?'} 章棄書</p></div>}
-                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1"><FileText size={12}/> 大綱</button>}
-                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap">{book.synopsis}</p>}
-                                        </>
-                                    )}
-                                </div>
-                                <div className="flex flex-row md:flex-col gap-2 justify-end shrink-0 md:w-10">
-                                    <button onClick={() => { setEditingId(book.id); setEditForm({...book}); }} className="h-10 w-10 flex items-center justify-center text-stone-300 hover:text-wood-500 bg-stone-50 rounded-xl transition-all" title="編輯"><Edit3 size={18}/></button>
-                                    {book.status === 'reading' ? (
-                                        <><button onClick={() => { setActiveBookId(book.id); setModalType('finish'); setModalData({ date: new Date().toISOString().split('T')[0], rating: 0 }); }} className="h-10 w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><CheckCircle size={18}/></button><button onClick={() => { setActiveBookId(book.id); setModalType('drop'); setModalData({ date: new Date().toISOString().split('T')[0] }); }} className="h-10 w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button></>
-                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, rating:null, review:null })} className="h-10 w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl" title="重讀"><RotateCcw size={18}/></button>}
-                                    <button onClick={(e) => togglePin(book, e)} className={`h-10 w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white' : 'bg-white text-stone-300'}`}>{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
-                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-10 w-10 flex items-center justify-center text-stone-200 hover:text-dried-500"><Trash2 size={16}/></button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+        let year = parseInt(rawBase.substring(0, 3)) + 1911;
+        let month = parseInt(rawBase.substring(3, 5)) - 1;
+        let day = parseInt(rawBase.substring(5, 7));
 
-                    {modalType && (
-                        <div className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 animate-fade-in" onClick={()=>setModalType(null)}>
-                            <div className="bg-paper w-full max-w-sm rounded-t-[2.5rem] md:rounded-[3rem] p-8 md:p-10 shadow-2xl space-y-6" onClick={e=>e.stopPropagation()}>
-                                <h3 className="text-xl text-center text-ink">{modalType==='finish'?'紀錄完食':'紀錄棄書'}</h3>
-                                {modalType==='finish' ? (
-                                    <div className="space-y-5"><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg" /><div className="flex flex-col items-center gap-2 text-xs text-sub"><p>評分</p><StarRating rating={modalData.rating || 0} setRating={r => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="心得..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-3 border rounded-xl h-24 text-sm resize-none" /></div>
-                                ) : (
-                                    <div className="space-y-4"><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full border p-2 text-center rounded-lg" /><input placeholder="棄書進度..." value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full p-3 border rounded-xl text-center" /></div>
-                                )}
-                                <div className="flex gap-4"><button onClick={()=>setModalType(null)} className="flex-1 text-stone-400">取消</button><button onClick={handleModalAction} className="flex-1 py-3 bg-wood-500 text-white rounded-xl shadow-lg">確認</button></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
+        let d = new Date(year, month, day);
+        
+        if (addMonths > 0) {
+            d.setMonth(d.getMonth() + addMonths);
+            d.setDate(15);
         }
 
-        createRoot(document.getElementById('root')).render(<App />);
-    </script>
+        const resY = d.getFullYear() - 1911;
+        const resM = (d.getMonth() + 1).toString().padStart(2, '0');
+        const resD = d.getDate().toString().padStart(2, '0');
+
+        return useSlash ? `${resY}/${resM}/${resD}` : `${resY}${resM}${resD}`;
+    }
+
+    function renderDetail() {
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
+        const pDetail = document.getElementById('paymentDetail');
+        if(net <= 0 || isNaN(p1Pct)) { pDetail.innerHTML = ""; return; }
+        
+        const pay1 = Math.round(net * (p1Pct / 100));
+        const date1 = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), true);
+        
+        let html = `<div class="section-title">付款排程 (預覽)</div><div class="date-line">${date1} &nbsp; $${fmt.format(pay1)}</div>`;
+        if (p1Pct < 100) {
+            const pay2 = net - pay1;
+            const date2 = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), true);
+            html += `<div class="date-line">${date2} &nbsp; $${fmt.format(pay2)}</div>`;
+        }
+        pDetail.innerHTML = html;
+    }
+
+    function saveData() {
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        if (net <= 0 || !document.getElementById('p1Pct').value) { alert("請輸入金額與比例"); return; }
+        const timestamp = Date.now();
+        const saveMonthLabel = `${new Date().getFullYear()}.${(new Date().getMonth()+1).toString().padStart(2, '0')}`;
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value);
+        const pay1 = Math.round(net * (p1Pct / 100));
+        const workNote = document.getElementById('workNote').value || "工程";
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = document.getElementById('retentionRate').value;
+        const currentBaseDate = document.getElementById('baseDate').value; // 獲取當前基準日
+        
+        let baseDesc = workNote;
+        if (hasRetention) baseDesc += `-保留${rRate}%`;
+        const isInstallment = p1Pct < 100;
+
+        const settings = {
+            taxCheck: document.getElementById('taxCheck').checked,
+            cleanCheck: document.getElementById('cleanCheck').checked,
+            cleanRate: document.getElementById('cleanRate').value,
+            retentionCheck: document.getElementById('retentionCheck').checked,
+            retentionRate: document.getElementById('retentionRate').value,
+            p1Pct: document.getElementById('p1Pct').value,
+            p1Mon: document.getElementById('p1Mon').value,
+            p2Pct: document.getElementById('p2Pct').value,
+            p2Mon: document.getElementById('p2Mon').value,
+            baseDate: currentBaseDate // 儲存基準日到設定中
+        };
+
+        const recordBase = { 
+            company: document.getElementById('companySelect').value, 
+            bank: document.getElementById('tempBankCode').value || "", 
+            acc: document.getElementById('tempAccount').value || "", 
+            owner: document.getElementById('tempOwner').value || "", 
+            formula: document.getElementById('processFormula').innerHTML, 
+            saveMonth: saveMonthLabel,
+            settings: settings 
+        };
+        
+        const date1_save = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), false);
+        const item1 = { ...recordBase, id: timestamp + "_1", date: date1_save, desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 };
+        db.push(item1);
+        checkedIds.add(item1.id);
+
+        if (isInstallment) { 
+            const date2_save = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), false);
+            const item2 = { ...recordBase, id: timestamp + "_2", date: date2_save, desc: `${baseDesc}(2-2)`, amount: net - pay1 };
+            db.push(item2); 
+            checkedIds.add(item2.id);
+        }
+        localStorage.setItem('paymentRecords', JSON.stringify(db));
+        
+        // 傳遞目前填寫的基準日，以便清空欄位時保留它
+        clearInputFields(currentBaseDate);
+    }
+
+    function clearInputFields(keptBaseDate) {
+        ['vendorSearch', 'workNote', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = "";
+        });
+        document.getElementById('processFormula').innerHTML = "請輸入資料...";
+        document.getElementById('paymentDetail').innerHTML = "";
+        
+        // 如果有傳入需要保留的基準日，就填入；否則（如初始化時）才用當天日期
+        if (keptBaseDate) {
+            document.getElementById('baseDate').value = keptBaseDate;
+        } else {
+            initBaseDate();
+        }
+    }
+
+    function toggleSort(field) {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+        db.sort((a, b) => {
+            let valA = a[field] || "";
+            let valB = b[field] || "";
+            return currentSortOrder === 'asc' ? valA.localeCompare(valB, 'zh-TW') : valB.localeCompare(valA, 'zh-TW');
+        });
+        renderTable();
+    }
+
+    function toggleItem(id, isChecked) {
+        if (isChecked) checkedIds.add(id);
+        else checkedIds.delete(id);
+        updateSummary();
+    }
+
+    function toggleSelectAll(el) {
+        const checkboxes = document.querySelectorAll('.item-check');
+        checkboxes.forEach(cb => {
+            cb.checked = el.checked;
+            toggleItem(cb.dataset.id, el.checked);
+        });
+    }
+
+    function updateSummary() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
+        
+        let filteredSum = 0;
+        let checkedSum = 0;
+        
+        filtered.forEach(i => {
+            filteredSum += i.amount;
+            if (checkedIds.has(i.id)) checkedSum += i.amount;
+        });
+
+        document.getElementById('filteredTotal').innerText = '$' + fmt.format(filteredSum);
+        document.getElementById('checkedTotal').innerText = '$' + fmt.format(checkedSum);
+    }
+
+    function renderTable() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+        
+        let counter = 1;
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
+        
+        filtered.forEach(item => {
+            if (!checkedIds.has(item.id) && document.getElementById('selectAll').checked) {
+                checkedIds.add(item.id);
+            }
+            const tr = document.createElement('tr');
+            tr.className = "draggable-row";
+            tr.draggable = true;
+            tr.dataset.id = item.id;
+            
+            tr.ondragstart = (e) => { e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', item.id); };
+            tr.ondragend = (e) => { e.target.classList.remove('dragging'); removeDragOverStyles(); };
+            tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drag-over'); };
+            tr.ondragleave = (e) => { tr.classList.remove('drag-over'); };
+            tr.ondrop = (e) => { e.preventDefault(); handleDrop(e.dataTransfer.getData('text/plain'), item.id); };
+
+            tr.innerHTML = `
+                <td style="text-align:center;"><input type="checkbox" class="item-check" data-id="${item.id}" ${checkedIds.has(item.id) ? 'checked' : ''} onchange="toggleItem('${item.id}', this.checked)"></td>
+                <td style="text-align:center; color:#999;">${counter++}</td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
+                <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'bank', this.innerText)" contenteditable="true">${item.bank || ''}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'acc', this.innerText)" contenteditable="true">${item.acc || ''}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'owner', this.innerText)" contenteditable="true">${item.owner || ''}</span></td>
+                <td><span class="editable" onblur="updateField('${item.id}', 'company', this.innerText)" contenteditable="true">${item.company || ''}</span></td>
+                <td class="action-cell">
+                    <button class="btn-calc" onclick="showFormula('${item.id}')" title="查看計算過程">算</button>
+                    <button class="btn-del" onclick="deleteRecord('${item.id}')">×</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateSummary();
+    }
+
+    function removeDragOverStyles() {
+        document.querySelectorAll('.draggable-row').forEach(row => row.classList.remove('drag-over'));
+    }
+
+    function handleDrop(draggedId, targetId) {
+        if (draggedId === targetId) return;
+        const dragIdx = db.findIndex(i => i.id === draggedId);
+        const targetIdx = db.findIndex(i => i.id === targetId);
+        const [draggedItem] = db.splice(dragIdx, 1);
+        db.splice(targetIdx, 0, draggedItem);
+        localStorage.setItem('paymentRecords', JSON.stringify(db));
+        renderTable();
+    }
+
+    function showFormula(id) {
+        const record = db.find(i => i.id === id);
+        if(record) { document.getElementById('modalBody').innerHTML = record.formula; document.getElementById('infoModal').style.display = 'flex'; }
+    }
+
+    function updateField(id, field, value) {
+        const idx = db.findIndex(i => i.id === id);
+        if(idx !== -1) { db[idx][field] = value.trim(); localStorage.setItem('paymentRecords', JSON.stringify(db)); }
+    }
+
+    function updateAmountField(id, el) {
+        const idx = db.findIndex(i => i.id === id);
+        if(idx !== -1) {
+            let val = parseInt(el.innerText.replace(/,/g, '')) || 0;
+            db[idx].amount = val; localStorage.setItem('paymentRecords', JSON.stringify(db));
+            el.innerText = fmt.format(val);
+            updateSummary();
+        }
+    }
+
+    function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); checkedIds.delete(id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
+    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; checkedIds.clear(); localStorage.removeItem('paymentRecords'); renderTable(); } }
+
+    function exportBankExcel() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
+        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
+        const headers = ["日期", "解款行", "帳號", "戶名", "金額"];
+        const data = filtered.map(i => [i.date, i.bank, i.acc, i.owner, i.amount]);
+        generateExcelFile(headers, data, `匯款資料_${filterMon}_${filterComp}`);
+    }
+
+    function exportClaimExcel() {
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
+        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
+        const headers = ["日期", "明細內容", "金額"];
+        const data = filtered.map(i => [i.date, i.desc, i.amount]);
+        generateExcelFile(headers, data, `請款明細_${filterMon}_${filterComp}`);
+    }
+
+    function initMonthFilter() {
+        const months = new Set();
+        db.forEach(item => { if(item.saveMonth) months.add(item.saveMonth); });
+        const now = new Date();
+        const currentLabel = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}`;
+        months.add(currentLabel);
+        const sorted = Array.from(months).sort().reverse();
+        document.getElementById('filterMonth').innerHTML = `<option value="全部">全部月份</option>` + sorted.map(m => `<option value="${m}">${m}</option>`).join('');
+        document.getElementById('filterMonth').value = currentLabel;
+    }
+
+    function initBaseDate() {
+        const now = new Date();
+        const y = now.getFullYear() - 1911;
+        const m = (now.getMonth() + 1).toString().padStart(2, '0');
+        const d = now.getDate().toString().padStart(2, '0');
+        document.getElementById('baseDate').value = `${y}${m}${d}`;
+    }
+
+    document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
+    window.onload = () => { 
+        db.forEach(i => checkedIds.add(i.id));
+        initMonthFilter(); 
+        initBaseDate();
+    };
+</script>
+
 </body>
 </html>
