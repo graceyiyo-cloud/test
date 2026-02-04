@@ -1,787 +1,671 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>工程階層結算系統</title>
-    <style>
-        :root {
-            --bg: #F7F6F2;
-            --card: #FFFFFF;
-            --primary: #8E9775;
-            --accent: #AF8F6F;
-            --text: #4A4A4A;
-            --border: #E0DED7;
-            --danger: #e74c3c;
-            --success: #217346;
-            --info: #5da9ad;
-            --dark: #2c3e50;
-        }
-
-        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; width: 100%; max-width: 500px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: #E0DED7; cursor: pointer; border-radius: 8px 8px 0 0; color: #777; font-weight: bold; transition: 0.3s; }
-        .tab-btn.active { background: var(--primary); color: white; }
-
-        .page { display: none; width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
-        #listPage.page.active { display: block; width: 98vw; max-width: none; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 20px; }
-        .list-card { background: var(--card); width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
-        
-        h2 { text-align: center; color: var(--primary); font-weight: 500; margin-bottom: 20px; letter-spacing: 1px; }
-        .row { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; }
-        .col { flex: 1; display: flex; flex-direction: column; }
-        
-        label { font-size: 0.8rem; margin-bottom: 5px; color: #999; }
-        input, select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; outline: none; background: #FAFAFA; width: 100%; box-sizing: border-box; }
-        input:focus, select:focus { border-color: var(--primary); background: #FFF; }
-        
-        #netAmount { font-weight: bold; color: var(--accent); background-color: #FFF9F3; border: 1px solid var(--accent); }
-        .config-box { background: #F9F9F8; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #EEE; }
-        .payment-box { border-top: 2px solid var(--primary); padding-top: 15px; margin-top: 20px; }
-        
-        .input-with-unit { position: relative; display: flex; align-items: center; }
-        .unit-label { margin-left: 5px; font-size: 0.8rem; color: #999; white-space: nowrap; width: 20px; }
-
-        .display-area { background: #FCFCFB; border: 1px solid #EEE; padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
-        .section-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 3px solid var(--primary); padding-left: 8px; }
-        
-        .formula { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.6; color: #666; }
-        .formula strong { color: #333; font-weight: 600; }
-        .subtotal-line { background: #F0F2EB; padding: 4px 8px; border-radius: 4px; color: var(--primary) !important; }
-        
-        .payment-result { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #DDD; }
-        .date-line { font-family: monospace; font-weight: bold; font-size: 1.1rem; color: var(--accent); margin-bottom: 5px; }
-
-        .btn-save { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-excel { padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-        .btn-info { padding: 10px 20px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-        .btn-reset { width: 100%; padding: 10px; margin-top: 10px; color: #BBB; border: 1px solid #EEE; background: none; cursor: pointer; border-radius: 8px; font-size: 0.8rem; }
-        
-        .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        .check-label input[type="checkbox"] { width: auto; margin: 0; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; table-layout: fixed; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; overflow: hidden; }
-        
-        #recordTable td { text-overflow: clip; white-space: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
-        #recordTable td::-webkit-scrollbar { display: none; }
-        
-        #vendorTable td { white-space: normal; word-break: break-all; vertical-align: middle; }
-        
-        th { background-color: #f8f8f8; color: var(--primary); }
-        .sortable { cursor: pointer; user-select: none; position: relative; }
-        .sortable:hover { background-color: #f0f0f0; }
-        
-        .editable { cursor: pointer; background-color: #fffdec; border-radius: 4px; padding: 2px 5px; display: block; width: calc(100% - 10px); min-height: 1.2em; border: 1px transparent solid; }
-        .editable:focus { border-color: var(--accent); outline: none; background-color: #fff; }
-        
-        .amount-cell { text-align: right; font-family: monospace; }
-        
-        .action-cell { text-align: center; width: 90px; }
-        .btn-calc { color: var(--info); border: 1px solid var(--info); background: white; cursor: pointer; border-radius: 50%; width: 24px; height: 24px; font-size: 0.7rem; font-weight: bold; padding: 0; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
-        .btn-calc:hover { background: var(--info); color: white; }
-        .btn-edit-tool { color: var(--accent); border: 1px solid var(--accent); background: white; cursor: pointer; border-radius: 4px; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; margin-right: 5px; transition: 0.2s; vertical-align: middle; }
-        .btn-edit-tool:hover { background: var(--accent); color: white; }
-        .btn-del { color: var(--danger); border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
-        
-        .filter-row { margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; justify-content: space-between; }
-        .filter-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .close-modal { position: absolute; right: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; color: #999; }
-
-        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; max-height: 250px; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; }
-        .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; line-height: 1.4; }
-        .search-item:hover { background: #f8f8f8; color: var(--primary); }
-        .search-subtext { color: #888; font-size: 0.75rem; margin-top: 2px; }
-
-        .vendor-form { background: #F9F9F8; padding: 15px; border-radius: 10px; border: 1px solid #EEE; margin-bottom: 20px; }
-
-        /* 新增樣式：拖曳視覺與統計欄位 */
-        .draggable-row { cursor: grab; transition: background 0.2s; }
-        .draggable-row:active { cursor: grabbing; }
-        .draggable-row.dragging { opacity: 0.5; background: #f0f0f0; }
-        .drag-over { border-top: 3px dashed var(--primary) !important; }
-        .summary-bar { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: right; font-size: 1.1rem; color: var(--dark); border: 1px solid #eee; }
-        .summary-bar strong { color: var(--danger); font-size: 1.3rem; }
-    </style>
-</head>
-<body>
-
-<div class="tabs">
-    <button class="tab-btn active" onclick="switchPage('calcPage', this)">計算工具</button>
-    <button class="tab-btn" onclick="switchPage('listPage', this)">付款清單</button>
-    <button class="tab-btn" onclick="switchPage('vendorPage', this)">廠商資料</button>
-</div>
-
-<div id="calcPage" class="page active">
-    <div class="card">
-        <h2>工程結算明細</h2>
-        <div class="row">
-            <div class="col">
-                <label>付款公司</label>
-                <select id="companySelect">
-                    <option value="瀞川">瀞川</option>
-                    <option value="聿川">聿川</option>
-                    <option value="長川">長川</option>
-                    <option value="上川">上川</option>
-                </select>
-            </div>
-            <div class="col" style="position: relative;">
-                <label>搜尋廠商 (預覽包含帳號)</label>
-                <input type="text" id="vendorSearch" placeholder="搜尋廠商關鍵字..." oninput="searchVendor(this.value)">
-                <div id="searchResults" class="search-results"></div>
-                <input type="hidden" id="tempBankCode">
-                <input type="hidden" id="tempAccount">
-                <input type="hidden" id="tempOwner">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>工程內容 (明細)</label>
-                <input type="text" id="workNote" placeholder="例如：木地板已完成54戶請款">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>未稅金額</label>
-                <input type="number" id="rawAmount" placeholder="請輸入金額" oninput="calculate(false, false)">
-            </div>
-            <div class="col">
-                <label class="check-label"><input type="checkbox" id="taxCheck" checked onchange="calculate(false, false)"> 稅額 (5%)</label>
-                <input type="number" id="taxAmount" oninput="calculate(true, false)">
-            </div>
-        </div>
-
-        <div class="config-box">
-            <div class="row">
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate(false, false)"> 清潔保險 (%)</label>
-                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate(false, false)">
-                </div>
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate(false, false)"> 保留款 (%)</label>
-                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate(false, false)">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <label>保留款金額 (可手動修改)</label>
-                    <input type="number" id="retentionAmount" oninput="calculate(true, true)">
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>加扣款事由</label>
-                <input type="text" id="adjustmentNote" placeholder="例如：代購材料扣款" oninput="calculate(false, false)">
-            </div>
-            <div class="col">
-                <label>加扣款金額</label>
-                <input type="number" id="adjustmentAmount" placeholder="0" oninput="calculate(false, false)">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>最終淨額 (可手動修改)</label>
-                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
-            </div>
-        </div>
-
-        <div class="payment-box">
-            <label>付款比例 / 期數 (月)</label>
-            <div class="row">
-                <div class="col"><div class="input-with-unit"><input type="number" id="p1Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
-                <div class="col"><div class="input-with-unit"><input type="number" id="p1Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
-            </div>
-            <div class="row">
-                <div class="col"><div class="input-with-unit"><input type="number" id="p2Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
-                <div class="col"><div class="input-with-unit"><input type="number" id="p2Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
-            </div>
-        </div>
-
-        <div class="display-area">
-            <div class="section-title">階層計算列示</div>
-            <div id="processFormula" class="formula">請輸入資料...</div>
-            <div class="payment-result" id="paymentDetail"></div>
-        </div>
-
-        <button class="btn-save" onclick="saveData()">儲存此筆排程</button>
-        <button class="btn-reset" onclick="location.reload()">重新整理</button>
-    </div>
-</div>
-
-<div id="listPage" class="page">
-    <div class="list-card">
-        <div class="section-title">付款清單明細</div>
-        <div class="filter-row">
-            <div class="filter-group">
-                <label style="margin:0">資料月份：</label>
-                <select id="filterMonth" style="width: auto; padding: 5px;" onchange="renderTable()"></select>
-                <label style="margin:0; margin-left:10px;">篩選公司：</label>
-                <select id="filterCompany" style="width: auto; padding: 5px;" onchange="renderTable()">
-                    <option value="全部">全部顯示</option>
-                    <option value="瀞川">瀞川</option>
-                    <option value="聿川">聿川</option>
-                    <option value="長川">長川</option>
-                    <option value="上川">上川</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
-                <button class="btn-info" style="background: var(--danger); border-color: var(--danger);" onclick="clearData()">清空所有排程</button>
-                <button class="btn-info" style="background: var(--dark);" onclick="exportBankExcel()">匯出匯款資料</button>
-                <button class="btn-excel" onclick="exportClaimExcel()">匯出請款明細</button>
-            </div>
-        </div>
-        <table id="recordTable">
-            <thead>
-                <tr>
-                    <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" checked onclick="toggleSelectAll(this)"></th>
-                    <th style="width: 35px;">No.</th>
-                    <th style="width: 8.5ch;">日期</th>
-                    <th style="width: auto;" class="sortable" onclick="toggleSort('desc')">明細內容 <small>(點擊排序)</small></th>
-                    <th style="width: 90px;">金額</th>
-                    <th style="width: 8.5ch;">解款行</th>
-                    <th style="width: 17ch;">帳號</th>
-                    <th style="width: 20em;">戶名</th>
-                    <th style="width: 3.2em;">付款公司</th>
-                    <th class="action-cell">功能</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-        <div class="summary-bar" id="listSummary">
-            篩選總金額：<span id="filteredTotal">$0</span> | 勾選總金額：<strong id="checkedTotal">$0</strong>
-        </div>
-    </div>
-</div>
-
-<div id="vendorPage" class="page" style="max-width: 850px;">
-    <div class="list-card">
-        <div class="section-title">廠商匯款資料管理</div>
-        
-        <div class="vendor-form">
-            <div class="section-title" style="border-left: 3px solid var(--accent); color: var(--accent);">手動新增廠商</div>
-            <div class="row">
-                <div class="col"><label>廠商名稱</label><input type="text" id="newVName" placeholder="公司名"></div>
-                <div class="col"><label>解款行</label><input type="text" id="newVBank" placeholder="代號+名稱"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>收款帳號</label><input type="text" id="newVAcc" placeholder="銀行帳號"></div>
-                <div class="col"><label>收款戶名</label><input type="text" id="newVOwner" placeholder="戶名"></div>
-            </div>
-            <button class="btn-save" style="margin-top: 5px; background: var(--accent);" onclick="manualAddVendor()">新增廠商資料</button>
-        </div>
-
-        <div class="filter-row">
-            <div class="filter-group">
-                <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importVendorCSV(this)">
-                <button class="btn-excel" onclick="document.getElementById('csvFileInput').click()">批次匯入 CSV</button>
-                <button class="btn-excel" style="background: #5da9ad;" onclick="exportVendorExcel()">匯出廠商清單</button>
-                <button class="btn-info" style="background: var(--dark); margin-bottom: 15px;" onclick="exportFullBackup()">備份全系統資料 (.json)</button>
-                <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importFullBackup(this)">
-                <button class="btn-info" style="background: var(--accent); margin-bottom: 15px;" onclick="document.getElementById('backupFileInput').click()">還原系統資料</button>
-            </div>
-            <button class="btn-reset" onclick="clearVendors()" style="color: var(--danger); margin:0; width: auto;">清空廠商庫</button>
-        </div>
-        
-        <table id="vendorTable">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">廠商名稱</th>
-                    <th style="width: 20%;">解款行</th>
-                    <th style="width: 20%;">帳號</th>
-                    <th style="width: 20%;">戶名</th>
-                    <th class="action-cell">功能</th>
-                </tr>
-            </thead>
-            <tbody id="vendorTableBody"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="infoModal" class="modal" onclick="document.getElementById('infoModal').style.display='none'">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <span class="close-modal" onclick="document.getElementById('infoModal').style.display='none'">&times;</span>
-        <div class="section-title">計算過程紀錄</div>
-        <div id="modalBody" class="formula"></div>
-    </div>
-</div>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的雲端書櫃</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script>
-    const fmt = new Intl.NumberFormat('zh-TW');
-    let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
-    let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
-    let currentSortOrder = 'asc';
-    let checkedIds = new Set(); // 用於暫存被勾選的 ID
-
-    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "" };
-
-    function generateExcelFile(headers, data, filename) {
-        let xml = '<?xml version="1.0" encoding="utf-8"?><?mso-application progid="Excel.Sheet"?>';
-        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
-        xml += '<Worksheet ss:Name="Sheet1"><Table>';
-        xml += '<Row>';
-        headers.forEach(h => xml += `<Cell><Data ss:Type="String">${h}</Data></Cell>`);
-        xml += '</Row>';
-        data.forEach(row => {
-            xml += '<Row>';
-            row.forEach(cell => {
-                const isNumber = !isNaN(cell) && cell !== "" && typeof cell === 'number';
-                const type = isNumber ? 'Number' : 'String';
-                xml += `<Cell><Data ss:Type="${type}">${cell}</Data></Cell>`;
-            });
-            xml += '</Row>';
-        });
-        xml += '</Table></Worksheet></Workbook>';
-        const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename + ".xls";
-        link.click();
-    }
-
-    function searchVendor(val) {
-        const resultsDiv = document.getElementById('searchResults');
-        if (!val) { resultsDiv.style.display = 'none'; return; }
-        const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || (v.account && v.account.includes(val)));
-        if (filtered.length > 0) {
-            resultsDiv.innerHTML = filtered.map(v => `
-                <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
-                    <div><strong>${v.name}</strong> (${v.owner})</div>
-                    <div class="search-subtext">行庫：${v.bankCode || ''} | 帳號：${v.account || ''}</div>
-                </div>
-            `).join('');
-            resultsDiv.style.display = 'block';
-        } else {
-            resultsDiv.style.display = 'none';
-        }
-    }
-
-    function selectVendor(name, bank, acc, owner) {
-        document.getElementById('vendorSearch').value = name;
-        document.getElementById('tempBankCode').value = bank || "";
-        document.getElementById('tempAccount').value = acc || "";
-        document.getElementById('tempOwner').value = owner || "";
-        document.getElementById('searchResults').style.display = 'none';
-    }
-
-    function exportFullBackup() {
-        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
-        link.click();
-    }
-
-    function importFullBackup(input) {
-        const file = input.files[0];
-        if (!file) return;
-        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (imported.paymentRecords && imported.vendorList) {
-                    db = imported.paymentRecords;
-                    vendors = imported.vendorList;
-                    localStorage.setItem('paymentRecords', JSON.stringify(db));
-                    localStorage.setItem('vendorList', JSON.stringify(vendors));
-                    alert("系統還原成功！");
-                    location.reload();
-                } else { alert("備份檔案格式不正確。"); }
-            } catch (err) { alert("讀取檔案失敗：" + err); }
-        };
-        reader.readAsText(file);
-    }
-
-    function autoFillRecordsByOwner() {
-        let count = 0;
-        db.forEach(item => {
-            if ((!item.bank || !item.acc) && item.owner) {
-                const match = vendors.find(v => v.owner === item.owner.trim());
-                if (match) {
-                    item.bank = match.bankCode;
-                    item.acc = match.account;
-                    count++;
-                }
-            }
-        });
-        if (count > 0) {
-            localStorage.setItem('paymentRecords', JSON.stringify(db));
-            renderTable();
-            alert(`成功補齊 ${count} 筆匯款資料！`);
-        } else { alert("未找到相符戶名的廠商資料。"); }
-    }
-
-    function manualAddVendor() {
-        const name = document.getElementById('newVName').value.trim();
-        const bank = document.getElementById('newVBank').value.trim();
-        const acc = document.getElementById('newVAcc').value.trim();
-        const owner = document.getElementById('newVOwner').value.trim();
-        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
-        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
-        localStorage.setItem('vendorList', JSON.stringify(vendors));
-        renderVendorTable();
-        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
-        alert("廠商新增成功！");
-    }
-
-    function importVendorCSV(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const rows = text.split('\n').filter(r => r.trim() !== "");
-            rows.slice(1).forEach(row => {
-                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
-                if (cols.length >= 4) {
-                    vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
-                }
-            });
-            localStorage.setItem('vendorList', JSON.stringify(vendors));
-            renderVendorTable();
-            alert("匯入成功！");
-            input.value = "";
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
-
-    function exportVendorExcel() {
-        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
-        const headers = ["廠商名稱", "解款行", "帳號", "戶名"];
-        const data = vendors.map(v => [v.name, v.bankCode, v.account, v.owner]);
-        generateExcelFile(headers, data, `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}`);
-    }
-
-    function renderVendorTable() {
-        const tbody = document.getElementById('vendorTableBody');
-        tbody.innerHTML = vendors.map(v => `
-            <tr>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
-                <td class="action-cell">
-                    <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改')">改</button>
-                    <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    function updateVendorField(id, field, value) {
-        const idx = vendors.findIndex(v => v.id == id);
-        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
-    }
-
-    function deleteVendor(id) {
-        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
-    }
-
-    function clearVendors() {
-        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
-    }
-
-    function switchPage(pageId, btn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        btn.classList.add('active');
-        if(pageId === 'listPage') { initMonthFilter(); renderTable(); }
-        if(pageId === 'vendorPage') { renderVendorTable(); }
-    }
-
-    function calculate(isManualTax, isManualRetention) {
-        const raw = parseFloat(document.getElementById('rawAmount').value) || 0;
-        const taxInput = document.getElementById('taxAmount');
-        const taxChecked = document.getElementById('taxCheck').checked;
-        const retentionInput = document.getElementById('retentionAmount');
-        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
-        const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
-        
-        let tax = 0;
-        if (taxChecked) {
-            tax = isManualTax ? (parseFloat(taxInput.value) || 0) : Math.round(raw * 0.05);
-        }
-        
-        if(!isManualTax) taxInput.value = taxChecked ? (tax || "") : "";
-        
-        const total = raw + tax;
-        const hasClean = document.getElementById('cleanCheck').checked;
-        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
-        const cleanFee = hasClean ? Math.round(total * (cRate / 100)) : 0;
-        const subtotal = total - cleanFee;
-        const hasRetention = document.getElementById('retentionCheck').checked;
-        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
-        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
-        if(!isManualRetention) retentionInput.value = retention || "";
-        
-        const net = (subtotal - retention) + adj;
-        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote };
-        document.getElementById('netAmount').value = net;
-        renderFormula(net);
-        renderDetail();
-    }
-
-    function updateFormulaOnly() {
-        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
-        renderFormula(manualNet);
-        renderDetail();
-    }
-
-    function renderFormula(currentNet) {
-        let html = `<div>① 全額：${fmt.format(lastCalcState.raw)}${lastCalcState.tax > 0 ? ' + 稅' + fmt.format(lastCalcState.tax) : ''} = <strong>${fmt.format(lastCalcState.total)}</strong></div>`;
-        if (lastCalcState.cleanFee !== 0) {
-            html += `<div>② 清潔費(${lastCalcState.cRate}%)：${fmt.format(lastCalcState.total)} × ${lastCalcState.cRate}% = <strong>${fmt.format(lastCalcState.cleanFee)}</strong></div>`;
-        }
-        html += `<div class="subtotal-line">③ 小計：${fmt.format(lastCalcState.total)} - ${fmt.format(lastCalcState.cleanFee)} = <strong>${fmt.format(lastCalcState.subtotal)}</strong></div>`;
-        let stepCount = 4;
-        if (lastCalcState.retention !== 0) {
-            html += `<div>④ 保留款：${fmt.format(lastCalcState.subtotal)} × ${lastCalcState.rRate}% = <strong>${fmt.format(lastCalcState.retention)}</strong></div>`;
-            stepCount = 5;
-        }
-        if (lastCalcState.adj !== 0) {
-            html += `<div>${stepCount === 5 ? '⑤' : '④'} ${lastCalcState.adjNote}：<strong>${lastCalcState.adj >= 0 ? '+' : ''}${fmt.format(lastCalcState.adj)}</strong></div>`;
-            stepCount++;
-        }
-        html += `<div style="margin-top:5px; border-top:1px solid #EEE; padding-top:5px;">${stepCount === 6 ? '⑥' : (stepCount === 5 ? '⑤' : '④')} 淨額：<strong>${fmt.format(currentNet)}</strong></div>`;
-        document.getElementById('processFormula').innerHTML = html;
-    }
-
-    function getMinguoDate(addMonths, useSlash = true) {
-        let d = new Date(); d.setMonth(d.getMonth() + (isNaN(addMonths) ? 0 : addMonths));
-        const y = d.getFullYear() - 1911; const m = (d.getMonth() + 1).toString().padStart(2, '0');
-        return useSlash ? `${y}/${m}/15` : `${y}${m}15`;
-    }
-
-    function renderDetail() {
-        const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
-        const pDetail = document.getElementById('paymentDetail');
-        if(net <= 0 || isNaN(p1Pct)) { pDetail.innerHTML = ""; return; }
-        const pay1 = Math.round(net * (p1Pct / 100));
-        let html = `<div class="section-title">付款排程 (預覽)</div><div class="formula">第一期 (${p1Pct}%)：<strong>${fmt.format(pay1)}</strong></div><div class="date-line">${getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), true)} &nbsp; $${fmt.format(pay1)}</div>`;
-        if (p1Pct < 100) {
-            const pay2 = net - pay1;
-            html += `<div class="formula" style="margin-top:10px;">第二期：<strong>${fmt.format(pay2)}</strong></div><div class="date-line">${getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), true)} &nbsp; $${fmt.format(pay2)}</div>`;
-        }
-        pDetail.innerHTML = html;
-    }
-
-    function saveData() {
-        const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        if (net <= 0 || !document.getElementById('p1Pct').value) { alert("請輸入金額與比例"); return; }
-        const timestamp = Date.now();
-        const saveMonthLabel = `${new Date().getFullYear()}.${(new Date().getMonth()+1).toString().padStart(2, '0')}`;
-        const p1Pct = parseFloat(document.getElementById('p1Pct').value);
-        const pay1 = Math.round(net * (p1Pct / 100));
-        const workNote = document.getElementById('workNote').value || "工程";
-        const hasRetention = document.getElementById('retentionCheck').checked;
-        const rRate = document.getElementById('retentionRate').value;
-        let baseDesc = workNote;
-        if (hasRetention) baseDesc += `-保留${rRate}%`;
-        const isInstallment = p1Pct < 100;
-        const recordBase = { company: document.getElementById('companySelect').value, bank: document.getElementById('tempBankCode').value || "", acc: document.getElementById('tempAccount').value || "", owner: document.getElementById('tempOwner').value || "", formula: document.getElementById('processFormula').innerHTML, saveMonth: saveMonthLabel };
-        
-        const item1 = { ...recordBase, id: timestamp + "_1", date: getMinguoDate(parseInt(document.getElementById('p1Mon').value || 0), false), desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 };
-        db.push(item1);
-        checkedIds.add(item1.id);
-
-        if (isInstallment) { 
-            const item2 = { ...recordBase, id: timestamp + "_2", date: getMinguoDate(parseInt(document.getElementById('p2Mon').value || 0), false), desc: `${baseDesc}(2-2)`, amount: net - pay1 };
-            db.push(item2); 
-            checkedIds.add(item2.id);
-        }
-        localStorage.setItem('paymentRecords', JSON.stringify(db));
-        clearInputFields();
-    }
-
-    function clearInputFields() {
-        ['vendorSearch', 'workNote', 'rawAmount', 'taxAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.value = "";
-        });
-        document.getElementById('processFormula').innerHTML = "請輸入資料...";
-        document.getElementById('paymentDetail').innerHTML = "";
-    }
-
-    function toggleSort(field) {
-        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
-        db.sort((a, b) => {
-            let valA = a[field] || "";
-            let valB = b[field] || "";
-            return currentSortOrder === 'asc' ? valA.localeCompare(valB, 'zh-TW') : valB.localeCompare(valA, 'zh-TW');
-        });
-        renderTable();
-    }
-
-    // 新增：切換勾選與計算總額
-    function toggleItem(id, isChecked) {
-        if (isChecked) checkedIds.add(id);
-        else checkedIds.delete(id);
-        updateSummary();
-    }
-
-    function toggleSelectAll(el) {
-        const checkboxes = document.querySelectorAll('.item-check');
-        checkboxes.forEach(cb => {
-            cb.checked = el.checked;
-            toggleItem(cb.dataset.id, el.checked);
-        });
-    }
-
-    function updateSummary() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        
-        let filteredSum = 0;
-        let checkedSum = 0;
-        
-        filtered.forEach(i => {
-            filteredSum += i.amount;
-            if (checkedIds.has(i.id)) checkedSum += i.amount;
-        });
-
-        document.getElementById('filteredTotal').innerText = '$' + fmt.format(filteredSum);
-        document.getElementById('checkedTotal').innerText = '$' + fmt.format(checkedSum);
-    }
-
-    function renderTable() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = "";
-        
-        let counter = 1;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon));
-        
-        filtered.forEach(item => {
-            if (!checkedIds.has(item.id) && document.getElementById('selectAll').checked) {
-                checkedIds.add(item.id);
-            }
-            const tr = document.createElement('tr');
-            tr.className = "draggable-row";
-            tr.draggable = true;
-            tr.dataset.id = item.id;
-            
-            // 綁定拖曳事件
-            tr.ondragstart = (e) => { e.target.classList.add('dragging'); e.dataTransfer.setData('text/plain', item.id); };
-            tr.ondragend = (e) => { e.target.classList.remove('dragging'); removeDragOverStyles(); };
-            tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drag-over'); };
-            tr.ondragleave = (e) => { tr.classList.remove('drag-over'); };
-            tr.ondrop = (e) => { e.preventDefault(); handleDrop(e.dataTransfer.getData('text/plain'), item.id); };
-
-            tr.innerHTML = `
-                <td style="text-align:center;"><input type="checkbox" class="item-check" data-id="${item.id}" ${checkedIds.has(item.id) ? 'checked' : ''} onchange="toggleItem('${item.id}', this.checked)"></td>
-                <td style="text-align:center; color:#999;">${counter++}</td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'date', this.innerText)" contenteditable="true">${item.date}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'desc', this.innerText)" contenteditable="true">${item.desc}</span></td>
-                <td class="amount-cell"><span class="editable" onblur="updateAmountField('${item.id}', this)" contenteditable="true">${fmt.format(item.amount)}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'bank', this.innerText)" contenteditable="true">${item.bank || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'acc', this.innerText)" contenteditable="true">${item.acc || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'owner', this.innerText)" contenteditable="true">${item.owner || ''}</span></td>
-                <td><span class="editable" onblur="updateField('${item.id}', 'company', this.innerText)" contenteditable="true">${item.company || ''}</span></td>
-                <td class="action-cell">
-                    <button class="btn-calc" onclick="showFormula('${item.id}')" title="查看計算過程">算</button>
-                    <button class="btn-del" onclick="deleteRecord('${item.id}')">×</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        updateSummary();
-    }
-
-    // 新增：拖曳邏輯處理
-    function removeDragOverStyles() {
-        document.querySelectorAll('.draggable-row').forEach(row => row.classList.remove('drag-over'));
-    }
-
-    function handleDrop(draggedId, targetId) {
-        if (draggedId === targetId) return;
-        const dragIdx = db.findIndex(i => i.id === draggedId);
-        const targetIdx = db.findIndex(i => i.id === targetId);
-        const [draggedItem] = db.splice(dragIdx, 1);
-        db.splice(targetIdx, 0, draggedItem);
-        localStorage.setItem('paymentRecords', JSON.stringify(db));
-        renderTable();
-    }
-
-    function showFormula(id) {
-        const record = db.find(i => i.id === id);
-        if(record) { document.getElementById('modalBody').innerHTML = record.formula; document.getElementById('infoModal').style.display = 'flex'; }
-    }
-
-    function updateField(id, field, value) {
-        const idx = db.findIndex(i => i.id === id);
-        if(idx !== -1) { db[idx][field] = value.trim(); localStorage.setItem('paymentRecords', JSON.stringify(db)); }
-    }
-
-    function updateAmountField(id, el) {
-        const idx = db.findIndex(i => i.id === id);
-        if(idx !== -1) {
-            let val = parseInt(el.innerText.replace(/,/g, '')) || 0;
-            db[idx].amount = val; localStorage.setItem('paymentRecords', JSON.stringify(db));
-            el.innerText = fmt.format(val);
-            updateSummary();
-        }
-    }
-
-    function deleteRecord(id) { if(confirm("確定刪除？")) { db = db.filter(i => i.id !== id); checkedIds.delete(id); localStorage.setItem('paymentRecords', JSON.stringify(db)); renderTable(); } }
-    function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; checkedIds.clear(); localStorage.removeItem('paymentRecords'); renderTable(); } }
-
-    function exportBankExcel() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
-        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
-        const headers = ["日期", "解款行", "帳號", "戶名", "金額"];
-        const data = filtered.map(i => [i.date, i.bank, i.acc, i.owner, i.amount]);
-        generateExcelFile(headers, data, `匯款資料_${filterMon}_${filterComp}`);
-    }
-
-    function exportClaimExcel() {
-        const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
-        const filtered = db.filter(item => (filterComp === "全部" || item.company === filterComp) && (filterMon === "全部" || item.saveMonth === filterMon) && checkedIds.has(item.id));
-        if(filtered.length === 0) return alert("目前無「勾選」資料可匯出");
-        const headers = ["日期", "明細內容", "金額"];
-        const data = filtered.map(i => [i.date, i.desc, i.amount]);
-        generateExcelFile(headers, data, `請款明細_${filterMon}_${filterComp}`);
-    }
-
-    function initMonthFilter() {
-        const months = new Set();
-        db.forEach(item => { if(item.saveMonth) months.add(item.saveMonth); });
-        const now = new Date();
-        const currentLabel = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}`;
-        months.add(currentLabel);
-        const sorted = Array.from(months).sort().reverse();
-        document.getElementById('filterMonth').innerHTML = `<option value="全部">全部月份</option>` + sorted.map(m => `<option value="${m}">${m}</option>`).join('');
-        document.getElementById('filterMonth').value = currentLabel;
-    }
-
-    document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
-    window.onload = () => { 
-        // 初始化時，將現有 db 的 ID 都預設勾選
-        db.forEach(i => checkedIds.add(i.id));
-        initMonthFilter(); 
-    };
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+paper: '#f2f0e9', 
+ink: '#373a36',   
+sub: '#6b705c',   
+wood: {
+100: '#e9e7da',
+200: '#dad7cd', 
+300: '#a3b18a', 
+400: '#588157', 
+500: '#3a5a40', 
+600: '#344e41',
+},
+sage: {
+50: '#f0f4ef',
+100: '#e0e9e1',
+200: '#c5d5c5',
+500: '#84a59d', 
+600: '#6b8a82',
+text: '#4a5d5a'
+},
+dried: {
+50: '#f7f2f2',
+100: '#ede0e0',
+200: '#d9bfbf',
+500: '#b5838d', 
+600: '#a0717a',
+text: '#6d4c51'
+},
+stone: {
+50: '#f5f5f4',
+100: '#e7e7e2',
+200: '#dcdcc6',
+400: '#a7a797',
+500: '#7f7f6f',
+600: '#5f5f54',
+text: '#4a4a40'
+},
+gold: { 
+400: '#d4a373', 
+500: '#bc8a5f',
+}
+}
+}
+}
+}
 </script>
+<style>
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(-10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-down {
+animation: fadeIn 0.3s ease-out forwards;
+}
 
+@keyframes modalIn {
+from { opacity: 0; transform: scale(0.95); }
+to { opacity: 1; transform: scale(1); }
+}
+.animate-modal-in {
+animation: modalIn 0.2s ease-out forwards;
+}
+
+html {
+font-size: 90%;
+background-color: #f2f0e9; 
+}
+
+@media (max-width: 768px) {
+html {
+font-size: 120%; 
+}
+input, select, textarea {
+padding-top: 0.6rem;
+padding-bottom: 0.6rem;
+}
+.mobile-edge-to-edge {
+padding-left: 0.5rem !important;
+padding-right: 0.5rem !important;
+}
+}
+
+input, textarea, select {
+font-size: 1rem !important; 
+}
+
+.no-scrollbar::-webkit-scrollbar {
+display: none;
+}
+.no-scrollbar {
+-ms-overflow-style: none;
+scrollbar-width: none;
+}
+
+.soft-shadow {
+box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08);
+}
+</style>
+</head>
+<body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink pb-10">
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0';
+import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+import { 
+BookOpen, Search, Plus, Trash2, CheckCircle, BookX, 
+Calendar, User, LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, Trophy, Hourglass, Star, X, Tag, RotateCcw, AlertTriangle, Filter, LogOut, MessageSquare, Edit3, ChevronDown, ExternalLink, Pin, PinOff, ChevronUp
+} from 'https://esm.sh/lucide-react@0.344.0';
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+const firebaseConfig = {
+apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU",
+authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+projectId: "my-reading-tracker-58f69",
+storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+messagingSenderId: "370802674969",
+appId: "1:370802674969:web:efb1c045e0028925154988",
+measurementId: "G-52EWLNG7ST"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = "my-reading-app"; 
+const ESTIMATE_WORDS_PER_PAGE = 350;
+
+const DEFAULT_CATEGORIES = [
+"玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", 
+"科幻", "懸疑", "推理", "驚悚", "恐怖", "冒險", "耽美 (BL)", "百合 (GL)", 
+"穿越", "重生", "系統", "快穿", "無限流", "末世", "種田", "宅鬥", "宮鬥", 
+"娛樂圈", "電競", "校園", "職場", "先婚後愛", "破鏡重圓", "青梅竹馬", 
+"異能", "空間", "甜寵", "虐戀", "爽文", "升級流", "治癒", "輕鬆", "沙雕"
+];
+
+const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
+const [isOpen, setIsOpen] = useState(false);
+const [filterText, setFilterText] = useState('');
+const filtered = useMemo(() => {
+const term = filterText.toLowerCase();
+return allCategories.filter(c => c.toLowerCase().includes(term));
+}, [allCategories, filterText]);
+const handleSelect = (cat) => { onToggle(cat); setFilterText(''); };
+const handleKeyDown = async (e) => {
+if (e.key === 'Enter') {
+e.preventDefault();
+const trimmedInput = filterText.trim();
+if (!trimmedInput) return;
+const tagsToAdd = trimmedInput.split(/[，,\s]+/).map(t => t.trim()).filter(t => t !== "");
+if (tagsToAdd.length > 1) {
+for (const tag of tagsToAdd) {
+if (!selectedCategories.includes(tag)) {
+if (allCategories.includes(tag)) { onToggle(tag); } else { await onAddNew(tag); }
+}
+}
+setFilterText('');
+} else {
+const singleTag = tagsToAdd[0];
+if (filtered.length > 0) {
+const firstMatch = filtered.find(c => !selectedCategories.includes(c));
+if (firstMatch) { handleSelect(firstMatch); return; }
+}
+if (!allCategories.includes(singleTag)) { await onAddNew(singleTag); setFilterText(''); }
+}
+}
+};
+
+const handleQuickDelete = (cat, e) => {
+e.stopPropagation();
+if (window.confirm(`確定要將「${cat}」從分類清單中永久刪除嗎？`)) {
+onDelete(cat, e);
+}
+};
+
+return (
+<div className="w-full">
+<div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 border-b border-wood-200">
+{selectedCategories.map(cat => (
+<span key={cat} className="bg-wood-400 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+{cat}
+<X size={12} className="cursor-pointer hover:text-wood-200" onClick={(e) => { e.stopPropagation(); onToggle(cat); }}/>
+</span>
+))}
+<button type="button" onClick={() => setIsOpen(!isOpen)} 
+className={`text-xs flex items-center gap-1 px-2 py-1 rounded-full transition-colors ${isOpen ? 'bg-wood-200 text-wood-600' : 'text-wood-500 hover:bg-wood-100'}`}>
+<Plus size={12}/> {isOpen ? '收起' : '選擇分類'}
+</button>
+</div>
+{isOpen && (
+<div className="mt-2 p-3 bg-stone-50 rounded-xl border border-stone-200 shadow-sm animate-fade-in relative z-10">
+<input type="text" placeholder="搜尋或輸入「A B C」批次建立" 
+value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown}
+className="w-full mb-3 p-2 bg-white rounded-lg text-sm outline-none focus:ring-1 focus:ring-wood-300 border border-stone-200" autoFocus />
+<div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar content-start">
+{filterText && !allCategories.includes(filterText) && !/[，,\s]/.test(filterText) && (
+<button type="button" onClick={() => { onAddNew(filterText); setFilterText(''); }}
+className="bg-wood-500 text-white text-xs px-3 py-1.5 rounded-full hover:bg-wood-600 transition shadow-sm flex items-center gap-1">
+<Plus size={12}/> 建立「{filterText}」
+</button>
+)}
+{filtered.map(cat => {
+const isSelected = selectedCategories.includes(cat);
+if (isSelected) return null;
+return (
+<div key={cat} className="group relative">
+<button type="button" onClick={() => handleSelect(cat)}
+className="bg-stone-100 text-stone-600 border border-stone-200 text-xs px-3 py-1.5 rounded-full hover:bg-stone-200 hover:border-stone-400 transition">
+{cat}
+</button>
+<button type="button" onClick={(e) => handleQuickDelete(cat, e)}
+className="absolute -top-1 -right-1 bg-white text-stone-300 hover:text-dried-500 rounded-full p-0.5 shadow-sm border border-stone-100 opacity-0 group-hover:opacity-100 transition-opacity">
+<X size={10} strokeWidth={3} />
+</button>
+</div>
+)
+})}
+{filtered.length === 0 && !filterText && <span className="text-xs text-stone-400 py-1">無符合分類</span>}
+</div>
+</div>
+)}
+</div>
+);
+};
+
+function ReadingTracker() {
+const [user, setUser] = useState(null);
+const [books, setBooks] = useState([]);
+const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+const [loading, setLoading] = useState(true);
+const [customId, setCustomId] = useState('');
+const [isLoginMode, setIsLoginMode] = useState(true);
+const [isAuthChecking, setIsAuthChecking] = useState(true);
+const [toast, setToast] = useState(null); 
+const [searchTerm, setSearchTerm] = useState('');
+const [statusFilter, setStatusFilter] = useState('all'); 
+const [ratingFilter, setRatingFilter] = useState(0); 
+const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
+const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+const [newBook, setNewBook] = useState({
+title: '', author: '', wordCount: '', isWordCountManual: false,
+addDate: new Date().toISOString().split('T')[0],
+reviewUrl: '', synopsis: '', category: [], isPinned: false
+});
+const [isSearching, setIsSearching] = useState(false);
+const [activeBookId, setActiveBookId] = useState(null);
+const [modalType, setModalType] = useState(null); 
+const [modalData, setModalData] = useState({});
+const [expandedBooks, setExpandedBooks] = useState({});
+
+useEffect(() => {
+signInAnonymously(auth).catch((error) => console.error("Auth Error", error));
+const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+if (currentUser) {
+setUser(currentUser);
+const savedId = localStorage.getItem('reading_tracker_custom_id');
+if (savedId) { setCustomId(savedId); setIsLoginMode(false); } else { setIsLoginMode(true); }
+}
+setIsAuthChecking(false);
+});
+return () => unsubscribe();
+}, []);
+
+useEffect(() => {
+if (!user || !customId) { setLoading(false); return; }
+setLoading(true);
+const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
+const fetchedBooks = [];
+let fetchedCategories = [...DEFAULT_CATEGORIES];
+snapshot.docs.forEach(doc => {
+if (doc.id === 'settings') {
+if (doc.data().categories && Array.isArray(doc.data().categories)) { fetchedCategories = doc.data().categories; }
+} else { fetchedBooks.push({ id: doc.id, ...doc.data() }); }
+});
+fetchedBooks.sort((a, b) => {
+if (a.isPinned && !b.isPinned) return -1;
+if (!a.isPinned && b.isPinned) return 1;
+const isReadingA = a.status === 'reading';
+const isReadingB = b.status === 'reading';
+if (isReadingA && !isReadingB) return -1;
+if (!isReadingA && isReadingB) return 1;
+return new Date(b.addDate) - new Date(a.addDate);
+});
+setBooks(fetchedBooks);
+setCategories(fetchedCategories);
+setLoading(false);
+}, (error) => {
+console.error("Error", error); setLoading(false); showToast("資料讀取失敗", "error");
+});
+return () => unsubscribe();
+}, [user, customId]);
+
+const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
+const handleLogin = (e) => {
+e.preventDefault();
+if (customId.trim().length < 3) return showToast("ID 太短囉", "error");
+localStorage.setItem('reading_tracker_custom_id', customId); setIsLoginMode(false);
+};
+const handleLogout = () => { setModalType('logout'); };
+const searchBookInfo = async () => {
+if (!newBook.title) return;
+setIsSearching(true);
+try {
+const q = `intitle:${newBook.title}${newBook.author ? `+inauthor:${newBook.author}` : ''}`;
+const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+const data = await res.json();
+if (data.items && data.items.length > 0) {
+const info = data.items[0].volumeInfo;
+setNewBook(prev => ({
+...prev,
+author: prev.author || info.authors?.[0] || '',
+wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE,
+isWordCountManual: false,
+synopsis: info.description || ''
+}));
+showToast("找到書籍資料！");
+} else { showToast("找不到書籍資料", "error"); }
+} catch (error) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
+};
+const addBook = async (e) => {
+e.preventDefault();
+if (!newBook.title || !customId) return;
+const isDuplicate = books.some(b => b.title.trim() === newBook.title.trim() && (b.author || '').trim() === (newBook.author || '').trim());
+if (isDuplicate) { setModalType('confirmAddDuplicate'); return; }
+executeAddBook();
+};
+const executeAddBook = async () => {
+try {
+await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`), { ...newBook, status: 'reading', createdAt: serverTimestamp() });
+setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+setIsAddFormOpen(false); 
+showToast("新增成功！");
+} catch (error) { showToast("新增失敗", "error"); }
+};
+const updateCategoriesInDb = async (newCats) => {
+try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings'), { categories: newCats }, { merge: true }); } catch (err) { showToast("更新分類失敗", "error"); }
+};
+const addNewCategory = async (catName) => {
+if (!catName.trim()) return;
+const name = catName.trim();
+if (categories.includes(name)) return name; 
+const updatedCats = [...categories, name];
+await updateCategoriesInDb(updatedCats);
+showToast(`已新增分類「${name}」`); return name; 
+};
+
+const handleDeleteCategory = async (catToDelete, e) => { 
+    e.stopPropagation(); 
+    const updatedCats = categories.filter(c => c !== catToDelete); 
+    await updateCategoriesInDb(updatedCats); 
+    showToast(`已刪除分類「${catToDelete}」`); 
+};
+
+const toggleNewBookCategory = (cat) => { setNewBook(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
+const toggleEditBookCategory = (cat) => { setModalData(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (currentCats.includes(cat)) { return { ...prev, category: currentCats.filter(c => c !== cat) }; } else { return { ...prev, category: [...currentCats, cat] }; } }); };
+const handleAddNewCategoryWrapper = async (name, targetStateSetter) => {
+const newName = await addNewCategory(name);
+if(newName && targetStateSetter) {
+targetStateSetter(prev => { const currentCats = Array.isArray(prev.category) ? prev.category : []; if (!currentCats.includes(newName)) { return { ...prev, category: [...currentCats, newName] }; } return prev; });
+}
+};
+const togglePin = async (book, e) => {
+e.stopPropagation();
+try {
+const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id);
+const newPinStatus = !book.isPinned; await updateDoc(bookRef, { isPinned: newPinStatus });
+showToast(newPinStatus ? "已釘選至最上方" : "已取消釘選");
+} catch (error) { showToast("操作失敗", "error"); }
+};
+const handleModalAction = async () => {
+if (!modalType) return;
+try {
+if (modalType === 'logout') { localStorage.removeItem('reading_tracker_custom_id'); setCustomId(''); setBooks([]); setIsLoginMode(true); closeModal(); return; }
+if (modalType === 'confirmAddDuplicate') { executeAddBook(); closeModal(); return; }
+const targetId = activeBookId || modalData.id;
+if (!targetId && modalType !== 'logout') return;
+const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, targetId);
+if (modalType === 'delete') { await deleteDoc(bookRef); showToast("已刪除書籍"); } 
+else if (modalType === 'edit') { await updateDoc(bookRef, { title: modalData.title || '', author: modalData.author || '', category: modalData.category || [], wordCount: modalData.wordCount || '', addDate: modalData.addDate || '', reviewUrl: modalData.reviewUrl || '', synopsis: modalData.synopsis || '' }); showToast("書籍資料已更新"); } 
+else {
+const updates = {};
+if (modalType === 'finish') { updates.status = 'finished'; updates.finishDate = modalData.date; updates.rating = modalData.rating; updates.review = modalData.review || ''; updates.isPinned = false; } 
+else if (modalType === 'drop') { updates.status = 'dropped'; updates.dropChapter = modalData.chapter; updates.dropDate = modalData.date; updates.isPinned = false; } 
+else if (modalType === 'reset') { updates.status = 'reading'; updates.finishDate = null; updates.dropChapter = null; updates.dropDate = null; updates.rating = null; updates.review = null; }
+await updateDoc(bookRef, updates); showToast("狀態已更新");
+}
+closeModal();
+} catch (error) { showToast("操作失敗，請稍後再試", "error"); }
+};
+const toggleSynopsis = (id) => setExpandedBooks(prev => ({...prev, [id]: !prev[id]}));
+const openModal = (book, type, e) => {
+if (e) e.stopPropagation();
+setActiveBookId(book.id); setModalType(type);
+if (type === 'edit') { setModalData({ ...book }); } 
+else { setModalData({ date: new Date().toISOString().split('T')[0], chapter: type === 'drop' ? '' : undefined, rating: type === 'finish' ? 0 : undefined, review: type === 'finish' ? (book.review || '') : undefined }); }
+};
+const closeModal = () => { setActiveBookId(null); setModalType(null); setModalData({}); };
+const activeBook = useMemo(() => books.find(b => b.id === activeBookId), [books, activeBookId]);
+const filteredBooks = useMemo(() => {
+let list = books;
+if (statusFilter !== 'all') list = list.filter(b => b.status === statusFilter);
+if (ratingFilter > 0) list = list.filter(b => (b.rating || 0) >= ratingFilter);
+if (searchTerm.trim()) {
+const term = searchTerm.toLowerCase();
+list = list.filter(b => (b.title?.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term) || (b.category && b.category.some(c => c.toLowerCase().includes(term)))));
+}
+return list;
+}, [books, searchTerm, statusFilter, ratingFilter]);
+const stats = useMemo(() => {
+const yearStats = {}; let totalFinished = 0, totalDropped = 0, totalReading = 0; const activeYears = new Set();
+books.forEach(b => {
+let y = null;
+if (b.status === 'reading') totalReading++;
+else if (b.status === 'finished' && b.finishDate) { y = new Date(b.finishDate).getFullYear(); totalFinished++; } 
+else if (b.status === 'dropped' && b.dropDate) { y = new Date(b.dropDate).getFullYear(); totalDropped++; }
+if (y) { activeYears.add(y); if (!yearStats[y]) yearStats[y] = { finished: 0, dropped: 0 }; if (b.status === 'finished') yearStats[y].finished++; if (b.status === 'dropped') yearStats[y].dropped++; }
+});
+return { years: Array.from(activeYears).sort((a, b) => b - a), data: yearStats, total: { finished: totalFinished, dropped: totalDropped, reading: totalReading } };
+}, [books]);
+const StarRating = ({ rating, setRating, interactive = false }) => (
+<div className="flex gap-1">
+{[1, 2, 3, 4, 5].map((index) => {
+const filled = rating >= index; const half = rating >= index - 0.5 && !filled;
+return (
+<div key={index} className={`relative ${interactive ? 'cursor-pointer transition-transform active:scale-90' : ''}`}
+onClick={(e) => { if (interactive) { const rect = e.currentTarget.getBoundingClientRect(); setRating((e.clientX - rect.left) < rect.width / 2 ? index - 0.5 : index); } }}>
+<Star size={interactive ? 32 : 16} className="text-stone-200"/>
+<div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
+<Star size={interactive ? 32 : 16} className="fill-gold-400 text-gold-400"/>
+</div>
+</div>
+);
+})}
+</div>
+);
+const handleWebSearch = (book, e) => { e.stopPropagation(); const query = encodeURIComponent(`${book.title} ${book.author || ''}`); window.open(`https://www.google.com/search?q=${query}`, '_blank'); };
+ 
+const handleCategoryClick = (cat, e) => {
+e.stopPropagation();
+setSearchTerm(cat);
+showToast(`已過濾分類：「${cat}」`);
+window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-paper"><RefreshCw className="animate-spin text-wood-400" /></div>;
+if (isLoginMode) {
+return (
+<div className="min-h-screen flex items-center justify-center p-4 bg-paper relative">
+{toast && <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-400'}`}>{toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>} {toast.message}</div>}
+<div className="bg-white/60 p-8 rounded-3xl shadow-lg border border-stone-200 w-full max-w-md backdrop-blur-sm">
+<div className="flex justify-center mb-6 text-wood-400"><BookOpen size={56} strokeWidth={1.5} /></div>
+<h1 className="text-3xl font-bold text-center mb-3 text-ink tracking-widest">雲端書櫃</h1>
+<p className="text-sub text-center mb-8 text-sm">溫和配色，舒適紀錄你的閱讀時光。</p>
+<form onSubmit={handleLogin} className="space-y-5">
+<input value={customId} onChange={e=>setCustomId(e.target.value)} placeholder="例如: alex2026" className="w-full p-3 bg-white/50 border-b-2 border-stone-200 focus:border-wood-300 outline-none text-center text-lg placeholder-stone-300 rounded-t-lg" />
+<button type="submit" className="w-full bg-wood-400 text-white py-3 rounded-xl font-bold flex justify-center gap-2 hover:bg-wood-500 transition shadow-md tracking-widest"><LogIn size={20} strokeWidth={1.5}/> 開啟</button>
+</form>
+</div>
+</div>
+);
+}
+
+return (
+<div className="min-h-screen bg-paper relative">
+{toast && <div className={`fixed top-20 md:top-4 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-xl z-50 animate-fade-in-down text-white text-sm font-bold flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-400'}`}>{toast.type === 'error' ? <AlertTriangle size={16}/> : <CheckCircle size={16}/>} {toast.message}</div>}
+<header className="bg-paper/80 backdrop-blur sticky top-0 z-20 border-b border-stone-200">
+<div className="max-w-3xl mx-auto px-4 py-4 md:px-6 md:py-5 flex justify-between items-center">
+<div className="flex items-center gap-3 text-ink font-bold text-xl md:text-2xl tracking-widest"><BookOpen className="text-wood-400" strokeWidth={1.5} /><span>閱讀手帳</span></div>
+<div className="flex items-center gap-3 md:gap-4 flex-1 justify-end min-w-0"><div className="text-xs text-sub bg-stone-100 px-3 py-1 rounded-full truncate max-w-[120px]">ID: {customId}</div><button onClick={handleLogout} className="text-stone-400 hover:text-ink transition"><LogOut size={20} strokeWidth={1.5}/></button></div>
+</div>
+</header>
+<main className="max-w-3xl mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 mobile-edge-to-edge">
+<section className="space-y-4">
+<div className="grid grid-cols-2 gap-3 md:gap-4">
+<div className="bg-white/50 p-3 md:p-4 rounded-2xl border border-stone-200 flex flex-col justify-between relative overflow-hidden soft-shadow">
+<div className="absolute right-0 top-0 p-2 opacity-5 text-wood-500"><Hourglass size={32}/></div>
+<div className="text-xs md:text-sm text-sub font-medium mb-0.5">待讀</div>
+<div className="flex flex-col">
+<div className="text-2xl md:text-3xl font-bold text-stone-600 flex items-baseline gap-1 md:gap-2">
+{stats.total.reading} <span className="text-[10px] md:text-xs font-normal text-stone-400">本</span>
+</div>
+<div className="text-[9px] md:text-[10px] opacity-0 h-[12px] md:h-[15px] select-none">spacer</div>
+</div>
+</div>
+<div className="bg-sage-50 p-3 md:p-4 rounded-2xl border border-sage-100 flex flex-col justify-between relative overflow-hidden soft-shadow">
+<div className="absolute right-0 top-0 p-2 opacity-10 text-wood-500"><Trophy size={32}/></div>
+<div className="text-xs md:text-sm text-wood-400 font-medium mb-0.5">生涯累積完食</div>
+<div className="flex flex-col">
+<div className="text-2xl md:text-3xl font-bold text-ink flex items-baseline gap-1 md:gap-2">
+{stats.total.finished} <span className="text-[10px] md:text-xs font-normal text-sub">本</span>
+</div>
+<div className="text-[9px] md:text-[10px] text-dried-500 text-right h-[12px] md:h-[15px]">
+{stats.total.dropped > 0 ? `棄書 ${stats.total.dropped}` : ''}
+</div>
+</div>
+</div>
+</div>
+{stats.years.length > 0 && (
+<div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
+{stats.years.map(y => (
+<div key={y} className="bg-white/40 p-3 rounded-xl border border-stone-100 flex flex-col items-center min-w-[120px] md:min-w-[140px] shrink-0 soft-shadow">
+<span className="text-xs font-bold text-wood-400 mb-2">{y}</span>
+<div className="flex gap-4 w-full justify-center items-center"><div className="text-center"><div className="text-sage-500 font-medium text-lg">{stats.data[y].finished}</div><div className="text-[9px] text-sub">完食</div></div><div className="h-4 w-[1px] bg-stone-200"></div><div className="text-center"><div className="text-dried-500 font-medium text-lg">{stats.data[y].dropped}</div><div className="text-[9px] text-sub">棄書</div></div></div>
+</div>
+))}
+</div>
+)}
+</section>
+
+<section className="bg-white/80 rounded-2xl md:rounded-3xl border border-stone-200 p-0 overflow-hidden soft-shadow transition-all duration-300">
+<div 
+onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+className="p-4 md:p-5 cursor-pointer flex items-center justify-between hover:bg-stone-50/50 transition-colors"
+>
+<h2 className="text-[0.825rem] font-bold flex items-center gap-2 text-ink border-l-4 border-wood-300 pl-3 uppercase tracking-wider">
+<PenTool className="text-wood-400 w-3.5 h-3.5" /> 紀錄新書
+</h2>
+<div className="flex items-center gap-2 text-sub">
+{!isAddFormOpen && <span className="text-[10px] font-normal opacity-60">點擊展開</span>}
+{isAddFormOpen ? <ChevronUp size={16} className="text-stone-400" /> : <Plus size={16} className="text-wood-400" />}
+</div>
+</div>
+
+{isAddFormOpen && (
+<div className="p-5 md:p-8 pt-0 md:pt-0 animate-fade-in">
+<form onSubmit={addBook} className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 border-t border-stone-100 pt-5 md:pt-6">
+<div className="md:col-span-5"><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" required /></div>
+<div className="md:col-span-4"><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+<div className="md:col-span-3 flex items-end md:items-center"><button type="button" onClick={searchBookInfo} disabled={isSearching || !newBook.title} className="w-full h-10 md:h-9 text-wood-500 bg-stone-100 hover:bg-stone-200 rounded-lg transition flex items-center justify-center gap-1 text-xs md:text-sm font-medium disabled:opacity-50">{isSearching ? <RefreshCw className="animate-spin w-4 h-4" /> : <Search className="w-3.5 h-3.5" />} 搜尋</button></div>
+<div className="md:col-span-12 relative"><CategoryPicker selectedCategories={newBook.category} onToggle={toggleNewBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setNewBook)} onDelete={handleDeleteCategory} /></div>
+<div className="md:col-span-4"><div className="relative"><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" />{!newBook.isWordCountManual && newBook.wordCount && <span className="absolute right-0 top-2 text-[10px] text-stone-400 bg-stone-50 px-1 rounded">估算</span>}</div></div>
+<div className="md:col-span-4"><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub focus:border-wood-300 outline-none" /></div>
+<div className="md:col-span-4"><input type="url" placeholder="推薦網址" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 focus:border-wood-300 outline-none placeholder-stone-300" /></div>
+<div className="md:col-span-12"><textarea placeholder="故事大綱..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50/50 rounded-xl border border-stone-200 focus:border-stone-300 outline-none h-24 placeholder-stone-300 resize-none text-base" /></div>
+<div className="md:col-span-12 flex justify-end gap-3 items-center">
+<button type="button" onClick={() => setIsAddFormOpen(false)} className="px-4 py-2 rounded-xl text-sub hover:bg-stone-100 transition text-xs md:text-sm">取消</button>
+<button type="submit" className="w-fit bg-wood-400 text-white px-5 py-2 rounded-xl font-medium hover:bg-wood-500 transition shadow-md flex items-center justify-center gap-2 text-xs md:text-sm"><Plus size={16} /> 加入書櫃</button>
+</div>
+</form>
+</div>
+)}
+</section>
+
+<section className="space-y-4">
+<div className="flex flex-col gap-3 mb-2 px-2">
+<div className="flex flex-wrap items-center justify-between gap-3">
+<div className="flex items-center gap-2"><h2 className="text-lg md:text-xl font-bold text-ink whitespace-nowrap">書單列表</h2>{loading && <RefreshCw className="animate-spin text-stone-400 w-4 h-4" />}</div>
+<div className="relative"><button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border soft-shadow ${ratingFilter > 0 ? 'bg-gold-400 text-white border-gold-500' : 'bg-white text-stone-500 border-stone-200 hover:border-wood-200'}`}><Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分篩選' : `${ratingFilter} 星以上`}<ChevronDown size={14} className={`transition-transform ${isRatingMenuOpen ? 'rotate-180' : ''}`} /></button>
+{isRatingMenuOpen && (<><div className="fixed inset-0 z-30" onClick={() => setIsRatingMenuOpen(false)}></div><div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in-down">{[{ val: 0, label: '全部評分' }, { val: 4.5, label: '4.5 星以上' }, { val: 4, label: '4 星以上' }, { val: 3, label: '3 星以上' }].map(opt => (<button key={opt.val} onClick={() => { setRatingFilter(opt.val); setIsRatingMenuOpen(false); }} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-stone-50 transition-colors ${ratingFilter === opt.val ? 'text-gold-500 font-bold bg-gold-50/30' : 'text-sub'}`}>{opt.label}</button>))}</div></>)}
+</div>
+</div>
+<div className="flex flex-col md:flex-row md:items-center gap-3">
+<div className="flex flex-wrap gap-1 md:gap-2">{[{ id: 'all', label: '全部' }, { id: 'reading', label: '待讀' }, { id: 'finished', label: '已完食' }, { id: 'dropped', label: '棄書' }].map(btn => (<button key={btn.id} onClick={() => setStatusFilter(btn.id)} className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${statusFilter === btn.id ? 'bg-wood-400 text-white border-wood-500 shadow-sm' : 'bg-white/60 text-stone-500 border-stone-200 hover:border-wood-200'}`}>{btn.label}</button>))}</div>
+<div className="flex-1 flex items-center gap-2 bg-white/60 px-3 py-2 rounded-xl border border-stone-200 soft-shadow">
+<Filter size={16} className="text-stone-400" />
+<input type="text" placeholder="搜尋書名、作者或分類..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none w-full text-xs text-ink placeholder-stone-300" />
+{searchTerm && <button onClick={() => setSearchTerm('')}><X size={14} className="text-stone-400"/></button>}
+</div>
+</div>
+</div>
+{!loading && filteredBooks.length === 0 && (<div className="text-center py-10 text-stone-400 bg-white/30 rounded-2xl border border-dashed border-stone-200"><BookOpen className="mx-auto mb-2 opacity-30 w-10 h-10" /><p className="text-sm">{searchTerm || statusFilter !== 'all' || ratingFilter > 0 ? '找不到符合條件的書籍。' : '書櫃空蕩蕩，選個安靜的午後開始閱讀吧。'}</p></div>)}
+<div className="grid grid-cols-1 gap-4 md:gap-6">
+{filteredBooks.map(book => (
+<div key={book.id} className={`group bg-white p-4 md:p-6 rounded-2xl border ${book.isPinned ? 'border-wood-300' : 'border-stone-200'} hover:border-wood-200 transition-all duration-300 animate-fade-in soft-shadow flex flex-col md:flex-row gap-4 relative overflow-hidden`}>
+<div className={`absolute left-0 top-0 bottom-0 w-1.5 ${book.status==='finished'?'bg-sage-500': book.status==='dropped'?'bg-dried-500': 'bg-stone-300'}`}></div>
+<div className="flex-1 pl-3 md:pl-0 min-w-0">
+<div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-2">
+<div className="min-w-0 flex-1">
+<div className="flex flex-wrap gap-2 items-center mb-1">
+{book.category && (Array.isArray(book.category) ? book.category : [book.category]).map((cat, idx) => (
+<button 
+key={idx} 
+onClick={(e) => handleCategoryClick(cat, e)}
+className="text-[10px] md:text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-sm hover:bg-wood-100 hover:text-wood-600 transition-colors"
+>
+{cat}
+</button>
+))}
+<span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs ${book.status==='finished'?'bg-sage-100 text-sage-text': book.status==='dropped'?'bg-dried-100 text-dried-text': 'bg-stone-100 text-stone-500'}`}>{book.status==='finished'?'已完食':book.status==='dropped'?'棄書':'待讀'}</span>
+{book.isPinned && <span className="flex items-center gap-1 text-[10px] md:text-xs text-wood-500 bg-wood-100 px-2 py-0.5 rounded-full font-bold shadow-sm"><Pin size={10} className="fill-wood-400" /> 已釘選</span>}
+</div>
+<div className="flex items-center gap-2 group/title"><h3 className="font-bold text-lg md:text-xl text-ink leading-relaxed break-words">{book.title}</h3><button onClick={(e) => handleWebSearch(book, e)} className="p-1.5 rounded-full bg-stone-50 text-stone-400 hover:text-wood-500 hover:bg-wood-50 transition-all border border-transparent hover:border-wood-100" title="在 Google 搜尋此書"><ExternalLink size={14} strokeWidth={2.5} /></button></div>
+</div>
+<div className="shrink-0">{book.status === 'finished' && book.rating > 0 && <StarRating rating={book.rating} />}</div>
+</div>
+<div className="text-sm text-sub space-y-2">
+<div className="flex flex-wrap gap-4 text-xs opacity-70"><span className="flex items-center gap-1"><User size={12}/> {book.author||'佚名'}</span><span className="flex items-center gap-1"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span><span className="flex items-center gap-1"><Calendar size={12}/> {book.addDate}</span></div>
+{book.status === 'finished' && (<div className="mt-2 bg-sage-50/50 p-3 rounded-lg border border-sage-100"><p className="text-sage-text flex items-center gap-2 text-xs md:text-sm font-medium"><CheckCircle size={14}/> 完食於 {book.finishDate}</p>{book.review && <p className="text-sage-600 text-xs mt-1 pl-5 border-l-2 border-sage-200 ml-0.5 whitespace-pre-wrap">{book.review}</p>}</div>)}
+{book.status === 'dropped' && <div className="text-dried-text mt-2 bg-dried-50/50 p-2 rounded-lg border border-dried-100 text-xs md:text-sm"><p className="flex items-center gap-2 font-medium"><BookX size={14}/> 第{book.dropChapter}章棄書</p>{book.dropDate && <p className="text-xs opacity-60 mt-1 ml-6">日期: {book.dropDate}</p>}</div>}
+{book.reviewUrl && <div className="mt-2"><a href={book.reviewUrl} target="_blank" className="inline-flex items-center gap-1 text-wood-400 hover:text-wood-600 hover:underline transition text-xs"><LinkIcon size={12}/> 閱讀推薦文章</a></div>}
+{book.synopsis && (
+<div className="mt-2 flex flex-col">
+<button onClick={()=>toggleSynopsis(book.id)} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition py-1 self-start">
+<FileText size={12}/> {expandedBooks[book.id] ? '收起大綱' : '查看故事大綱'}
+</button>
+{expandedBooks[book.id] && <p className="text-xs text-sub leading-relaxed bg-stone-50/50 p-3 rounded-lg whitespace-pre-wrap mt-2 mb-0">{book.synopsis}</p>}
+</div>
+)}
+</div>
+</div>
+
+<div className="flex mt-1 pt-1 border-t border-stone-100 flex-row gap-1.5 
+md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:grid md:grid-cols-2 md:w-28 md:gap-2 shrink-0">
+
+{book.status === 'reading' ? (
+<>
+<button onClick={(e)=>openModal(book, 'finish', e)} className="flex-1 py-2 bg-sage-50 text-sage-600 hover:bg-sage-100 rounded-xl transition flex items-center justify-center border border-sage-100 shadow-sm md:w-full" title="完食"><CheckCircle size={18} /></button>
+<button onClick={(e)=>openModal(book, 'drop', e)} className="flex-1 py-2 bg-dried-50 text-dried-600 hover:bg-dried-100 rounded-xl transition flex items-center justify-center border border-dried-100 shadow-sm md:w-full" title="棄書"><BookX size={18} /></button>
+</>
+) : (
+<button onClick={(e)=>openModal(book, 'reset', e)} className="flex-1 py-2 bg-stone-50 text-stone-600 hover:bg-stone-100 rounded-xl transition flex items-center justify-center border border-stone-200 shadow-sm col-span-2 md:w-full" title="重設"><RotateCcw size={18} /></button>
+)}
+
+<button onClick={(e)=>openModal(book, 'edit', e)} className="flex-1 py-2 bg-white text-stone-400 hover:text-stone-600 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="編輯">
+<Edit3 size={16} />
+</button>
+<button onClick={(e)=>openModal(book, 'delete', e)} className="flex-1 py-2 bg-white text-stone-300 hover:text-dried-500 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center md:w-full" title="刪除">
+<Trash2 size={16} />
+</button>
+
+<button onClick={(e) => togglePin(book, e)} className={`flex-1 py-2 rounded-xl transition flex items-center justify-center border shadow-sm col-span-2 md:w-full ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-500 border-stone-200'}`} title={book.isPinned ? "取消釘選" : "優先釘選"}>
+{book.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+</button>
+</div>
+</div>
+))}
+</div>
+</section>
+
+{(activeBookId || modalType === 'logout' || modalType === 'confirmAddDuplicate') && (
+<div className="fixed inset-0 bg-stone-800/20 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-4" onClick={closeModal}>
+<div className="bg-paper rounded-t-3xl md:rounded-3xl w-full max-w-sm p-6 md:p-8 shadow-2xl border border-stone-200 animate-modal-in max-h-[90vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
+<div className="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-6 md:hidden"></div>
+<h3 className="text-xl font-bold mb-4 text-center text-ink border-b border-stone-200 pb-4">{modalType === 'finish' ? '紀錄完食' : modalType === 'drop' ? '紀錄棄書' : modalType === 'reset' ? '重設狀態' : modalType === 'delete' ? '刪除書籍' : modalType === 'logout' ? '登出確認' : modalType === 'confirmAddDuplicate' ? '重複確認' : '編輯書籍'}</h3>
+<div className="mb-6">
+{modalType === 'edit' && (<div className="space-y-5"><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">書名</label><input placeholder="書名" value={modalData.title} onChange={e=>setModalData({...modalData, title:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">作者</label><input placeholder="作者" value={modalData.author} onChange={e=>setModalData({...modalData, author:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">分類標籤</label><CategoryPicker selectedCategories={modalData.category || []} onToggle={toggleEditBookCategory} allCategories={categories} onAddNew={(name) => handleAddNewCategoryWrapper(name, setModalData)} onDelete={handleDeleteCategory} /></div><div className="flex gap-4"><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">字數/頁數</label><input type="number" placeholder="字數" value={modalData.wordCount} onChange={e=>setModalData({...modalData, wordCount:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="w-1/2 space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">加入日期</label><input type="date" value={modalData.addDate} onChange={e=>setModalData({...modalData, addDate:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">推薦連結</label><input placeholder="推薦網址" value={modalData.reviewUrl} onChange={e=>setModalData({...modalData, reviewUrl:e.target.value})} className="w-full p-2 bg-white/50 border-b border-stone-200 outline-none focus:border-wood-300" /></div><div className="space-y-1.5"><label className="text-xs md:text-sm text-sub ml-1 uppercase tracking-wider font-bold">故事大綱</label><textarea placeholder="大綱" value={modalData.synopsis} onChange={e=>setModalData({...modalData, synopsis:e.target.value})} className="w-full p-3 bg-white/50 rounded-lg outline-none h-24 resize-none border border-stone-200 focus:border-wood-300 text-sm" /></div></div>)}
+{modalType === 'finish' && (<div className="bg-white/50 p-4 rounded-xl space-y-5 border border-stone-200"><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /><div className="flex flex-col items-center gap-2"><label className="text-xs text-sub">給這本書一個評價吧</label><StarRating rating={modalData.rating} setRating={(r) => setModalData({...modalData, rating: r})} interactive={true} /></div><textarea placeholder="寫點什麼紀錄一下心情..." value={modalData.review} onChange={e=>setModalData({...modalData, review:e.target.value})} className="w-full p-2 bg-white rounded-lg border border-stone-200 h-20 text-sm" /></div>)}
+{modalType === 'drop' && (<div className="bg-white/50 p-4 rounded-xl space-y-4 border border-stone-200"><div className="space-y-1"><label className="text-xs text-sub block">棄書日期</label><input type="date" value={modalData.date} onChange={e=>setModalData({...modalData, date:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div><div className="space-y-1"><label className="text-xs text-sub block">進度紀錄</label><input placeholder="在哪個章節停下了？" value={modalData.chapter} onChange={e=>setModalData({...modalData, chapter:e.target.value})} className="w-full bg-transparent border-b border-stone-300 outline-none p-2 text-center" /></div></div>)}
+{modalType === 'confirmAddDuplicate' && (<div className="text-center p-4"><div className="flex justify-center mb-4 text-dried-500"><AlertTriangle size={48} /></div><p className="mb-2 font-bold text-ink">這本書已經在書櫃中囉！</p><p className="text-sm text-sub">書名：「{newBook.title}」<br/>作者：「{newBook.author || '佚名'}」</p></div>)}
+{['reset', 'delete', 'logout'].includes(modalType) && (<div className="text-center p-4"><p className="mb-2 font-bold text-ink">{activeBook?.title}</p><p className="text-sm text-sub">確定執行此操作嗎？</p></div>)}
+</div>
+<div className="flex gap-4"><button onClick={closeModal} className="flex-1 py-3 text-sub hover:bg-stone-100 rounded-xl transition text-sm">取消</button><button onClick={handleModalAction} className={`flex-1 py-3 text-white rounded-xl shadow-md text-sm font-medium ${['finish', 'edit', 'confirmAddDuplicate'].includes(modalType)?'bg-sage-500': ['reset', 'logout'].includes(modalType)?'bg-wood-400': 'bg-dried-500'}`}>確認</button></div>
+</div>
+</div>
+)}
+</main>
+</div>
+);
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<ReadingTracker />);
+</script>
 </body>
 </html>
