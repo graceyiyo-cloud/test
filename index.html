@@ -3,430 +3,499 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>URL_Manager</title>
+    <title>我的雲端書櫃</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#f2f0e9', ink: '#373a36', sub: '#6b705c',
+                        wood: { 100: '#e9e7da', 200: '#dad7cd', 300: '#a3b18a', 400: '#588157', 500: '#3a5a40', 600: '#344e41' },
+                        sage: { 50: '#f0f4ef', 100: '#e0e9e1', 200: '#c5d5c5', 500: '#84a59d', 600: '#6b8a82', text: '#4a5d5a' },
+                        dried: { 50: '#f7f2f2', 100: '#ede0e0', 200: '#d9bfbf', 500: '#b5838d', 600: '#a0717a', text: '#6d4c51' },
+                        stone: { 50: '#f5f5f4', 100: '#e7e7e2', 200: '#dcdcc6', 400: '#a7a797', 500: '#7f7f6f', 600: '#5f5f54', text: '#4a4a40' },
+                        gold: { 400: '#d4a373', 500: '#bc8a5f' }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        body {
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f7f3e9; 
-            background-image: radial-gradient(#e0d7c1 1px, transparent 1px);
-            background-size: 24px 24px;
-            color: #4a3f35;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ghibli-shadow {
-            box-shadow: 0 4px 10px -2px rgba(74, 63, 53, 0.08);
-            border: 2px solid #d1c7b7;
-        }
-        
-        #filter-bar-container {
-            width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-            padding: 8px 0; 
-            cursor: default;
-        }
-        #filter-bar-container::-webkit-scrollbar { height: 4px; }
-        #filter-bar-container::-webkit-scrollbar-thumb { background: #d1c7b7; border-radius: 10px; }
-        #filter-bar { display: flex; flex-wrap: nowrap; gap: 12px; padding: 0 4px; min-width: max-content; }
-        
-        .filter-chip {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
-            white-space: nowrap; 
-            flex-shrink: 0; 
-            font-size: 0.85rem; 
-            font-weight: 900; 
-            border-width: 2.5px; 
-            border-style: solid;
-            cursor: pointer; 
-            user-select: none; 
-            padding: 6px 20px; 
-            border-radius: 9999px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        
-        .filter-chip:not(.active) {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-        }
-
-        .filter-chip.active { 
-            color: #ffffff !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-1.5px);
-        }
-        
-        .item-title { font-size: 1.05rem; font-weight: 800; color: #4a3f35; }
-        .item-url { font-size: 0.75rem; color: #5c8a97; margin-top: 2px; word-break: break-all; white-space: normal; }
-        
-        .item-tag {
-            border-width: 1.5px; border-style: solid;
-            padding: 1px 7px; border-radius: 6px; 
-            font-size: 0.6rem; 
-            font-weight: 900; 
-            margin-left: 8px; vertical-align: middle;
-            letter-spacing: 0.05em;
-            display: inline-block;
-            line-height: 1.2;
-            text-transform: uppercase;
-        }
-        
-        .ghibli-input { background-color: rgba(255, 255, 255, 0.9); border: 2px solid #d1c7b7; transition: all 0.3s; }
-        .ghibli-input:focus { outline: none; border-color: #8fb4a2; box-shadow: 0 0 0 3px rgba(143, 180, 162, 0.15); }
-        .tab-btn { background-color: #e8e2d5; color: #6b5e51; border: 2px solid #d1c7b7; border-bottom: none; font-size: 0.8rem; }
-        .tab-btn.active { background-color: #fff; color: #4a3f35; font-weight: bold; }
-        .loading-spinner { border: 4px solid #e8e2d5; border-top: 4px solid #8fb4a2; border-radius: 50%; width: 30px; height: 30px; animation: spin 1.5s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #login-overlay { background-color: #f7f3e9; background-image: radial-gradient(#e0d7c1 1px, transparent 1px); background-size: 24px 24px; }
-
-        /* 拖曳排序導引線樣式 */
-        .sortable-placeholder {
-            background-color: #8fb4a220;
-            border: 2px dashed #8fb4a2 !important;
-            border-radius: 16px;
-            height: 80px;
-            margin-bottom: 12px;
-        }
-        .sortable-ghost {
-            opacity: 0.4;
-        }
+        body { font-family: 'Noto Sans TC', sans-serif; font-weight: 400; line-height: 1.3; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .soft-shadow { box-shadow: 0 4px 12px -2px rgba(58, 90, 64, 0.08); }
+        input, textarea, select { font-size: 0.95rem !important; font-weight: 400; font-style: normal !important; }
+        .font-title { font-weight: 700; }
+        /* 強制移除斜體 */
+        em, i, .italic { font-style: normal !important; }
     </style>
 </head>
-<body class="pb-20 min-h-screen flex flex-col items-center">
+<body class="bg-paper text-ink selection:bg-wood-200 selection:text-ink">
+    <div id="root"></div>
 
-    <div id="login-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center px-4">
-        <div class="w-full max-w-xs text-center">
-            <div class="mb-8">
-                <h1 class="text-3xl font-black text-[#4a3f35] tracking-tight uppercase">
-                    <i class="fa-solid fa-door-open text-[#8fb4a2] mr-1"></i>USER LOGIN
-                </h1>
-                <p class="text-sm font-black text-[#8fb4a2] tracking-[0.2em] mt-1 opacity-80">URL_MANAGER</p>
-            </div>
-            
-            <div class="bg-white p-6 ghibli-shadow rounded-2xl space-y-4">
-                <input type="text" id="userInput" placeholder="請輸入使用者代號" 
-                       class="ghibli-input w-full px-4 py-3 text-sm rounded-xl font-bold text-center">
-                <div id="login-history" class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-1"></div>
-                <button onclick="handleLogin()" class="w-full bg-[#8fb4a2] text-white py-3 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">
-                    進入系統
-                </button>
-            </div>
-            <p class="text-[10px] text-[#b7ad9d] mt-4 font-bold">系統將記住此代號以便下次自動登入</p>
-        </div>
-    </div>
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+            BookOpen, Search, Plus, Trash2, CheckCircle, BookX, Calendar, User, 
+            LogIn, RefreshCw, TrendingUp, Link as LinkIcon, FileText, PenTool, 
+            Trophy, Hourglass, Star, X, RotateCcw, AlertTriangle, LogOut, Edit3, 
+            ChevronDown, ExternalLink, Pin, PinOff, ChevronUp 
+        } from 'https://esm.sh/lucide-react@0.344.0';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-    <div id="app-content" class="w-full max-w-lg px-4 mt-8 hidden">
-        
-        <div class="mb-4">
-            <div class="text-center mb-1">
-                <h1 class="text-2xl font-black text-[#4a3f35] tracking-tight uppercase flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-link text-[#8fb4a2] text-xl"></i>URL_MANAGER
-                </h1>
-            </div>
-
-            <div class="border-b-2 border-[#d1c7b7] mb-3"></div>
-
-            <div class="flex justify-between items-center px-2 py-0.5">
-                <div class="flex items-center text-[#4a3f35] max-w-[65%]">
-                    <i class="fa-solid fa-circle-user text-[#8fb4a2] mr-2 text-sm flex-shrink-0"></i>
-                    <span id="display-user-id" class="text-[11px] font-black break-all">---</span>
-                </div>
-                <button onclick="handleLogout()" class="text-[#b7ad9d] hover:text-red-400 py-0.5 px-1 text-sm flex items-center gap-1 font-bold transition-colors">
-                    <span class="text-[10px]">切換帳號</span>
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <div class="flex gap-1">
-                <button onclick="switchTab('link')" id="tab-link" class="tab-btn active px-5 py-2 rounded-t-xl font-bold">新增連結</button>
-                <button onclick="switchTab('category')" id="tab-category" class="tab-btn px-5 py-2 rounded-t-xl font-bold">新增分類</button>
-            </div>
-            <div class="bg-white p-4 border-2 border-[#d1c7b7] ghibli-shadow rounded-b-2xl rounded-tr-2xl">
-                <div id="panel-link" class="flex flex-col gap-3">
-                    <div class="flex gap-2">
-                        <select id="newLinkCat" class="ghibli-input w-1/3 px-2 py-2.5 rounded-lg text-xs font-bold text-[#6b5e51]"></select>
-                        <input type="text" id="newDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-2/3 px-3 py-2.5 text-xs rounded-lg">
-                    </div>
-                    <input type="text" id="newUrl" placeholder="輸入網址" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addItem()" class="w-full bg-[#8fb4a2] text-white py-2.5 rounded-xl hover:bg-[#7da390] font-bold text-sm transition-colors">新增連結 <i class="fa-solid fa-plus ml-1"></i></button>
-                </div>
-                <div id="panel-category" class="hidden flex flex-col gap-3">
-                    <input type="text" id="newCatName" placeholder="輸入新分類名稱" class="ghibli-input w-full px-3 py-2.5 text-xs rounded-lg">
-                    <button onclick="addCategory()" class="w-full bg-[#5c8a97] text-white py-2.5 rounded-xl hover:bg-[#4d7885] font-bold text-sm transition-colors">建立分類 <i class="fa-solid fa-folder ml-1"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <div id="filter-bar-container" class="mb-4"><div id="filter-bar"></div></div>
-        <div class="relative mb-4">
-            <i class="fa-solid fa-search absolute left-4 top-3 text-[#b7ad9d] text-xs"></i>
-            <input type="text" id="searchInput" placeholder="搜尋標題或網址..." class="ghibli-input w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-xs font-bold">
-        </div>
-        <div id="loading" class="loading-spinner mx-auto my-10"></div>
-        <div id="main-container" class="space-y-3 hidden pb-10"></div>
-        <p id="empty-msg" class="text-center text-[#b7ad9d] mt-10 hidden font-bold text-xs">[ 無資料 ]</p>
-    </div>
-
-    <div id="editModal" class="fixed inset-0 bg-[#4a3f35]/50 hidden flex items-center justify-center z-50 px-4 backdrop-blur-sm">
-        <div class="bg-white p-6 w-full max-w-sm ghibli-shadow rounded-2xl relative">
-            <button onclick="closeEditModal()" class="absolute top-3 right-4 text-[#b7ad9d] hover:text-[#4a3f35] text-lg"><i class="fa-solid fa-times"></i></button>
-            <h3 class="text-sm font-bold text-[#4a3f35] mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square mr-1"></i>編輯連結</h3>
-            <input type="hidden" id="editKey">
-            <div class="space-y-3">
-                <select id="editCatId" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs font-bold"></select>
-                <input type="text" id="editDesc" placeholder="輸入標題 (選填)" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-xs">
-                <input type="text" id="editUrl" class="ghibli-input w-full px-3 py-2.5 rounded-lg text-[10px] font-mono">
-            </div>
-            <div class="flex justify-between items-center mt-6 gap-3">
-                <button onclick="deleteCurrentItem()" class="px-4 py-2 text-red-400 font-bold text-xs">刪除</button>
-                <button onclick="saveEdit()" class="px-7 py-2.5 bg-[#8fb4a2] text-white font-bold rounded-xl text-xs">儲存更新</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDlxwcj-PSv2Bc1UFgjlVnKUmIzvwXmBig",
-            authDomain: "url-sorting.firebaseapp.com",
-            projectId: "url-sorting",
-            databaseURL: "https://url-sorting-default-rtdb.firebaseio.com"
-        };
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU", authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+                projectId: "my-reading-tracker-58f69", storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+                messagingSenderId: "370802674969", appId: "1:370802674969:web:efb1c045e0028925154988", measurementId: "G-52EWLNG7ST"
+            };
+        } catch (e) {
+            firebaseConfig = {
+                apiKey: "AIzaSyDX1-Lwc5_u_fwV9P25xh32dVF8uVNT0QU", authDomain: "my-reading-tracker-58f69.firebaseapp.com",
+                projectId: "my-reading-tracker-58f69", storageBucket: "my-reading-tracker-58f69.firebasestorage.app",
+                messagingSenderId: "370802674969", appId: "1:370802674969:web:efb1c045e0028925154988", measurementId: "G-52EWLNG7ST"
+            };
+        }
 
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        let state = { userId: '', links: [], categories: [], currentFilter: 'all' };
-        let linkSortables = [], catSortable = null;
-        const ghibliColors = ["#8fb4a2", "#5c8a97", "#d6a278", "#e3b04b", "#9b8b7a", "#a8c69f", "#7892a0", "#c8a49a"];
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-reading-app';
+        const ESTIMATE_WORDS_PER_PAGE = 350;
+        const DEFAULT_CATEGORIES = ["玄幻", "奇幻", "武俠", "仙俠", "都市", "言情", "古代", "架空", "科幻", "懸疑", "推理", "驚悚", "耽美", "百合", "穿越", "重生", "系統", "末世", "種田"];
 
-        function renderLoginHistory() {
-            const history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            const container = document.getElementById('login-history');
-            container.innerHTML = '';
-            
-            history.forEach(id => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'flex items-center bg-[#f0ede4] rounded-full px-3 py-1 gap-1 border border-[#d1c7b7]';
-                
-                const idBtn = document.createElement('button');
-                idBtn.className = 'text-[10px] text-[#6b5e51] font-bold hover:text-[#4a3f35]';
-                idBtn.textContent = id;
-                idBtn.onclick = () => { document.getElementById('userInput').value = id; handleLogin(); };
-                
-                const delBtn = document.createElement('button');
-                delBtn.className = 'text-[10px] text-red-300 hover:text-red-500 ml-1 pl-1 border-l border-[#d1c7b7]';
-                delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removeHistoryId(id);
-                };
-                
-                wrapper.appendChild(idBtn);
-                wrapper.appendChild(delBtn);
-                container.appendChild(wrapper);
-            });
-        }
+        const StarRating = ({ rating, setRating, interactive = false, size = 16 }) => (
+            <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((index) => {
+                    const filled = rating >= index;
+                    const half = rating >= index - 0.5 && !filled;
+                    return (
+                        <div key={index} className={`relative ${interactive ? 'cursor-pointer' : ''}`}
+                            onClick={(e) => {
+                                if (!interactive) return;
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setRating((e.clientX - rect.left) < rect.width / 2 ? index - 0.5 : index);
+                            }}>
+                            <Star size={interactive ? 24 : size} className="text-stone-200" />
+                            <div className="absolute top-0 left-0 overflow-hidden" style={{ width: filled ? '100%' : half ? '50%' : '0%' }}>
+                                <Star size={interactive ? 24 : size} className="fill-gold-400 text-gold-400" />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
 
-        window.removeHistoryId = (id) => {
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            history = history.filter(item => item !== id);
-            localStorage.setItem('url_manager_history', JSON.stringify(history));
-            renderLoginHistory();
-        };
-
-        window.handleLogin = () => {
-            const id = document.getElementById('userInput').value.trim();
-            if (!id) return;
-            state.userId = id;
-            let history = JSON.parse(localStorage.getItem('url_manager_history') || '[]');
-            if (!history.includes(id)) {
-                history.unshift(id);
-                localStorage.setItem('url_manager_history', JSON.stringify(history.slice(0, 10)));
-            }
-            localStorage.setItem('url_manager_current_user', id);
-            document.getElementById('display-user-id').textContent = id;
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('app-content').classList.remove('hidden');
-            initDataListeners();
-        };
-
-        window.handleLogout = () => {
-            if (confirm('切換使用者？')) {
-                localStorage.removeItem('url_manager_current_user');
-                location.reload();
-            }
-        };
-
-        function initDataListeners() {
-            onValue(ref(db, `users/${state.userId}/links`), (snapshot) => {
-                const data = snapshot.val();
-                state.links = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.links.sort((a, b) => (a.order || 0) - (b.order || 0));
-                renderFilterBar(); checkAndRender();
-            });
-            onValue(ref(db, `users/${state.userId}/categories`), (snapshot) => {
-                const data = snapshot.val();
-                state.categories = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                state.categories.sort((a, b) => (a.order || 0) - (b.order || 0));
-                updateCategoryDropdowns(); renderFilterBar(); checkAndRender();
-            });
-        }
-
-        function getCatColor(id) {
-            if (id === 'all') return "#4a3f35";
-            if (id === 'uncategorized') return "#9b8b7a";
-            let hash = 0; for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-            return ghibliColors[Math.abs(hash) % ghibliColors.length];
-        }
-
-        function renderFilterBar() {
-            const bar = document.getElementById('filter-bar'); bar.innerHTML = '';
-            if(catSortable) catSortable.destroy();
-            bar.appendChild(createFilterChip('全部', 'all'));
-            state.categories.forEach(cat => {
-                const chip = createFilterChip(cat.name, cat.id);
-                chip.dataset.catId = cat.id; bar.appendChild(chip);
-            });
-            if (state.links.some(l => !l.categoryId || !state.categories.find(c => c.id === l.categoryId)))
-                bar.appendChild(createFilterChip('未分類', 'uncategorized'));
-            catSortable = Sortable.create(bar, {
-                animation: 200, delay: 200, filter: '.static-chip',
-                onEnd: () => {
-                    const updates = {}; let idx = 0;
-                    Array.from(bar.children).forEach(el => { if(el.dataset.catId) updates[`users/${state.userId}/categories/${el.dataset.catId}/order`] = idx++; });
-                    update(ref(db), updates);
-                }
-            });
-        }
-
-        function createFilterChip(text, filterId) {
-            const btn = document.createElement('button');
-            const isActive = state.currentFilter === filterId, color = getCatColor(filterId);
-            btn.className = `filter-chip ${isActive ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.style.borderColor = color;
-            btn.style.backgroundColor = isActive ? color : "#ffffff";
-            btn.style.color = isActive ? "#ffffff" : color;
-            
-            if (filterId === 'all' || filterId === 'uncategorized') btn.classList.add('static-chip');
-            btn.onclick = () => { state.currentFilter = filterId; renderFilterBar(); checkAndRender(); };
-            return btn;
-        }
-
-        function renderMain(filterText = '') {
-            const container = document.getElementById('main-container'); 
-            container.innerHTML = '';
-            
-            // 清除舊的 Sortable 實例
-            linkSortables.forEach(s => s.destroy());
-            linkSortables = [];
-
-            const term = filterText.toLowerCase(); let hasData = false;
-            const renderBlock = (cat, links, isUncat) => {
-                if (links.length > 0) {
-                    const ul = document.createElement('ul'); ul.className = 'space-y-3 min-h-[10px]';
-                    links.forEach(link => {
-                        const li = document.createElement('li');
-                        li.dataset.id = link.id; // 用於排序識別
-                        li.className = `bg-white p-4 ghibli-shadow rounded-2xl flex items-center gap-3 transition-all hover:bg-[#faf9f6]`;
-                        
-                        const catColor = isUncat ? '#9b8b7a' : getCatColor(cat.id);
-                        const tag = (state.currentFilter === 'all' || state.currentFilter === 'uncategorized') 
-                            ? `<span class="item-tag" style="color:${catColor}; border-color:${catColor}; background-color:${catColor}10">${cat.name}</span>` 
-                            : '';
-
-                        const displayDesc = link.desc && link.desc.trim() !== "" ? link.desc : "[ 無標題 ]";
-
-                        li.innerHTML = `<div class="flex-grow min-w-0"><div class="flex items-center"><span class="item-title truncate">${displayDesc}</span>${tag}</div><div class="item-url font-mono"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div></div><div class="flex flex-col gap-1 flex-shrink-0 border-l-2 border-[#f0ede4] pl-2"><button onclick="copyToClipboard(this, '${link.desc || ''}', '${link.url}')" class="text-[#b7ad9d] hover:text-[#8fb4a2] p-1.5"><i class="fa-regular fa-copy"></i></button><button onclick="openEditModal('${link.id}', '${link.desc || ''}', '${link.url}', '${link.categoryId || ''}')" class="text-[#b7ad9d] hover:text-[#5c8a97] p-1.5"><i class="fa-solid fa-pen"></i></button></div>`;
-                        ul.appendChild(li);
-                    });
-                    container.appendChild(ul); 
-                    hasData = true;
-
-                    // 為每個列表初始化排序功能
-                    const s = Sortable.create(ul, {
-                        animation: 250,
-                        ghostClass: "sortable-ghost",
-                        placeholderClass: "sortable-placeholder",
-                        delay: 150, // 增加延遲避免與點擊網址衝突
-                        onEnd: () => {
-                            const updates = {};
-                            Array.from(ul.children).forEach((el, idx) => {
-                                updates[`users/${state.userId}/links/${el.dataset.id}/order`] = idx;
-                            });
-                            update(ref(db), updates);
-                        }
-                    });
-                    linkSortables.push(s);
+        const CategoryPicker = ({ selectedCategories, onToggle, allCategories, onAddNew, onDelete }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [filterText, setFilterText] = useState('');
+            const filtered = useMemo(() => allCategories.filter(c => c.toLowerCase().includes(filterText.toLowerCase())), [allCategories, filterText]);
+            const handleKeyDown = async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const tags = filterText.trim().split(/[，,\s]+/).filter(t => t !== "");
+                    for (const tag of tags) { if (!selectedCategories.includes(tag)) { if (allCategories.includes(tag)) onToggle(tag); else await onAddNew(tag); } }
+                    setFilterText('');
                 }
             };
+            return (
+                <div className="w-full">
+                    <div className="flex flex-wrap gap-2 items-center p-1 border-b border-stone-200 font-normal">
+                        {selectedCategories.map(cat => (
+                            <span key={cat} className="bg-wood-400 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                                {cat} <X size={10} className="cursor-pointer" onClick={() => onToggle(cat)}/>
+                            </span>
+                        ))}
+                        <button type="button" onClick={() => setIsOpen(!isOpen)} className="text-[10px] text-wood-500 hover:bg-wood-100 px-2 py-1 rounded-full transition-colors flex items-center gap-1">
+                            {isOpen ? '收起' : <><Plus size={10}/> 選擇分類</>}
+                        </button>
+                    </div>
+                    {isOpen && (
+                        <div className="mt-2 p-3 bg-white rounded-xl border border-stone-200 animate-fade-in relative z-10">
+                            <input placeholder="搜尋或新增..." value={filterText} onChange={e => setFilterText(e.target.value)} onKeyDown={handleKeyDown} className="w-full mb-2 p-1.5 border rounded-lg text-xs outline-none" />
+                            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
+                                {filtered.map(cat => (
+                                    <div key={cat} className="group relative">
+                                        <button type="button" onClick={() => onToggle(cat)} className={`text-[10px] px-2 py-1 rounded-full border transition ${selectedCategories.includes(cat) ? 'bg-wood-500 text-white' : 'bg-white text-stone-600 border-stone-200'}`}>{cat}</button>
+                                        <button type="button" onClick={(e) => { e.stopPropagation(); if(confirm(`刪除「${cat}」？`)) onDelete(cat, e); }} className="absolute -top-1 -right-1 bg-white text-stone-300 rounded-full p-0.5 border border-stone-100 opacity-0 group-hover:opacity-100"><X size={8}/></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
-            if (state.currentFilter === 'all') {
-                state.categories.forEach(cat => renderBlock(cat, state.links.filter(l => l.categoryId === cat.id && matchFilter(l, term)), false));
-                renderBlock({id:'uncategorized', name:'未分類'}, state.links.filter(l => (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) && matchFilter(l, term)), true);
-            } else {
-                const activeCat = state.currentFilter === 'uncategorized' ? {id:'uncategorized', name:'未分類'} : state.categories.find(c => c.id === state.currentFilter);
-                if (activeCat) renderBlock(activeCat, state.links.filter(l => ((state.currentFilter==='uncategorized') ? (!l.categoryId || !state.categories.find(c => c.id === l.categoryId)) : (l.categoryId===state.currentFilter)) && matchFilter(l, term)), state.currentFilter==='uncategorized');
+        function App() {
+            const [user, setUser] = useState(null);
+            const [books, setBooks] = useState([]);
+            const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+            const [loading, setLoading] = useState(true);
+            const [customId, setCustomId] = useState(localStorage.getItem('reading_tracker_id') || '');
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [toast, setToast] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [yearFilter, setYearFilter] = useState(null);
+            const [ratingFilter, setRatingFilter] = useState(0);
+            const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+            const [isSearching, setIsSearching] = useState(false);
+            const [isRatingMenuOpen, setIsRatingMenuOpen] = useState(false);
+            const [modalType, setModalType] = useState(null);
+            const [modalData, setModalData] = useState({});
+            const [activeBookId, setActiveBookId] = useState(null);
+            const [editingId, setEditingId] = useState(null);
+            const [inlineActionId, setInlineActionId] = useState(null);
+            const [inlineData, setInlineData] = useState({});
+            const [editForm, setEditForm] = useState({});
+            const [expandedBooks, setExpandedBooks] = useState({});
+            const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                        else await signInAnonymously(auth);
+                    } catch (err) { console.error("Auth Failed:", err); }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, (curr) => {
+                    setUser(curr);
+                    if (curr && customId) setIsLoggedIn(true);
+                });
+                return () => unsubscribe();
+            }, [customId]);
+
+            useEffect(() => {
+                if (!user || !isLoggedIn || !customId) { setLoading(false); return; }
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                const unsub = onSnapshot(collectionRef, (snapshot) => {
+                    const list = [];
+                    let fetchedCats = [...DEFAULT_CATEGORIES];
+                    snapshot.docs.forEach(doc => {
+                        if (doc.id === 'settings') { if (doc.data().categories) fetchedCats = doc.data().categories; }
+                        else list.push({ id: doc.id, ...doc.data() });
+                    });
+                    setCategories(fetchedCats);
+                    
+                    // 強化排序：Pinned -> 主要日期降序 -> 登記日期降序
+                    const sorted = list.sort((a, b) => {
+                        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                        const dateA = a.status === 'finished' ? a.finishDate : (a.status === 'dropped' ? a.dropDate : a.addDate);
+                        const dateB = b.status === 'finished' ? b.finishDate : (b.status === 'dropped' ? b.dropDate : b.addDate);
+                        if (dateA !== dateB) return new Date(dateB) - new Date(dateA);
+                        return new Date(b.addDate) - new Date(a.addDate);
+                    });
+                    
+                    setBooks(sorted);
+                    setLoading(false);
+                });
+                return () => unsub();
+            }, [user, isLoggedIn, customId]);
+
+            const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3000); };
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (customId.trim().length < 3) return showToast("ID 過短", "error");
+                localStorage.setItem('reading_tracker_id', customId);
+                setIsLoggedIn(true);
+            };
+
+            const searchBookInfo = async (target, setter) => {
+                if (!target.title) return;
+                setIsSearching(true);
+                try {
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${target.title}${target.author ? `+inauthor:${target.author}` : ''}&maxResults=1`);
+                    const data = await res.json();
+                    if (data.items?.length > 0) {
+                        const info = data.items[0].volumeInfo;
+                        setter(prev => ({ ...prev, author: prev.author || info.authors?.[0] || '', wordCount: (info.pageCount || 0) * ESTIMATE_WORDS_PER_PAGE, synopsis: info.description || '' }));
+                        showToast("找到資料！");
+                    } else showToast("無搜尋結果", "error");
+                } catch (err) { showToast("搜尋失敗", "error"); } finally { setIsSearching(false); }
+            };
+
+            const handleUpdateCategories = async (newCats) => {
+                setCategories(newCats);
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, 'settings');
+                await setDoc(settingsRef, { categories: newCats }, { merge: true });
+            };
+
+            const stats = useMemo(() => {
+                const res = { reading: 0, finished: 0, dropped: 0, years: {} };
+                books.forEach(b => {
+                    if (b.status === 'reading') res.reading++;
+                    else {
+                        if (b.status === 'finished') res.finished++; else res.dropped++;
+                        const rawDate = b.status === 'finished' ? b.finishDate : b.dropDate;
+                        if (rawDate) {
+                            const y = rawDate.split(/[-/]/)[0];
+                            if (y && y.length === 4) {
+                                if (!res.years[y]) res.years[y] = { f: 0, d: 0 };
+                                if (b.status === 'finished') res.years[y].f++; else res.years[y].d++;
+                            }
+                        }
+                    }
+                });
+                return { ...res, sortedYears: Object.keys(res.years).sort((a, b) => b - a) };
+            }, [books]);
+
+            const filteredBooks = useMemo(() => {
+                const term = searchTerm.toLowerCase();
+                return books.filter(b => {
+                    const matchStatus = statusFilter === 'all' || b.status === statusFilter;
+                    const matchRating = ratingFilter === 0 || (b.rating || 0) >= ratingFilter;
+                    const matchTerm = b.title.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term) || b.category?.some(c => c.toLowerCase().includes(term));
+                    
+                    let matchYear = true;
+                    if (yearFilter) {
+                        const bDate = b.status === 'finished' ? b.finishDate : (b.status === 'dropped' ? b.dropDate : null);
+                        matchYear = bDate && bDate.startsWith(yearFilter);
+                    }
+                    
+                    return matchStatus && matchRating && matchTerm && matchYear;
+                });
+            }, [books, statusFilter, ratingFilter, searchTerm, yearFilter]);
+
+            const updateBook = async (id, data) => {
+                const bookRef = doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, id);
+                await updateDoc(bookRef, data);
+                setEditingId(null); 
+                setInlineActionId(null);
+                showToast("更新成功");
+            };
+
+            const handleInlineSubmit = async (id, type) => {
+                let updates = {};
+                if (type === 'finish') {
+                    updates = { status: 'finished', finishDate: inlineData.date, rating: inlineData.rating || 0, review: inlineData.review || '', isPinned: false };
+                } else if (type === 'drop') {
+                    updates = { status: 'dropped', dropChapter: inlineData.chapter, dropDate: inlineData.date, isPinned: false };
+                }
+                await updateBook(id, updates);
+            };
+
+            const addBook = async (e) => {
+                e.preventDefault();
+                if (!newBook.title) return;
+                try {
+                    const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`);
+                    await addDoc(collectionRef, { ...newBook, status: 'reading', createdAt: serverTimestamp() });
+                    setNewBook({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+                    setIsAddFormOpen(false);
+                    showToast("新增成功！");
+                } catch (err) { showToast("儲存失敗", "error"); }
+            };
+
+            if (!isLoggedIn) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 bg-paper">
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl w-full max-w-md text-center border border-stone-200">
+                            <BookOpen size={64} className="mx-auto text-wood-300 mb-6" />
+                            <h1 className="text-4xl font-title mb-2 tracking-widest text-ink">雲端書櫃</h1>
+                            <p className="text-sub mb-8">請輸入 ID 開啟你的閱讀空間</p>
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <input value={customId} onChange={e => setCustomId(e.target.value)} placeholder="你的專屬 ID" className="w-full p-4 rounded-2xl border text-center text-lg outline-none focus:ring-2 focus:ring-wood-200 transition-all" />
+                                <button className="w-full bg-wood-500 text-white py-4 rounded-2xl font-title shadow-lg hover:bg-wood-600 transition-all">進入書房</button>
+                            </form>
+                        </div>
+                    </div>
+                );
             }
-            document.getElementById('empty-msg').classList.toggle('hidden', hasData);
+
+            return (
+                <div className="min-h-screen max-w-3xl mx-auto p-4 md:p-6 space-y-6 pb-20 bg-paper">
+                    {toast && <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl animate-fade-in text-white flex items-center gap-2 ${toast.type === 'error' ? 'bg-dried-500' : 'bg-wood-500'}`}>{toast.message}</div>}
+                    
+                    <header className="flex justify-between items-center py-4 border-b border-stone-200">
+                        <div className="flex items-center gap-2 text-xl tracking-widest text-ink font-title"><BookOpen className="text-wood-400"/> 閱讀手帳</div>
+                        <div className="flex items-center gap-4 text-xs text-sub">
+                            <span>ID: {customId}</span>
+                            <button onClick={() => { setIsLoggedIn(false); localStorage.removeItem('reading_tracker_id'); }}><LogOut size={18}/></button>
+                        </div>
+                    </header>
+
+                    <section className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center overflow-hidden soft-shadow">
+                                <div><p className="text-xs text-sub mb-1">未讀</p><p className="text-2xl text-ink font-normal">{stats.reading}</p></div>
+                                <Hourglass className="text-wood-100 -mr-4" size={48} />
+                            </div>
+                            <div className="bg-sage-50 p-4 rounded-2xl border border-sage-100 flex justify-between items-center overflow-hidden soft-shadow">
+                                <div><p className="text-xs text-wood-500 mb-1">累計完食</p><p className="text-2xl text-ink font-normal">{stats.finished}</p></div>
+                                <Trophy className="text-wood-200 -mr-4" size={48} />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 px-1 flex-nowrap">
+                            {stats.sortedYears.map(y => (
+                                <div key={y} 
+                                     onClick={() => setYearFilter(yearFilter === y ? null : y)}
+                                     className={`p-3 rounded-xl border flex flex-col items-center min-w-[120px] shrink-0 soft-shadow transition-all cursor-pointer ${yearFilter === y ? 'bg-wood-500 border-wood-600' : 'bg-white/60 border-stone-100'}`}>
+                                    <span className={`text-xs mb-2 font-title ${yearFilter === y ? 'text-white' : 'text-wood-400'}`}>{y} 年度</span>
+                                    <div className="flex gap-4 w-full justify-center items-center text-center font-normal">
+                                        <div><div className={`text-lg ${yearFilter === y ? 'text-white' : 'text-sage-500'}`}>{stats.years[y].f}</div><div className={`text-[9px] ${yearFilter === y ? 'text-wood-100' : 'text-sub'}`}>完食</div></div>
+                                        <div className={`h-4 w-[1px] ${yearFilter === y ? 'bg-wood-400' : 'bg-stone-200'}`}></div>
+                                        <div><div className={`text-lg ${yearFilter === y ? 'text-white' : 'text-dried-500'}`}>{stats.years[y].d}</div><div className={`text-[9px] ${yearFilter === y ? 'text-wood-100' : 'text-sub'}`}>棄書</div></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="bg-white rounded-3xl border border-stone-200 overflow-hidden soft-shadow transition-all">
+                        <div onClick={() => setIsAddFormOpen(!isAddFormOpen)} className="p-5 flex justify-between cursor-pointer hover:bg-stone-50 transition-colors font-normal">
+                            <div className="flex items-center gap-2 text-ink font-title"><PenTool className="text-wood-400" size={18} /> 紀錄新書</div>
+                            {isAddFormOpen ? <ChevronUp className="text-stone-400"/> : <Plus className="text-wood-400"/>}
+                        </div>
+                        {isAddFormOpen && (
+                            <form onSubmit={addBook} className="p-6 pt-0 space-y-4 border-t border-stone-50 pt-5 animate-fade-in font-normal">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                    <div className="md:col-span-5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">書名</label><input placeholder="書名" value={newBook.title} onChange={e=>setNewBook({...newBook, title:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300 font-title" required /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">作者</label><input placeholder="作者" value={newBook.author} onChange={e=>setNewBook({...newBook, author:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none focus:border-wood-300" /></div>
+                                    <div className="md:col-span-3 flex items-end"><button type="button" onClick={()=>searchBookInfo(newBook, setNewBook)} disabled={isSearching || !newBook.title} className="w-full h-10 bg-stone-100 hover:bg-stone-200 text-wood-500 rounded-lg text-sm flex items-center justify-center gap-2 transition disabled:opacity-50 font-normal">{isSearching ? <RefreshCw className="animate-spin" size={16}/> : <Search size={16}/>} 搜尋</button></div>
+                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">分類標籤</label><CategoryPicker selectedCategories={newBook.category} allCategories={categories} onToggle={c => setNewBook(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">字數/頁數</label><input type="number" placeholder="字數/頁數" value={newBook.wordCount} onChange={e=>setNewBook({...newBook, wordCount:e.target.value, isWordCountManual:true})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={newBook.addDate} onChange={e=>setNewBook({...newBook, addDate:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 text-sub outline-none" /></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] text-stone-400 uppercase tracking-tighter">推薦連結</label><input placeholder="URL" value={newBook.reviewUrl} onChange={e=>setNewBook({...newBook, reviewUrl:e.target.value})} className="w-full p-2 bg-transparent border-b border-stone-200 outline-none" /></div>
+                                    <div className="md:col-span-12"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea placeholder="..." value={newBook.synopsis} onChange={e=>setNewBook({...newBook, synopsis:e.target.value})} className="w-full p-3 bg-stone-50 rounded-xl h-32 outline-none resize-none font-normal" /></div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-2 font-normal"><button type="submit" className="bg-wood-500 text-white px-8 py-2 rounded-xl shadow-lg hover:bg-wood-600 font-title transition-all">存入書櫃</button></div>
+                            </form>
+                        )}
+                    </section>
+
+                    <div className="space-y-3 font-normal">
+                        <div className="flex flex-wrap items-center justify-between gap-3 font-normal">
+                            <div className="flex gap-1.5 bg-white p-1 rounded-xl shadow-inner border border-stone-200">
+                                {['all', 'reading', 'finished', 'dropped'].map(f => (
+                                    <button key={f} onClick={() => setStatusFilter(f)} className={`px-4 py-1.5 rounded-lg text-xs transition-all ${statusFilter===f ? 'bg-wood-400 text-white shadow-sm font-normal' : 'text-stone-400 font-normal'}`}>
+                                        {f==='all'?'全部':f==='reading'?'未讀':f==='finished'?'已完食':'棄書'}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="relative">
+                                <button onClick={() => setIsRatingMenuOpen(!isRatingMenuOpen)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all border font-normal ${ratingFilter > 0 ? 'bg-gold-400 text-white' : 'bg-white text-stone-500 border-stone-200'}`}>
+                                    <Star size={14} className={ratingFilter > 0 ? 'fill-white' : ''} /> {ratingFilter === 0 ? '評分' : `${ratingFilter} 星+`}
+                                </button>
+                                {isRatingMenuOpen && (
+                                    <div className="absolute left-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 z-40 overflow-hidden animate-fade-in">
+                                        {[0, 4.5, 4, 3].map(val => (
+                                            <button key={val} onClick={() => { setRatingFilter(val); setIsRatingMenuOpen(false); }} className="w-full text-left px-4 py-2 text-xs hover:bg-stone-50 text-sub font-normal">{val === 0 ? '全部評分' : `${val} 星+`}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="relative group"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" /></div>
+                    </div>
+
+                    <div className="grid gap-5">
+                        {loading ? <div className="text-center py-10 text-stone-400 font-normal">讀取中...</div> : filteredBooks.map(book => (
+                            <div key={book.id} className="bg-white p-5 rounded-[2rem] border border-stone-200 shadow-sm flex flex-col md:flex-row gap-5 relative overflow-hidden group/card font-normal">
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${book.status==='finished'?'bg-sage-500':book.status==='dropped'?'bg-dried-500':'bg-stone-200'}`}></div>
+                                <div className="flex-1 space-y-1.5">
+                                    {editingId === book.id ? (
+                                        <div className="space-y-3 p-0.5 animate-fade-in font-normal">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">書名</label><input value={editForm.title} onChange={e=>setEditForm({...editForm, title:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent font-title" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">作者</label><input value={editForm.author} onChange={e=>setEditForm({...editForm, author:e.target.value})} className="w-full p-1.5 border-b outline-none focus:border-wood-400 bg-transparent" /></div>
+                                            </div>
+                                            <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                            </div>
+                                            <div className="space-y-0.5 font-normal"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">故事大綱</label><textarea value={editForm.synopsis} onChange={e=>setEditForm({...editForm, synopsis:e.target.value})} className="w-full p-2 border rounded-lg h-40 text-xs bg-stone-50 outline-none resize-none font-normal" /></div>
+                                            <div className="flex justify-end gap-2 font-normal"><button onClick={()=>setEditingId(null)} className="px-3 py-1 text-xs text-sub font-normal">取消</button><button onClick={()=>updateBook(book.id, editForm)} className="bg-wood-500 text-white px-5 py-1.5 rounded-lg text-xs font-title">儲存</button></div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex flex-wrap gap-1.5 items-center font-normal">
+                                                {book.category?.map(c => <span key={c} onClick={() => setSearchTerm(c)} className="text-[10px] bg-stone-100 px-2 py-0.5 rounded-full text-stone-400 cursor-pointer hover:bg-wood-100 transition-colors font-normal">{c}</span>)}
+                                                {book.isPinned && <span className="bg-wood-50 p-1 rounded-md border border-wood-100 font-normal"><Pin size={10} className="text-wood-500 fill-wood-500"/></span>}
+                                            </div>
+                                            <h3 className="text-xl font-title text-ink leading-tight">{book.title}</h3>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-sub opacity-70 font-normal">
+                                                <span className="flex items-center gap-1 font-normal"><User size={12}/> {book.author || '佚名'}</span>
+                                                <span className="flex items-center gap-1 font-normal"><TrendingUp size={12}/> {book.wordCount ? `${Number(book.wordCount).toLocaleString()}字` : '未知'}</span>
+                                                <span className="flex items-center gap-1 font-normal"><Calendar size={12}/> {book.addDate}</span>
+                                            </div>
+                                            
+                                            {/* 已完食顯示區 */}
+                                            {book.status === 'finished' && (
+                                                <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100 font-normal">
+                                                    <div className="flex justify-between items-center mb-1 font-normal"><span className="text-[10px] text-sage-600 flex items-center gap-1 font-normal"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
+                                                    {book.review && <p className="text-xs text-sage-text font-normal whitespace-pre-wrap">「{book.review}」</p>}
+                                                </div>
+                                            )}
+                                            
+                                            {/* 棄書顯示區 */}
+                                            {book.status === 'dropped' && <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text font-normal"><p className="flex items-center gap-1 font-normal"><BookX size={12}/> {book.dropDate} 第 {book.dropChapter || '?'} 章棄書</p></div>}
+                                            
+                                            {/* 行內紀錄完食/棄書區 */}
+                                            {inlineActionId === book.id && (
+                                                <div className="mt-3 p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 animate-fade-in">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h4 className="text-xs font-title text-wood-500">{modalType === 'finish' ? '紀錄完食細節' : '紀錄棄書原因'}</h4>
+                                                        <button onClick={() => setInlineActionId(null)}><X size={14} className="text-stone-400"/></button>
+                                                    </div>
+                                                    {modalType === 'finish' ? (
+                                                        <div className="space-y-3">
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
+                                                                <div className="flex flex-col items-center justify-end pb-1"><StarRating rating={inlineData.rating || 0} setRating={r => setInlineData({...inlineData, rating: r})} interactive={true} size={14} /></div>
+                                                            </div>
+                                                            <textarea placeholder="寫下你的心得...(支援換行)" value={inlineData.review} onChange={e=>setInlineData({...inlineData, review:e.target.value})} className="w-full p-2 text-xs border rounded-lg h-24 resize-none" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="space-y-1"><label className="text-[10px] text-sub">日期</label><input type="date" value={inlineData.date} onChange={e=>setInlineData({...inlineData, date:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
+                                                            <div className="space-y-1"><label className="text-[10px] text-sub">進度(章節)</label><input placeholder="例：45" value={inlineData.chapter} onChange={e=>setInlineData({...inlineData, chapter:e.target.value})} className="w-full p-1.5 text-xs border rounded-lg" /></div>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-end">
+                                                        <button onClick={() => handleInlineSubmit(book.id, modalType)} className="bg-wood-500 text-white px-4 py-1.5 rounded-lg text-xs font-title">確認更新</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {book.synopsis && <button onClick={()=>setExpandedBooks(p=>({...p,[book.id]:!p[book.id]}))} className="text-[10px] text-stone-400 flex items-center gap-1 font-normal"><FileText size={12}/> 大綱</button>}
+                                            {expandedBooks[book.id] && <p className="text-xs text-sub bg-stone-50 p-2 rounded-lg mt-1 whitespace-pre-wrap font-normal">{book.synopsis}</p>}
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex flex-row md:flex-col gap-2 justify-end shrink-0 md:w-10 font-normal">
+                                    <button onClick={() => { setEditingId(book.id); setEditForm({...book}); }} className="h-10 w-10 flex items-center justify-center text-stone-300 hover:text-wood-500 bg-stone-50 rounded-xl" title="編輯"><Edit3 size={18}/></button>
+                                    {book.status === 'reading' ? (
+                                        <>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('finish'); setInlineData({ date: new Date().toISOString().split('T')[0], rating: 0, review: '' }); }} className="h-10 w-10 flex items-center justify-center text-sage-600 bg-sage-50 rounded-xl border border-sage-100" title="完食"><CheckCircle size={18}/></button>
+                                            <button onClick={() => { setInlineActionId(book.id); setModalType('drop'); setInlineData({ date: new Date().toISOString().split('T')[0], chapter: '' }); }} className="h-10 w-10 flex items-center justify-center text-dried-500 bg-dried-50 rounded-xl border border-dried-100" title="棄書"><BookX size={18}/></button>
+                                        </>
+                                    ) : <button onClick={() => updateBook(book.id, { status:'reading', finishDate:null, dropChapter:null, dropDate:null, rating:null, review:null })} className="h-10 w-10 flex items-center justify-center text-stone-400 bg-stone-50 rounded-xl font-normal" title="重讀"><RotateCcw size={18}/></button>}
+                                    <button onClick={(e) => { e.stopPropagation(); updateBook(book.id, { isPinned: !book.isPinned }); }} className={`h-10 w-10 flex items-center justify-center rounded-xl border ${book.isPinned ? 'bg-wood-500 text-white border-wood-600' : 'bg-white text-stone-300 border-stone-100'} font-normal`}>{book.isPinned ? <PinOff size={16}/> : <Pin size={16}/>}</button>
+                                    <button onClick={() => { if(confirm('刪除？')) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `reading_list_${customId}`, book.id)); }} className="h-10 w-10 flex items-center justify-center text-stone-200 hover:text-dried-500 font-normal"><Trash2 size={16}/></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
         }
 
-        function matchFilter(item, term) { return !term || item.desc?.toLowerCase().includes(term) || item.url?.toLowerCase().includes(term); }
-        function checkAndRender() { document.getElementById('loading').style.display = 'none'; document.getElementById('main-container').classList.remove('hidden'); renderMain(document.getElementById('searchInput').value); }
-        window.switchTab = (t) => { document.getElementById('panel-link').classList.toggle('hidden', t!=='link'); document.getElementById('panel-category').classList.toggle('hidden', t!=='category'); document.getElementById('tab-link').classList.toggle('active', t==='link'); document.getElementById('tab-category').classList.toggle('active', t==='category'); };
-        window.openEditModal = (k, d, u, c) => { document.getElementById('editKey').value = k; document.getElementById('editDesc').value = d; document.getElementById('editUrl').value = u; document.getElementById('editCatId').value = c || ""; document.getElementById('editModal').classList.remove('hidden'); };
-        window.closeEditModal = () => document.getElementById('editModal').classList.add('hidden');
-        
-        window.copyToClipboard = (b, d, u) => { 
-            const textToCopy = d && d.trim() !== "" ? `${d} - ${u}` : u;
-            navigator.clipboard.writeText(textToCopy).then(() => { 
-                const icon = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-check text-[#8fb4a2]"></i>'; 
-                setTimeout(() => b.innerHTML = icon, 1000); 
-            }); 
-        };
-
-        function updateCategoryDropdowns() { let opts = '<option value="">未分類</option>'; state.categories.forEach(cat => opts += `<option value="${cat.id}">${cat.name}</option>`); document.getElementById('newLinkCat').innerHTML = document.getElementById('editCatId').innerHTML = opts; }
-        
-        window.addItem = () => { 
-            const desc = document.getElementById('newDesc').value.trim();
-            const url = document.getElementById('newUrl').value.trim();
-            const catId = document.getElementById('newLinkCat').value; 
-            if (!url) return; 
-            push(ref(db, `users/${state.userId}/links`), { 
-                desc: desc || "", 
-                url: url, 
-                categoryId: catId || null, 
-                order: 999 
-            }); 
-            document.getElementById('newDesc').value = document.getElementById('newUrl').value = ''; 
-        };
-
-        window.addCategory = () => { const name = document.getElementById('newCatName').value.trim(); if(!name) return; push(ref(db, `users/${state.userId}/categories`), { name, order: state.categories.length }); document.getElementById('newCatName').value = ''; switchTab('link'); };
-        
-        window.saveEdit = () => { 
-            const k = document.getElementById('editKey').value; 
-            update(ref(db, `users/${state.userId}/links/${k}`), { 
-                desc: document.getElementById('editDesc').value.trim() || "", 
-                url: document.getElementById('editUrl').value.trim(), 
-                categoryId: document.getElementById('editCatId').value || null 
-            }).then(closeEditModal); 
-        };
-
-        window.deleteCurrentItem = () => confirm('確定刪除？') && remove(ref(db, `users/${state.userId}/links/${document.getElementById('editKey').value}`)).then(closeEditModal);
-        document.getElementById('searchInput').addEventListener('input', (e) => renderMain(e.target.value));
-        
-        window.onload = () => {
-            renderLoginHistory();
-            const lastUser = localStorage.getItem('url_manager_current_user');
-            if (lastUser) { document.getElementById('userInput').value = lastUser; handleLogin(); }
-        };
+        createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
