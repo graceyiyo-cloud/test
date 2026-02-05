@@ -317,7 +317,6 @@
         }
     }
 
-    // 修改處：增加對重複日期的去重處理，確保同一天只取最後一個符合條件的區塊
     function parseLunchFile(text, targetMonth) {
         const lines = text.split(/\r?\n/);
         const result = {};
@@ -325,76 +324,64 @@
         let datePositions = [];
         nonMonthlyDates = [];
         
-        // 1. 找出所有日期的行索引
         lines.forEach((line, idx) => {
             const m = line.match(dateRegex);
             if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') });
         });
 
-        // 2. 暫存符合月份的「所有」區塊，同一日期可能有多個區塊
-        const tempDailyBlocks = {}; 
-
         datePositions.forEach((pos, i) => {
-            const formattedDate = pos.date.replace(/-/g, '.');
             if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
             
             const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
             const dayLines = lines.slice(pos.idx, nextIdx);
             
-            const hasMonthlyTag = dayLines.some(l => l.includes("$$月結"));
-            const isForced = forceIncludeDates.has(formattedDate);
+            const monthlyIndexInDay = dayLines.findLastIndex(l => l.includes("$$月結"));
+            const isForced = forceIncludeDates.has(pos.date.replace(/-/g, '.'));
 
-            if (hasMonthlyTag || isForced) {
-                let lunchIdx = dayLines.findLastIndex(l => l.trim().includes("午餐"));
-                if (lunchIdx !== -1) {
-                    // 關鍵：如果同一天有多個符合的區塊，這裡會一直覆蓋，最終只留下最後一個
-                    tempDailyBlocks[pos.date] = extractDayData(dayLines.slice(lunchIdx));
+            if (monthlyIndexInDay !== -1 || isForced) {
+                let searchLimit = (monthlyIndexInDay !== -1) ? monthlyIndexInDay : dayLines.length;
+                let relevantLines = dayLines.slice(0, searchLimit + 1);
+                
+                // 改良點：尋找「最後一筆接龍」的起始位置
+                // 如果有「午餐」則從最後一個午餐開始；如果沒有午餐只有「飲料」，則從最後一個飲料開始
+                let lunchIdx = relevantLines.findLastIndex(l => l.trim() === "午餐");
+                let drinkIdx = relevantLines.findLastIndex(l => l.trim().includes("飲料"));
+                
+                // 取兩者中較後的那個作為起點，若都沒有則不處理
+                let startIdx = Math.max(lunchIdx, drinkIdx);
+                
+                if (startIdx !== -1) {
+                    result[pos.date] = extractDayData(relevantLines.slice(startIdx));
                 }
             } else {
-                // 如果該區塊沒有月結標記，先存入非月結清單 (後續會過濾掉已被月結涵蓋的日期)
-                if (!nonMonthlyDates.includes(formattedDate)) {
-                    nonMonthlyDates.push(formattedDate);
-                }
+                nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
             }
         });
-
-        // 3. 最終整理：如果某日期已經有了「月結」區塊，從「非月結清單」中移除該日期
-        const finalMonthlyDates = Object.keys(tempDailyBlocks);
-        nonMonthlyDates = nonMonthlyDates.filter(d => !finalMonthlyDates.includes(d.replace(/\./g, '-')));
-
-        return tempDailyBlocks;
+        return result;
     }
 
     function extractDayData(lines) {
         const dayData = {};
-        let mode = "meal";
+        // 預設模式：如果第一行就是飲料，則進入 drink，否則預設 meal
+        let mode = lines[0] && lines[0].includes("飲料") ? "drink" : "meal";
+        
         lines.forEach(line => {
             let t = line.trim();
-            // 如果遇到關鍵字切換模式
             if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
-            if (t.includes("午餐")) { mode = "meal"; return; }
-            if (!t || t.includes("$$月結") || t.includes("結單") || t.includes("總計")) return;
-
-            // 修正正則：為了相容 LINE 複製出的各種姓名格式 (包含可能有的特殊符號)
-            const nameMatch = t.match(/^([^\d\s\-:：]{1,10})\s*[-:：]{1,2}(.*)$/);
+            if (t === "午餐") { mode = "meal"; return; }
+            if (!t || t.includes("$$月結") || t.includes("結單")) return;
+            
+            const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
             if (nameMatch) {
                 let name = nameMatch[1].trim().replace(/^\$/, ''); 
-                if (name === "小計" || name === "總計") return;
+                if (name === "小計") return;
 
                 let content = nameMatch[2].trim();
                 if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
                 
-                // 優先找等號後的金額，再找最後的數字
-                let price = 0;
-                const priceMatch = content.match(/(\d+)$/);
-                if (content.includes('=')) {
-                    price = parseInt(content.split('=').pop().match(/\d+/));
-                } else if (priceMatch) {
-                    price = parseInt(priceMatch[0]);
-                } else {
-                    price = NaN;
-                }
-
+                // 提取價格
+                let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
+                
                 if (isNaN(price)) { 
                     dayData[name].hasError = true; 
                     dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
@@ -575,8 +562,10 @@
         
         const monthVal = document.getElementById('monthSelect').value; 
         let monthStr = "XX";
-        if (monthVal) {
-            monthStr = parseInt(monthVal.split('-')[1] || monthVal.split('.')[1], 10);
+        if (monthVal && monthVal.includes('-')) {
+            monthStr = parseInt(monthVal.split('-')[1], 10);
+        } else if (monthVal && monthVal.includes('.')) {
+            monthStr = parseInt(monthVal.split('.')[1], 10);
         }
 
         let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
@@ -587,10 +576,15 @@
                     showCopyFeedback('copyBtn'); 
                 })
                 .catch(err => {
-                    if(fallbackCopyText(txt)) showCopyFeedback('copyBtn'); 
+                    console.warn("Clipboard API failed, using fallback", err);
+                    if(fallbackCopyText(txt)) {
+                        showCopyFeedback('copyBtn'); 
+                    }
                 });
         } else {
-            if(fallbackCopyText(txt)) showCopyFeedback('copyBtn'); 
+            if(fallbackCopyText(txt)) {
+                showCopyFeedback('copyBtn'); 
+            }
         }
     });
 
@@ -620,7 +614,12 @@
         let success = false;
         try {
             success = document.execCommand('copy');
-        } catch (err) {}
+            if(!success) {
+                alert('複製失敗，請手動複製。');
+            }
+        } catch (err) {
+            alert('複製失敗，請手動複製。');
+        }
         document.body.removeChild(textArea);
         return success;
     }
@@ -645,6 +644,7 @@
                             showCopyFeedback('copyImgBtn', '✔️ 已複製！');
                             resetUI();
                         }).catch(err => {
+                            console.warn("Image copy failed, downloading instead", err);
                             downloadImage(canvas, personName);
                             showCopyFeedback('copyImgBtn', '✔️ 已下載');
                             resetUI();
@@ -656,6 +656,7 @@
                     }
                 });
             }).catch(err => {
+                console.error("html2canvas failed", err);
                 resetUI();
             });
         }, 150);
