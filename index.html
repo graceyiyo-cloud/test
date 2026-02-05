@@ -5,7 +5,7 @@
     <title>月結餐點費用統計</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* 保持原本莫蘭迪色系 (Morandi Colors) 定義，且不使用襯線體、斜體 */
+        /* 莫蘭迪色系 (Morandi Colors) 定義 */
         body { 
             font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif; 
             background: #F2F0EB; 
@@ -258,6 +258,7 @@
     let nonMonthlyDates = [];
     let currentSelectedUser = null; 
 
+    // 初始化載入
     window.onload = function() {
         loadFromLocalStorage();
     };
@@ -316,6 +317,7 @@
         }
     }
 
+    // 修改處：增加對重複日期的去重處理，確保同一天只取最後一個符合條件的區塊
     function parseLunchFile(text, targetMonth) {
         const lines = text.split(/\r?\n/);
         const result = {};
@@ -323,59 +325,82 @@
         let datePositions = [];
         nonMonthlyDates = [];
         
+        // 1. 找出所有日期的行索引
         lines.forEach((line, idx) => {
             const m = line.match(dateRegex);
             if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') });
         });
 
+        // 2. 暫存符合月份的「所有」區塊，同一日期可能有多個區塊
+        const tempDailyBlocks = {}; 
+
         datePositions.forEach((pos, i) => {
+            const formattedDate = pos.date.replace(/-/g, '.');
             if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
+            
             const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
             const dayLines = lines.slice(pos.idx, nextIdx);
-            if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
-                // 原本是只切最後一個「午餐」，現在我們抓取整個區塊進行去重解析
-                result[pos.date] = extractDayData(dayLines);
+            
+            const hasMonthlyTag = dayLines.some(l => l.includes("$$月結"));
+            const isForced = forceIncludeDates.has(formattedDate);
+
+            if (hasMonthlyTag || isForced) {
+                let lunchIdx = dayLines.findLastIndex(l => l.trim().includes("午餐"));
+                if (lunchIdx !== -1) {
+                    // 關鍵：如果同一天有多個符合的區塊，這裡會一直覆蓋，最終只留下最後一個
+                    tempDailyBlocks[pos.date] = extractDayData(dayLines.slice(lunchIdx));
+                }
             } else {
-                nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
+                // 如果該區塊沒有月結標記，先存入非月結清單 (後續會過濾掉已被月結涵蓋的日期)
+                if (!nonMonthlyDates.includes(formattedDate)) {
+                    nonMonthlyDates.push(formattedDate);
+                }
             }
         });
-        return result;
+
+        // 3. 最終整理：如果某日期已經有了「月結」區塊，從「非月結清單」中移除該日期
+        const finalMonthlyDates = Object.keys(tempDailyBlocks);
+        nonMonthlyDates = nonMonthlyDates.filter(d => !finalMonthlyDates.includes(d.replace(/\./g, '-')));
+
+        return tempDailyBlocks;
     }
 
     function extractDayData(lines) {
         const dayData = {};
-        let currentMode = "ignore"; // 預設先忽略，直到遇到午餐或飲料
-
+        let mode = "meal";
         lines.forEach(line => {
             let t = line.trim();
-            
-            // 切換模式：午餐或飲料都納入抓取範圍
-            if (t.includes("午餐")) { currentMode = "meal"; return; }
-            if (t.includes("飲料")) { currentMode = "drink"; return; }
-            if (t === "---") return;
-            if (!t || t.includes("$$月結") || t.includes("結單")) return;
-            if (currentMode === "ignore") return;
+            // 如果遇到關鍵字切換模式
+            if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
+            if (t.includes("午餐")) { mode = "meal"; return; }
+            if (!t || t.includes("$$月結") || t.includes("結單") || t.includes("總計")) return;
 
-            // 抓取 名字-品項=金額
-            const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
+            // 修正正則：為了相容 LINE 複製出的各種姓名格式 (包含可能有的特殊符號)
+            const nameMatch = t.match(/^([^\d\s\-:：]{1,10})\s*[-:：]{1,2}(.*)$/);
             if (nameMatch) {
                 let name = nameMatch[1].trim().replace(/^\$/, ''); 
-                if (name === "小計") return;
+                if (name === "小計" || name === "總計") return;
 
                 let content = nameMatch[2].trim();
-                let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
+                if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
                 
-                // 重點：如果同一天內同一個名字出現多次，我們會建立一個暫存空間，
-                // 每次出現都會覆寫，確保最後只保留「該區塊最後出現的一次紀錄」
+                // 優先找等號後的金額，再找最後的數字
+                let price = 0;
+                const priceMatch = content.match(/(\d+)$/);
+                if (content.includes('=')) {
+                    price = parseInt(content.split('=').pop().match(/\d+/));
+                } else if (priceMatch) {
+                    price = parseInt(priceMatch[0]);
+                } else {
+                    price = NaN;
+                }
+
                 if (isNaN(price)) { 
-                    dayData[name] = { total: 0, items: [{ text: "⚠️ " + content, price: 0 }], hasError: true }; 
+                    dayData[name].hasError = true; 
+                    dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
                 } else { 
-                    // 這裡不使用累加 +=，而是直接覆寫，因為 LINE 名單是疊加式的
-                    dayData[name] = { 
-                        total: price, 
-                        items: [{ text: content, price: price }], 
-                        hasError: false 
-                    }; 
+                    dayData[name].total += price; 
+                    dayData[name].items.push({ text: content, price: price }); 
                 }
             }
         });
@@ -385,6 +410,7 @@
     document.getElementById('fileInput').addEventListener('change', e => {
         if (!e.target.files[0]) return;
         clearAllData(true); 
+
         const reader = new FileReader();
         reader.onload = () => {
             rawFileText = reader.result;
@@ -490,11 +516,14 @@
     function handlePriceChange(name, detailIndex, newPrice, inputEl) {
         const val = parseInt(newPrice) || 0;
         personalStats[name].details[detailIndex].price = val;
+        
         inputEl.nextElementSibling.textContent = val.toLocaleString();
+
         const newTotal = personalStats[name].details.reduce((sum, d) => sum + d.price, 0);
         personalStats[name].total = newTotal;
         document.getElementById(`detail-total-${name}`).textContent = newTotal.toLocaleString();
         document.getElementById(`sum-${name}`).textContent = newTotal.toLocaleString();
+        
         let grand = 0;
         Object.keys(personalStats).forEach(n => { if (!excludedUsers.has(n)) grand += personalStats[n].total; });
         document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
@@ -506,8 +535,10 @@
         document.getElementById('selectedPersonName').innerHTML = name + (stats.error ? '<span class="red-star">*</span>' : '');
         document.getElementById('imgTitle').innerHTML = `【${name}${stats.error ? '<span style="color:#C76C6C">*</span>' : ''} 餐費明細】`;
         document.getElementById('copyBtn').style.display = document.getElementById('copyImgBtn').style.display = 'inline-block';
+        
         const box = document.getElementById('personalDetail');
         stats.details.sort((a,b)=>a.date.localeCompare(b.date));
+        
         box.innerHTML = stats.details.map((d, index) => `
             <div class="detail-row">
                 <span class="detail-content">${d.date.substring(5).replace('-','/')}：${d.text}</span>
@@ -541,25 +572,36 @@
     document.getElementById('copyBtn').addEventListener('click', () => {
         const name = currentSelectedUser;
         if (!name) return;
+        
         const monthVal = document.getElementById('monthSelect').value; 
         let monthStr = "XX";
         if (monthVal) {
             monthStr = parseInt(monthVal.split('-')[1] || monthVal.split('.')[1], 10);
         }
+
         let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
+        
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(txt).then(() => showCopyFeedback('copyBtn')).catch(() => fallbackCopyText(txt));
+            navigator.clipboard.writeText(txt)
+                .then(() => {
+                    showCopyFeedback('copyBtn'); 
+                })
+                .catch(err => {
+                    if(fallbackCopyText(txt)) showCopyFeedback('copyBtn'); 
+                });
         } else {
-            fallbackCopyText(txt);
+            if(fallbackCopyText(txt)) showCopyFeedback('copyBtn'); 
         }
     });
 
     function showCopyFeedback(btnId, msg = "✔️ 已複製！") {
         const btn = document.getElementById(btnId);
         const originalText = btn.innerHTML; 
+        
         btn.innerHTML = msg;
         btn.style.backgroundColor = "#5E7D75"; 
         btn.style.cursor = "default";
+        
         setTimeout(() => {
             btn.innerHTML = originalText;
             btn.style.backgroundColor = ""; 
@@ -575,25 +617,34 @@
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        try { document.execCommand('copy'); showCopyFeedback('copyBtn'); } catch (err) {}
+        let success = false;
+        try {
+            success = document.execCommand('copy');
+        } catch (err) {}
         document.body.removeChild(textArea);
+        return success;
     }
 
     document.getElementById('copyImgBtn').addEventListener('click', () => {
         const area = document.getElementById('captureArea');
         const imgTitle = document.getElementById('imgTitle');
         const personName = currentSelectedUser;
+        
         imgTitle.style.display = 'block';
         document.body.classList.add('capturing');
+        
         setTimeout(() => {
-            html2canvas(area, { scale: 2, backgroundColor: "#ffffff" }).then(canvas => {
+            html2canvas(area, { 
+                scale: 2, 
+                backgroundColor: "#ffffff" 
+            }).then(canvas => {
                 canvas.toBlob(blob => {
                     if (navigator.clipboard && navigator.clipboard.write) {
                         const item = new ClipboardItem({ "image/png": blob });
                         navigator.clipboard.write([item]).then(() => {
                             showCopyFeedback('copyImgBtn', '✔️ 已複製！');
                             resetUI();
-                        }).catch(() => {
+                        }).catch(err => {
                             downloadImage(canvas, personName);
                             showCopyFeedback('copyImgBtn', '✔️ 已下載');
                             resetUI();
@@ -604,9 +655,16 @@
                         resetUI();
                     }
                 });
-            }).catch(() => resetUI());
+            }).catch(err => {
+                resetUI();
+            });
         }, 150);
-        function resetUI() { imgTitle.style.display = 'none'; document.body.classList.remove('capturing'); }
+        
+        function resetUI() {
+            imgTitle.style.display = 'none';
+            document.body.classList.remove('capturing');
+        }
+        
         function downloadImage(canvas, name) {
             const link = document.createElement('a');
             link.download = `餐費明細-${name}.png`;
