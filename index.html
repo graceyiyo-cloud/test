@@ -191,26 +191,31 @@
                     });
                     setCategories(fetchedCats);
                     
-                    // 核心排序邏輯
+                    // 優化後的極限排序邏輯
                     const sorted = list.sort((a, b) => {
-                        // 1. 置頂優先
+                        // 1. 置頂優先 (Pinned at the very top)
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
                         
-                        // 2. 獲取排序參考日期 (完食日 > 棄書日 > 登記日)
-                        const getRefDate = (item) => {
-                            if (item.status === 'finished') return item.finishDate || '0000-00-00';
-                            if (item.status === 'dropped') return item.dropDate || '0000-00-00';
-                            return item.addDate || '0000-00-00';
+                        // 2. 定義各狀態的關鍵排序日期
+                        const getSortTime = (item) => {
+                            let dateStr = "";
+                            if (item.status === 'finished') dateStr = item.finishDate;
+                            else if (item.status === 'dropped') dateStr = item.dropDate;
+                            else dateStr = item.addDate;
+                            
+                            // 轉為 Date 物件比對數值，無日期者排最後
+                            const d = new Date(dateStr);
+                            return isNaN(d.getTime()) ? 0 : d.getTime();
                         };
 
-                        const dateA = getRefDate(a);
-                        const dateB = getRefDate(b);
+                        const timeA = getSortTime(a);
+                        const timeB = getSortTime(b);
 
-                        // 3. 由新到舊排序 (降序)
-                        if (dateA !== dateB) return dateB.localeCompare(dateA);
+                        // 3. 由新到舊 (大到小)
+                        if (timeA !== timeB) return timeB - timeA;
                         
-                        // 4. 同日期則依建立時間排序
-                        return b.createdAt?.seconds - a.createdAt?.seconds;
+                        // 4. 同日期則依系統建立時間排序
+                        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
 
                     setBooks(sorted);
