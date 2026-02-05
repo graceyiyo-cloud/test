@@ -56,12 +56,16 @@
             border: 1px solid #EBEBEB; 
             border-radius: 8px; 
             padding: 20px; 
-            min-height: 550px; 
+            min-height: 260px; /* 調整高度以容納兩個 section */
             background: #fff; 
             display: flex; 
             flex-direction: column;
             box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            margin-bottom: 25px;
         }
+
+        /* 讓左側兩個區塊垂直排列 */
+        .left-column { display: flex; flex-direction: column; }
         
         h3 { 
             margin-top: 0; 
@@ -80,13 +84,16 @@
             overflow-y: auto; 
             border: 1px solid #F5F5F5; 
             border-radius: 4px;
+            max-height: 400px;
         }
         
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #F0F0F0; }
         
         #summaryTable th:nth-child(2),
-        #summaryTable td:nth-child(2) {
+        #summaryTable td:nth-child(2),
+        #dailyTable th:nth-child(2),
+        #dailyTable td:nth-child(2) {
             text-align: right;
         }
         
@@ -210,31 +217,51 @@
         <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">手動清除所有緩存</button></div>
     </div>
     <div class="main-content">
-        <div class="section">
-            <h3>
-                <span>人員費用總計</span>
-                <span id="grandTotalDisplay" style="color: #5D4037;">0</span>
-            </h3>
-            <div class="scroll-area" id="summaryScrollArea">
-                <table id="summaryTable">
-                    <thead>
-                        <tr>
-                            <th style="width:70%">姓名</th>
-                            <th style="width:30%">金額</th>
-                        </tr>
-                    </thead>
-                    <tbody id="includedBody"></tbody>
-                    <tbody>
-                        <tr class="excluded-header-row">
-                            <td colspan="2">▼ 排除不計區域 (不列入總額)</td>
-                        </tr>
-                    </tbody>
-                    <tbody id="excludedBody" class="excluded-row"></tbody>
-                </table>
+        <div class="left-column">
+            <div class="section">
+                <h3>
+                    <span>人員費用總計</span>
+                    <span id="grandTotalDisplay" style="color: #5D4037;">0</span>
+                </h3>
+                <div class="scroll-area" id="summaryScrollArea">
+                    <table id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th style="width:70%">姓名</th>
+                                <th style="width:30%">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="includedBody"></tbody>
+                        <tbody>
+                            <tr class="excluded-header-row">
+                                <td colspan="2">▼ 排除不計區域 (不列入總額)</td>
+                            </tr>
+                        </tbody>
+                        <tbody id="excludedBody" class="excluded-row"></tbody>
+                    </table>
+                </div>
+                <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
             </div>
-            <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
+
+            <div class="section">
+                <h3>
+                    <span>每日結算總額</span>
+                </h3>
+                <div class="scroll-area">
+                    <table id="dailyTable">
+                        <thead>
+                            <tr>
+                                <th style="width:60%">日期</th>
+                                <th style="width:40%">當日總額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div class="section">
+
+        <div class="section" style="min-height: 600px;">
             <h3>
                 <div>個人明細：<span id="selectedPersonName">-</span></div>
                 <div class="btn-group">
@@ -255,6 +282,7 @@
     let forceIncludeDates = new Set();
     let excludedUsers = new Set();
     let personalStats = {};
+    let dailyStats = {}; // 新增：用於存放每日加總
     let nonMonthlyDates = [];
     let currentSelectedUser = null; 
 
@@ -295,6 +323,7 @@
             forceIncludeDates = new Set();
             excludedUsers = new Set();
             personalStats = {};
+            dailyStats = {};
             currentSelectedUser = null;
             document.getElementById('monthSelect').innerHTML = '';
             document.getElementById('selectedPersonName').textContent = '-';
@@ -324,6 +353,22 @@
         let datePositions = [];
         nonMonthlyDates = [];
         
+        // 重設每日統計
+        dailyStats = {};
+
+        datePositions.forEach((pos, i) => {
+            if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
+            const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
+            const dayLines = lines.slice(pos.idx, nextIdx);
+            if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
+                let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
+                if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
+            } else {
+                nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
+            }
+        });
+
+        // 預解析日期位置
         lines.forEach((line, idx) => {
             const m = line.match(dateRegex);
             if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') });
@@ -331,28 +376,11 @@
 
         datePositions.forEach((pos, i) => {
             if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
-            
             const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
             const dayLines = lines.slice(pos.idx, nextIdx);
-            
-            const monthlyIndexInDay = dayLines.findLastIndex(l => l.includes("$$月結"));
-            const isForced = forceIncludeDates.has(pos.date.replace(/-/g, '.'));
-
-            if (monthlyIndexInDay !== -1 || isForced) {
-                let searchLimit = (monthlyIndexInDay !== -1) ? monthlyIndexInDay : dayLines.length;
-                let relevantLines = dayLines.slice(0, searchLimit + 1);
-                
-                // 改良點：尋找「最後一筆接龍」的起始位置
-                // 如果有「午餐」則從最後一個午餐開始；如果沒有午餐只有「飲料」，則從最後一個飲料開始
-                let lunchIdx = relevantLines.findLastIndex(l => l.trim() === "午餐");
-                let drinkIdx = relevantLines.findLastIndex(l => l.trim().includes("飲料"));
-                
-                // 取兩者中較後的那個作為起點，若都沒有則不處理
-                let startIdx = Math.max(lunchIdx, drinkIdx);
-                
-                if (startIdx !== -1) {
-                    result[pos.date] = extractDayData(relevantLines.slice(startIdx));
-                }
+            if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
+                let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
+                if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
             } else {
                 nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
             }
@@ -362,15 +390,12 @@
 
     function extractDayData(lines) {
         const dayData = {};
-        // 預設模式：如果第一行就是飲料，則進入 drink，否則預設 meal
-        let mode = lines[0] && lines[0].includes("飲料") ? "drink" : "meal";
-        
+        let mode = "meal";
         lines.forEach(line => {
             let t = line.trim();
             if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
             if (t === "午餐") { mode = "meal"; return; }
             if (!t || t.includes("$$月結") || t.includes("結單")) return;
-            
             const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
             if (nameMatch) {
                 let name = nameMatch[1].trim().replace(/^\$/, ''); 
@@ -378,10 +403,7 @@
 
                 let content = nameMatch[2].trim();
                 if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
-                
-                // 提取價格
                 let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
-                
                 if (isNaN(price)) { 
                     dayData[name].hasError = true; 
                     dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
@@ -397,7 +419,6 @@
     document.getElementById('fileInput').addEventListener('change', e => {
         if (!e.target.files[0]) return;
         clearAllData(true); 
-
         const reader = new FileReader();
         reader.onload = () => {
             rawFileText = reader.result;
@@ -419,16 +440,23 @@
         if(!month) {
             document.getElementById('includedBody').innerHTML = '';
             document.getElementById('excludedBody').innerHTML = '';
+            document.getElementById('dailyBody').innerHTML = '';
             document.getElementById('grandTotalDisplay').textContent = '0';
             return;
         }
         
         const data = parseLunchFile(rawFileText, month);
         personalStats = {};
+        dailyStats = {}; // 重設
+
         for (let date in data) {
+            if (!dailyStats[date]) dailyStats[date] = 0;
             for (let name in data[date]) {
                 if (!personalStats[name]) personalStats[name] = { total: 0, details: [], error: false };
+                
                 personalStats[name].total += data[date][name].total;
+                dailyStats[date] += data[date][name].total; // 累加每日總額
+
                 if (data[date][name].hasError) personalStats[name].error = true;
                 
                 const items = data[date][name].items;
@@ -445,6 +473,7 @@
             }
         }
         buildTable();
+        buildDailyTable(); // 建構每日結算表格
         renderNonMonthly();
         if (currentSelectedUser && personalStats[currentSelectedUser]) {
             updateDetail(currentSelectedUser);
@@ -488,6 +517,21 @@
         requestAnimationFrame(() => { scrollArea.scrollTop = currentScroll; });
     }
 
+    // 新增：建構每日結算表格
+    function buildDailyTable() {
+        const dailyBody = document.getElementById('dailyBody');
+        dailyBody.innerHTML = '';
+        
+        Object.keys(dailyStats).sort().forEach(date => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${date.replace(/-/g, '/')}</td>
+                <td id="daily-sum-${date}" style="font-weight:bold; color:#455A64;">${dailyStats[date].toLocaleString()}</td>
+            `;
+            dailyBody.appendChild(tr);
+        });
+    }
+
     function toggleUser(name) {
         if (excludedUsers.has(name)) excludedUsers.delete(name);
         else excludedUsers.add(name);
@@ -502,15 +546,27 @@
 
     function handlePriceChange(name, detailIndex, newPrice, inputEl) {
         const val = parseInt(newPrice) || 0;
+        const oldPrice = personalStats[name].details[detailIndex].price;
+        const date = personalStats[name].details[detailIndex].date;
+
+        // 更新個人資料
         personalStats[name].details[detailIndex].price = val;
-        
         inputEl.nextElementSibling.textContent = val.toLocaleString();
 
         const newTotal = personalStats[name].details.reduce((sum, d) => sum + d.price, 0);
         personalStats[name].total = newTotal;
+        
+        // 更新 UI
         document.getElementById(`detail-total-${name}`).textContent = newTotal.toLocaleString();
         document.getElementById(`sum-${name}`).textContent = newTotal.toLocaleString();
         
+        // 更新每日結算總額
+        const diff = val - oldPrice;
+        dailyStats[date] += diff;
+        const dailyEl = document.getElementById(`daily-sum-${date}`);
+        if(dailyEl) dailyEl.textContent = dailyStats[date].toLocaleString();
+
+        // 更新大總計
         let grand = 0;
         Object.keys(personalStats).forEach(n => { if (!excludedUsers.has(n)) grand += personalStats[n].total; });
         document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
