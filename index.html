@@ -191,15 +191,28 @@
                     });
                     setCategories(fetchedCats);
                     
-                    // 強化排序：Pinned -> 主要日期降序 -> 登記日期降序
+                    // 核心排序邏輯
                     const sorted = list.sort((a, b) => {
+                        // 1. 置頂優先
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-                        const dateA = a.status === 'finished' ? a.finishDate : (a.status === 'dropped' ? a.dropDate : a.addDate);
-                        const dateB = b.status === 'finished' ? b.finishDate : (b.status === 'dropped' ? b.dropDate : b.addDate);
-                        if (dateA !== dateB) return new Date(dateB) - new Date(dateA);
-                        return new Date(b.addDate) - new Date(a.addDate);
+                        
+                        // 2. 獲取排序參考日期 (完食日 > 棄書日 > 登記日)
+                        const getRefDate = (item) => {
+                            if (item.status === 'finished') return item.finishDate || '0000-00-00';
+                            if (item.status === 'dropped') return item.dropDate || '0000-00-00';
+                            return item.addDate || '0000-00-00';
+                        };
+
+                        const dateA = getRefDate(a);
+                        const dateB = getRefDate(b);
+
+                        // 3. 由新到舊排序 (降序)
+                        if (dateA !== dateB) return dateB.localeCompare(dateA);
+                        
+                        // 4. 同日期則依建立時間排序
+                        return b.createdAt?.seconds - a.createdAt?.seconds;
                     });
-                    
+
                     setBooks(sorted);
                     setLoading(false);
                 });
@@ -434,7 +447,6 @@
                                                 <span className="flex items-center gap-1 font-normal"><Calendar size={12}/> {book.addDate}</span>
                                             </div>
                                             
-                                            {/* 已完食顯示區 */}
                                             {book.status === 'finished' && (
                                                 <div className="mt-2 bg-sage-50 p-3 rounded-xl border border-sage-100 font-normal">
                                                     <div className="flex justify-between items-center mb-1 font-normal"><span className="text-[10px] text-sage-600 flex items-center gap-1 font-normal"><CheckCircle size={12}/> 完食於 {book.finishDate}</span>{book.rating > 0 && <StarRating rating={book.rating} />}</div>
@@ -442,10 +454,8 @@
                                                 </div>
                                             )}
                                             
-                                            {/* 棄書顯示區 */}
                                             {book.status === 'dropped' && <div className="mt-2 bg-dried-50 p-3 rounded-xl border border-dried-100 text-xs text-dried-text font-normal"><p className="flex items-center gap-1 font-normal"><BookX size={12}/> {book.dropDate} 第 {book.dropChapter || '?'} 章棄書</p></div>}
                                             
-                                            {/* 行內紀錄完食/棄書區 */}
                                             {inlineActionId === book.id && (
                                                 <div className="mt-3 p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3 animate-fade-in">
                                                     <div className="flex justify-between items-center mb-2">
