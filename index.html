@@ -84,7 +84,7 @@
 
         /* 拖曳相關樣式修正 */
         .drag-handle {
-            cursor: grab; /* 僅在控制區顯示抓取手勢 */
+            cursor: grab; 
             touch-action: none;
         }
         .drag-handle:active {
@@ -373,11 +373,11 @@
 
                     const s = Sortable.create(ul, {
                         animation: 250,
-                        handle: ".drag-handle", // 關鍵修改：僅限於控制區塊可觸發拖曳
+                        handle: ".drag-handle",
                         ghostClass: "sortable-ghost",
                         chosenClass: "sortable-chosen",
                         dragClass: "sortable-drag",
-                        placeholderClass: "sortable-placeholder",
+                        placeholderClass: "sortable-placeholder", // 這裡是定位線的關鍵樣式
                         forceFallback: false,
                         onEnd: () => {
                             const updates = {};
