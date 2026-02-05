@@ -361,9 +361,11 @@
             if (!pos.date.startsWith(targetMonth.replace('.','-'))) return;
             const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
             const dayLines = lines.slice(pos.idx, nextIdx);
+            
+            // 判斷是否為月結日：有月結標記 OR 被手動強制包含
             if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
-                let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
-                if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
+                // 不再尋找「午餐」關鍵字，直接處理整段日期內容
+                result[pos.date] = extractDayData(dayLines);
             } else {
                 nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
             }
@@ -373,12 +375,12 @@
 
     function extractDayData(lines) {
         const dayData = {};
-        let mode = "meal";
         lines.forEach(line => {
             let t = line.trim();
-            if (t === "---" || t.includes("飲料")) { mode = "drink"; return; }
-            if (t === "午餐") { mode = "meal"; return; }
-            if (!t || t.includes("$$月結") || t.includes("結單")) return;
+            // 跳過標題、分隔線、月結標記與特定雜訊
+            if (!t || t.includes("$$月結") || t.includes("結單") || t === "---" || t === "午餐" || t === "飲料" || t.match(/^\dF$/)) return;
+            
+            // 人名格式正則：抓取「姓名-內容 價格」
             const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
             if (nameMatch) {
                 let name = nameMatch[1].trim().replace(/^\$/, ''); 
@@ -386,7 +388,10 @@
 
                 let content = nameMatch[2].trim();
                 if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
+                
+                // 嘗試解析價格
                 let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
+                
                 if (isNaN(price)) { 
                     dayData[name].hasError = true; 
                     dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
