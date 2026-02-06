@@ -42,7 +42,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             BookOpen, Search, Plus, Trash2, CheckCircle, BookX, Calendar, User, 
@@ -163,6 +163,8 @@
             const [editForm, setEditForm] = useState({});
             const [expandedBooks, setExpandedBooks] = useState({});
             const [newBook, setNewBook] = useState({ title: '', author: '', wordCount: '', isWordCountManual: false, addDate: new Date().toISOString().split('T')[0], reviewUrl: '', synopsis: '', category: [], isPinned: false });
+            
+            const searchInputRef = useRef(null);
 
             useEffect(() => {
                 const initAuth = async () => {
@@ -326,6 +328,13 @@
                 );
             };
 
+            const clearSearch = () => {
+                setSearchTerm('');
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            };
+
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-6 bg-paper">
@@ -425,7 +434,24 @@
                                 )}
                             </div>
                         </div>
-                        <div className="relative group"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/><input placeholder="搜尋..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" /></div>
+                        <div className="relative group">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-300"/>
+                            <input 
+                                ref={searchInputRef}
+                                placeholder="搜尋..." 
+                                value={searchTerm} 
+                                onChange={e=>setSearchTerm(e.target.value)} 
+                                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white border border-stone-200 outline-none text-sm soft-shadow focus:border-wood-300 transition-all font-normal" 
+                            />
+                            {searchTerm && (
+                                <button 
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid gap-5">
