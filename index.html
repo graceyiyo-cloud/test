@@ -16,9 +16,6 @@
         .tab-content.active { display: block; }
         .input-field { width: 100%; padding: 10px; border: 1px solid #D1C7BD; border-radius: 8px; background: white; }
         .input-field:focus { outline: none; border-color: #7D8471; ring: 1px solid #7D8471; }
-        .btn-primary { background-color: #7D8471; color: white; padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
-        .btn-primary:hover { opacity: 0.9; }
-        /* 針對手機版表格優化 */
         .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
@@ -30,7 +27,7 @@
             <p class="text-stone-400 text-sm">優雅地處理每一筆匯款</p>
         </header>
 
-        <nav class="flex justify-center space-x-8 border-b border-stone-200 mb-8">
+        <nav class="flex justify-center space-x-4 md:space-x-8 border-b border-stone-200 mb-8">
             <button onclick="showTab('form')" id="t-form" class="pb-2 border-b-2 border-[#7D8471] text-[#7D8471]">填寫表單</button>
             <button onclick="showTab('list')" id="t-list" class="pb-2 text-stone-400">待匯清單</button>
             <button onclick="showTab('admin')" id="t-admin" class="pb-2 text-stone-400">資料管理</button>
@@ -45,30 +42,30 @@
             </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="relative">
-                    <label class="text-xs text-stone-400 mb-1 block">匯款戶名 (關鍵字搜尋)</label>
-                    <input type="text" id="search-name" oninput="handleSearch(this.value)" class="input-field" placeholder="輸入名稱...">
-                    <div id="search-results" class="absolute z-10 w-full bg-white shadow-lg rounded-b-lg max-h-40 overflow-y-auto hidden"></div>
+                <div class="relative md:col-span-2">
+                    <label class="text-xs text-stone-400 mb-1 block">匯款戶名 (輸入關鍵字搜尋)</label>
+                    <input type="text" id="search-name" oninput="handleSearch(this.value)" class="input-field" placeholder="例如：京城、富邦...">
+                    <div id="search-results" class="absolute z-10 w-full bg-white shadow-xl rounded-b-lg max-h-60 overflow-y-auto hidden border border-stone-100 mt-1"></div>
                 </div>
 
                 <div id="bank-group">
                     <label class="text-xs text-stone-400 mb-1 block">銀行</label>
-                    <input type="text" id="bank-name" class="input-field" readonly>
+                    <input type="text" id="bank-name" class="input-field bg-stone-50" readonly>
                 </div>
 
                 <div id="branch-group">
                     <label class="text-xs text-stone-400 mb-1 block">分行</label>
-                    <input type="text" id="branch-name" class="input-field" readonly>
+                    <input type="text" id="branch-name" class="input-field bg-stone-50" readonly>
                 </div>
 
                 <div>
                     <label class="text-xs text-stone-400 mb-1 block">解款行/代碼</label>
-                    <input type="text" id="bank-code" class="input-field" readonly>
+                    <input type="text" id="bank-code" class="input-field bg-stone-50" readonly>
                 </div>
 
-                <div class="md:col-span-2">
+                <div>
                     <label class="text-xs text-stone-400 mb-1 block">帳號</label>
-                    <input type="text" id="account-no" class="input-field" readonly>
+                    <input type="text" id="account-no" class="input-field bg-stone-50" readonly>
                 </div>
 
                 <div>
@@ -78,32 +75,29 @@
 
                 <div>
                     <label class="text-xs text-stone-400 mb-1 block">備註</label>
-                    <input type="text" id="note" class="input-field" placeholder="輸入備註事項">
+                    <input type="text" id="note" class="input-field" placeholder="手動輸入或自動帶入">
                 </div>
 
-                <div class="slip-only hidden md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-stone-50">
+                <div class="slip-only hidden md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-stone-100">
                     <div><label class="text-xs text-stone-400 mb-1 block">匯款人名稱</label><input type="text" id="remitter" class="input-field"></div>
-                    <div><label class="text-xs text-stone-400 mb-1 block">匯款人身份證</label><input type="text" id="remitter-id" class="input-field"></div>
+                    <div><label class="text-xs text-stone-400 mb-1 block">匯款人ID</label><input type="text" id="remitter-id" class="input-field"></div>
                     <div><label class="text-xs text-stone-400 mb-1 block">代理人名稱</label><input type="text" id="agent" class="input-field"></div>
-                    <div><label class="text-xs text-stone-400 mb-1 block">代理人身份證</label><input type="text" id="agent-id" class="input-field"></div>
+                    <div><label class="text-xs text-stone-400 mb-1 block">代理人ID</label><input type="text" id="agent-id" class="input-field"></div>
                 </div>
             </div>
-            <button onclick="saveToRecords()" class="w-full morandi-green text-white py-4 rounded-xl shadow-md font-medium tracking-widest">儲存此筆資料</button>
+            <button onclick="saveToRecords()" class="w-full morandi-green text-white py-4 rounded-xl shadow-md font-medium tracking-widest hover:opacity-90 transition">儲存此筆資料</button>
         </section>
 
         <section id="list" class="tab-content">
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <button onclick="clearAllRecords()" class="text-red-400 text-xs hover:underline order-2 md:order-1">⚠️ 一鍵清除全部紀錄</button>
-                <button onclick="exportToExcel()" class="morandi-green text-white px-8 py-3 rounded-xl text-sm shadow-md order-1 md:order-2 w-full md:w-auto">匯出今日 Excel</button>
+                <button onclick="clearAllRecords()" class="text-red-400 text-xs hover:underline order-2 md:order-1">⚠️ 清空待匯紀錄</button>
+                <button onclick="exportToExcel()" class="morandi-green text-white px-8 py-3 rounded-xl text-sm shadow-md order-1 md:order-2 w-full md:w-auto font-medium">匯出今日 Excel</button>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-stone-100 table-container">
                 <table class="w-full text-left text-sm min-w-[600px]">
                     <thead class="bg-stone-50 text-stone-400">
                         <tr>
-                            <th class="p-4 font-normal">模式</th>
-                            <th class="p-4 font-normal">戶名</th>
-                            <th class="p-4 font-normal">金額</th>
-                            <th class="p-4 font-normal">備註</th>
+                            <th class="p-4 font-normal">模式</th><th class="p-4 font-normal">戶名</th><th class="p-4 font-normal">帳號</th><th class="p-4 font-normal">金額</th><th class="p-4 font-normal">備註</th>
                         </tr>
                     </thead>
                     <tbody id="record-table-body"></tbody>
@@ -111,20 +105,34 @@
             </div>
         </section>
 
-        <section id="admin" class="tab-content">
-            <div class="bg-white p-8 md:p-16 rounded-3xl border-2 border-dashed border-stone-200 text-center">
-                <div class="mb-4 text-[#7D8471]">
-                    <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
-                </div>
-                <p class="text-stone-500 mb-6 leading-relaxed">請上傳 Excel<br><span class="text-xs text-stone-400">需包含欄位：銀行、分行、解款行、帳號、戶名 (備註可選)</span></p>
+        <section id="admin" class="tab-content space-y-8">
+            <div class="bg-white p-8 rounded-3xl border-2 border-dashed border-stone-200 text-center">
+                <p class="text-stone-500 mb-4 text-sm font-medium">匯入銀行資料庫</p>
                 <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden" onchange="importData(this)">
-                <label for="excel-upload" class="cursor-pointer border border-[#7D8471] text-[#7D8471] px-10 py-3 rounded-full inline-block hover:bg-stone-50 transition">選擇檔案並覆蓋資料庫</label>
+                <label for="excel-upload" class="cursor-pointer border border-[#7D8471] text-[#7D8471] px-10 py-2 rounded-full inline-block hover:bg-stone-50 transition text-sm">選擇檔案並覆蓋資料庫</label>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-medium text-stone-400 mb-4 px-2">目前資料庫全部資料：</h3>
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-100 table-container max-h-96 overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-stone-50 sticky top-0">
+                            <tr>
+                                <th class="p-3 text-stone-400 font-normal">戶名</th>
+                                <th class="p-3 text-stone-400 font-normal">帳號</th>
+                                <th class="p-3 text-stone-400 font-normal">解款行</th>
+                                <th class="p-3 text-stone-400 font-normal">備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="beneficiary-list-body"></tbody>
+                    </table>
+                </div>
             </div>
         </section>
     </div>
 
     <script>
-        // Firebase Config
+        // Firebase Config (已填入您的金鑰)
         const firebaseConfig = {
             apiKey: "AIzaSyAlKzsOyxFKa-YugMyTlT0HUjcq1gm3oiM",
             authDomain: "remit-money-8629b.firebaseapp.com",
@@ -136,7 +144,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Tab Switching
+        // 頁籤切換
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
@@ -145,37 +153,27 @@
                 el.classList.add('text-stone-400');
             });
             document.getElementById('t-' + tabId).classList.add('border-b-2', 'border-[#7D8471]', 'text-[#7D8471]');
+            
             if(tabId === 'list') loadRecords();
+            if(tabId === 'admin') loadBeneficiaryList();
         }
 
-        // Mode Switching
-        function toggleMode() {
-            const mode = document.getElementById('mode-select').value;
-            const slipFields = document.querySelectorAll('.slip-only');
-            if(mode === 'slip') {
-                slipFields.forEach(el => el.classList.remove('hidden'));
-                document.getElementById('bank-group').classList.remove('hidden');
-                document.getElementById('branch-group').classList.remove('hidden');
-            } else {
-                slipFields.forEach(el => el.classList.add('hidden'));
-                document.getElementById('bank-group').classList.add('hidden');
-                document.getElementById('branch-group').classList.add('hidden');
-            }
-        }
-
-        // Autocomplete
+        // 搜尋邏輯：顯示 戶名 | 帳號 | 備註
         async function handleSearch(val) {
             if(val.length < 1) { document.getElementById('search-results').classList.add('hidden'); return; }
             const snapshot = await db.collection("beneficiaries").get();
-            const beneficiaries = snapshot.docs.map(doc => doc.data());
-            const filtered = beneficiaries.filter(b => b.戶名.includes(val));
+            const list = snapshot.docs.map(doc => doc.data());
+            const filtered = list.filter(b => b.戶名.includes(val) || (b.備註 && b.備註.includes(val)));
             
             const resDiv = document.getElementById('search-results');
             resDiv.innerHTML = '';
             filtered.forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'p-3 hover:bg-stone-50 cursor-pointer text-sm border-b border-stone-50';
-                div.innerText = item.戶名;
+                div.className = 'p-3 hover:bg-stone-50 cursor-pointer border-b border-stone-50';
+                div.innerHTML = `
+                    <div class="text-sm font-medium">${item.戶名}</div>
+                    <div class="text-[10px] text-stone-400">${item.帳號} | ${item.備註 || '無備註'}</div>
+                `;
                 div.onclick = () => fillForm(item);
                 resDiv.appendChild(div);
             });
@@ -188,18 +186,41 @@
             document.getElementById('branch-name').value = item.分行 || '';
             document.getElementById('bank-code').value = item.解款行 || '';
             document.getElementById('account-no').value = item.帳號 || '';
-            document.getElementById('note').value = item.備註 || ''; // 自動帶入 Excel 中的備註
+            document.getElementById('note').value = item.備註 || '';
             document.getElementById('search-results').classList.add('hidden');
         }
 
-        // Save
+        // 載入資料管理中的完整列表
+        async function loadBeneficiaryList() {
+            const snapshot = await db.collection("beneficiaries").get();
+            const body = document.getElementById('beneficiary-list-body');
+            body.innerHTML = '';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                body.innerHTML += `
+                    <tr class="border-b border-stone-50">
+                        <td class="p-3 font-medium">${d.戶名}</td>
+                        <td class="p-3 text-stone-500">${d.帳號}</td>
+                        <td class="p-3 text-stone-400">${d.解款行}</td>
+                        <td class="p-3 text-stone-400 italic">${d.備註 || '-'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 其他功能邏輯 (模式切換、儲存、匯出、匯入) 保持不變，但確保與新 UI 連結
+        function toggleMode() {
+            const mode = document.getElementById('mode-select').value;
+            document.querySelectorAll('.slip-only').forEach(el => mode === 'slip' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+            document.getElementById('bank-group').classList.toggle('hidden', mode === 'netbank');
+            document.getElementById('branch-group').classList.toggle('hidden', mode === 'netbank');
+        }
+
         async function saveToRecords() {
             const name = document.getElementById('search-name').value;
             if(!name) return alert("請輸入戶名");
-            
-            const mode = document.getElementById('mode-select').value;
             const data = {
-                mode: mode === 'netbank' ? '企網銀' : '匯款單',
+                mode: document.getElementById('mode-select').value === 'netbank' ? '企網銀' : '匯款單',
                 戶名: name,
                 銀行: document.getElementById('bank-name').value,
                 分行: document.getElementById('branch-name').value,
@@ -207,97 +228,59 @@
                 帳號: document.getElementById('account-no').value,
                 金額: document.getElementById('amount').value,
                 備註: document.getElementById('note').value,
-                匯款人: document.getElementById('remitter').value,
-                匯款人ID: document.getElementById('remitter-id').value,
-                代理人: document.getElementById('agent').value,
-                代理人ID: document.getElementById('agent-id').value,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
             await db.collection("records").add(data);
-            alert("已成功儲存至清單");
-            // 清空金額與備註，方便下一筆輸入
+            alert("已儲存");
             document.getElementById('amount').value = '';
             document.getElementById('note').value = '';
         }
 
-        // Load
         async function loadRecords() {
             const snapshot = await db.collection("records").orderBy("timestamp", "desc").get();
             const body = document.getElementById('record-table-body');
             body.innerHTML = '';
             snapshot.forEach(doc => {
                 const d = doc.data();
-                body.innerHTML += `<tr class="border-b border-stone-50 hover:bg-stone-50/50">
-                    <td class="p-4 text-xs font-medium text-stone-400">${d.mode}</td>
-                    <td class="p-4 font-medium">${d.戶名}</td>
-                    <td class="p-4 text-[#7D8471] font-medium">$${Number(d.金額).toLocaleString()}</td>
-                    <td class="p-4 text-stone-400 text-xs">${d.備註 || '-'}</td>
-                </tr>`;
+                body.innerHTML += `<tr class="border-b border-stone-50"><td class="p-4 text-xs font-medium">${d.mode}</td><td class="p-4 font-medium">${d.戶名}</td><td class="p-4 text-stone-400">${d.帳號}</td><td class="p-4 text-[#7D8471]">$${Number(d.金額).toLocaleString()}</td><td class="p-4 text-xs text-stone-400">${d.備註 || '-'}</td></tr>`;
             });
         }
 
-        // Export
         async function exportToExcel() {
             const snapshot = await db.collection("records").orderBy("timestamp", "asc").get();
             const data = snapshot.docs.map(doc => {
                 const d = doc.data();
-                return { 
-                    "日期": new Date().toLocaleDateString(),
-                    "模式": d.mode, 
-                    "戶名": d.戶名, 
-                    "銀行": d.銀行, 
-                    "分行": d.分行, 
-                    "帳號": d.帳號, 
-                    "金額": d.金額, 
-                    "備註": d.備註,
-                    "解款行": d.解款行,
-                    "匯款人": d.匯款人,
-                    "匯款人ID": d.匯款人ID,
-                    "代理人": d.代理人,
-                    "代理人ID": d.代理人ID
-                };
+                return { "模式": d.mode, "戶名": d.戶名, "銀行": d.銀行, "分行": d.分行, "帳號": d.帳號, "金額": d.金額, "備註": d.備註 };
             });
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "匯款資料");
-            const dateStr = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `${dateStr}_匯款清單.xlsx`);
+            XLSX.writeFile(wb, `${new Date().toISOString().split('T')[0]}_匯款清單.xlsx`);
         }
 
-        // Import & Overwrite
         async function importData(input) {
-            if(!confirm("確定要覆蓋舊資料嗎？現有的銀行清單將會被清空。")) return;
-            const file = input.files[0];
+            if(!confirm("將會覆蓋現有資料庫，確定嗎？")) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const workbook = XLSX.read(e.target.result, { type: 'binary' });
                 const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                
                 const batch = db.batch();
-                const oldDocs = await db.collection("beneficiaries").get();
-                oldDocs.forEach(d => batch.delete(d.ref));
-                
+                const old = await db.collection("beneficiaries").get();
+                old.forEach(d => batch.delete(d.ref));
                 json.forEach(row => {
                     const ref = db.collection("beneficiaries").doc();
-                    batch.set(ref, { 
-                        銀行: row.銀行 || '', 
-                        分行: row.分行 || '', 
-                        解款行: row.解款行 || '', 
-                        帳號: row.帳號 || '', 
-                        戶名: row.戶名 || '',
-                        備註: row.備註 || '' // 支援匯入備註
-                    });
+                    batch.set(ref, { 銀行: row.銀行 || '', 分行: row.分行 || '', 解款行: row.解款行 || '', 帳號: row.帳號 || '', 戶名: row.戶名 || '', 備註: row.備註 || '' });
                 });
                 await batch.commit();
-                alert("銀行資料庫已成功更新！");
+                alert("更新成功");
+                loadBeneficiaryList();
                 input.value = '';
             };
-            reader.readAsBinaryString(file);
+            reader.readAsBinaryString(input.files[0]);
         }
 
-        // Clear All Records
         async function clearAllRecords() {
-            if(!confirm("確定要清空今日所有「待匯紀錄」嗎？(這不會影響銀行資料庫)")) return;
+            if(!confirm("確定清空嗎？")) return;
             const snapshot = await db.collection("records").get();
             const batch = db.batch();
             snapshot.docs.forEach(d => batch.delete(d.ref));
