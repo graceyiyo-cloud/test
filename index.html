@@ -290,10 +290,10 @@
                 <input type="text" id="filterDate" placeholder="輸入日期(如11502)" style="width: 130px; padding: 5px; font-weight: bold;" oninput="renderTable()">
             </div>
             <div class="button-cluster">
-                <button class="btn-info" id="btnCopyClaim" style="background: var(--accent);" onclick="copyToClipboard('claim', this)">📋 複製請款明細 (貼Excel)</button>
-                <button class="btn-info" id="btnCopyBank" style="background: var(--dark);" onclick="copyToClipboard('bank', this)">📋 複製匯款資料 (貼Excel)</button>
-                <button class="btn-info" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
-                <button class="btn-save" style="background: var(--danger); width: auto; padding: 10px 20px; margin: 0;" onclick="clearData()">清空所有排程</button>
+                <button class="btn-info" id="btnCopyClaim" style="background: #2c3e50;" onclick="copyToClipboard('claim', this)">📋 複製請款明細 (貼Excel)</button>
+                <button class="btn-info" id="btnCopyBank" style="background: #34495e;" onclick="copyToClipboard('bank', this)">📋 複製匯款資料 (貼Excel)</button>
+                <button class="btn-info" style="background: #16a085;" onclick="autoFillRecordsByOwner()">按戶名補齊資料</button>
+                <button class="btn-save" style="background: #a93226; width: auto; padding: 10px 20px; margin: 0;" onclick="clearData()">清空所有排程</button>
             </div>
         </div>
         <table id="recordTable">
@@ -550,7 +550,6 @@
                 <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
                 <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
                 <td class="action-cell">
-                    <button class="btn-edit-tool" onclick="alert('請直接在黃色欄位內修改')">改</button>
                     <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
                 </td>
             </tr>
@@ -926,13 +925,13 @@
         textArea.select();
         try {
             document.execCommand('copy');
-            // 按鈕視覺變化替代 Alert
             const originalText = btn.innerText;
+            const originalBg = btn.style.background;
             btn.innerText = "✅ 已成功複製";
             btn.style.background = "#1b5e20"; 
             setTimeout(() => {
                 btn.innerText = originalText;
-                btn.style.background = ""; 
+                btn.style.background = originalBg; 
             }, 2000);
         } catch (err) {}
         document.body.removeChild(textArea);
