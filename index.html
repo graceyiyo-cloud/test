@@ -201,20 +201,21 @@
                     setCategories(fetchedCats);
                     
                     const sorted = list.sort((a, b) => {
+                        // 1. 置頂優先
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                        
+                        // 2. 依照「加入日期」降序排列 (不管是哪種狀態，皆以此為準)
                         const getSortTime = (item) => {
-                            let dateStr = "";
-                            // 修改處：未讀書本也應根據 addDate 排序，與已完食/棄書邏輯統一
-                            if (item.status === 'finished') dateStr = item.finishDate;
-                            else if (item.status === 'dropped') dateStr = item.dropDate;
-                            else dateStr = item.addDate; // 這是未讀書本的加入日期
-                            
-                            const d = new Date(dateStr);
+                            const d = new Date(item.addDate);
                             return isNaN(d.getTime()) ? 0 : d.getTime();
                         };
+                        
                         const timeA = getSortTime(a);
                         const timeB = getSortTime(b);
+                        
                         if (timeA !== timeB) return timeB - timeA;
+                        
+                        // 3. 日期相同時，依照系統建立時間降序
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
                     setBooks(sorted);
