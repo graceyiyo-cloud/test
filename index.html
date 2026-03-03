@@ -205,8 +205,8 @@ word-break: break-all;
 .row-checked .check-cell { color: var(--success-color); }
 .row-checked td:nth-child(2) { text-decoration: line-through; }
 
-/* Sortable 樣式 */
-.sortable-ghost { opacity: 0.1; background-color: var(--primary-color); }
+/* Sortable 樣式優化 */
+.sortable-ghost { opacity: 0.2; background-color: var(--primary-color) !important; }
 .sortable-chosen { background-color: #f0f7ff; }
 
 /* --- 統計區塊 --- */
@@ -321,7 +321,7 @@ vertical-align: middle;
 </div>
 <div class="modal-btns">
 <button class="process-btn" id="modalYes">合併品項</button>
-<button class="clear-btn" id="modalNo">僅調順序</button>
+<button class="clear-btn" id="modalNo">取消</button>
 </div>
 </div>
 </div>
@@ -331,6 +331,7 @@ vertical-align: middle;
 
 <div class="hint">
 <span><b>長按拖動</b>品項，放在另一個品項上即可 <b>合併</b></span>
+<span>若放在品項邊緣則為 <b>插入排序</b></span>
 </div>
 
 <div class="mode-selector">
@@ -382,8 +383,27 @@ function initSortable() {
         onEnd: function (evt) {
             const srcIdx = evt.oldIndex;
             const targetIdx = evt.newIndex;
+            
             if (srcIdx === targetIdx) return;
-            triggerMerge(srcIdx, targetIdx);
+
+            // 取得放開時相對於目標元素的 Y 軸位置
+            const targetRect = evt.item.getBoundingClientRect();
+            const relativeY = evt.originalEvent.clientY - targetRect.top;
+            const targetHeight = targetRect.height;
+
+            // 判斷邏輯：如果放開的位置在目標列高度的 25% ~ 75% 之間 (中間區塊)
+            // 則觸發「合併」，否則執行預設的「插入排序」
+            if (relativeY > targetHeight * 0.25 && relativeY < targetHeight * 0.75) {
+                // 先將畫面恢復原本順序 (因為 Sortable 已經偷偷幫你換位子了)
+                // 我們要手動控制邏輯
+                renderDisplay(); 
+                triggerMerge(srcIdx, targetIdx);
+            } else {
+                // 正常的插入排序：更新陣列數據
+                const item = currentSummary.splice(srcIdx, 1)[0];
+                currentSummary.splice(targetIdx, 0, item);
+                renderDisplay();
+            }
         }
     });
 }
@@ -395,7 +415,6 @@ function triggerMerge(srcIdx, targetIdx) {
     const priceArea = document.getElementById('priceInputArea');
     const priceInput = document.getElementById('customPrice');
     
-    // 更新視覺化文字
     document.getElementById('srcText').innerText = `${src.name} ($${src.price})`;
     document.getElementById('targetText').innerText = `${target.name} ($${target.price})`;
 
@@ -420,9 +439,6 @@ function triggerMerge(srcIdx, targetIdx) {
     };
 
     document.getElementById('modalNo').onclick = function() {
-        // 僅調整順序：根據移動後的位置更新陣列
-        const item = currentSummary.splice(srcIdx, 1)[0];
-        currentSummary.splice(targetIdx, 0, item);
         modal.style.display = 'none';
         renderDisplay();
     };
