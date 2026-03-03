@@ -205,12 +205,10 @@ vertical-align: middle;
 word-break: break-all;
 }
 
-/* 欄位寬度固定 */
 #resultTable th:nth-child(1), #resultTable td:nth-child(1) { width: 50px; text-align: center; padding: 0; }
 #resultTable th:nth-child(2), #resultTable td:nth-child(2) { text-align: left; }
 #resultTable th:nth-child(3), #resultTable td:nth-child(3) { width: 50px; text-align: center; }
 
-/* 勾選欄位平行修正 */
 .check-cell { 
     cursor: pointer !important; 
     user-select: none; 
@@ -228,9 +226,9 @@ word-break: break-all;
 .row-checked .check-cell { color: var(--success-color); }
 .row-checked td:nth-child(2) { text-decoration: line-through; }
 
-/* Sortable 拖曳時的樣式 */
-.sortable-ghost { opacity: 0.4; background-color: #f0f0f0; }
-.sortable-chosen { background-color: #e3f2fd; }
+/* Sortable 樣式 */
+.sortable-ghost { opacity: 0.1; background-color: var(--primary-color); }
+.sortable-chosen { background-color: #f0f7ff; }
 
 /* --- 統計區塊 --- */
 .summary-box { 
@@ -325,26 +323,16 @@ vertical-align: middle;
     <h2><i data-lucide="clipboard-list"></i> 訂單明細統計助手 <i data-lucide="clipboard-list"></i></h2>
 
 <div class="hint">
-<span>格式：姓名-餐點 價格 (支援「元」字)</span>
-<span>相同名稱但價格不同時會標註 *</span>
-<span><b>手機長按</b>品項可進行 <b>排序/合併</b></span>
+<span>格式：姓名-餐點 價格</span>
+<span><b>長按拖動</b>品項，放開於他項之上即可 <b>合併</b></span>
 </div>
 
 <div class="mode-selector">
-<label>
-<input type="radio" name="calcMode" value="split" checked>
-<span>標準模式 (拆分 + 號)</span>
-</label>
-<label>
-<input type="radio" name="calcMode" value="combo">
-<span>套餐模式 (保留整行)</span>
-</label>
+<label><input type="radio" name="calcMode" value="split" checked><span>標準模式</span></label>
+<label><input type="radio" name="calcMode" value="combo"><span>套餐模式</span></label>
 </div>
 
-<textarea id="inputData" placeholder="請輸入訂單，例如：
-王小明-排骨飯 100
-李大華-排骨飯 120元
-張阿三-雞腿飯 110+大冰紅 30元"></textarea>
+<textarea id="inputData" placeholder="請輸入訂單..."></textarea>
 
 <div class="btn-group">
         <button class="process-btn" onclick="processOrder()"><i data-lucide="rocket"></i> 開始統計</button>
@@ -358,24 +346,13 @@ vertical-align: middle;
         </div>
 <table id="resultTable">
 <thead>
-<tr>
-    <th><i data-lucide="check-square"></i></th>
-    <th>品項與備註</th>
-    <th>數量</th>
-</tr>
+<tr><th><i data-lucide="check-square"></i></th><th>品項與備註</th><th>數量</th></tr>
 </thead>
 <tbody id="resultBody"></tbody>
 </table>
-
 <div class="summary-box">
-<div class="summary-line">
-<span>總份數：</span>
-<span id="totalQty">0 份</span>
-</div>
-<div class="summary-line">
-<span>應收總金額：</span>
-<span id="totalAmount" class="total-price">$0</span>
-</div>
+<div class="summary-line"><span>總份數：</span><span id="totalQty">0 份</span></div>
+<div class="summary-line"><span>應收總金額：</span><span id="totalAmount" class="total-price">$0</span></div>
 </div>
 </div>
 </div>
@@ -386,7 +363,6 @@ let sortableInstance = null;
 
 function initIcons() { lucide.createIcons(); }
 
-// 初始化 SortableJS
 function initSortable() {
     const el = document.getElementById('resultBody');
     if (sortableInstance) sortableInstance.destroy();
@@ -395,43 +371,71 @@ function initSortable() {
         animation: 150,
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
-        delay: 150, // 手機長按 150ms 後啟動拖曳
+        delay: 200, 
         delayOnTouchOnly: true,
-        touchStartThreshold: 5,
         onEnd: function (evt) {
-            const oldIndex = evt.oldIndex;
-            const newIndex = evt.newIndex;
+            const srcIdx = evt.oldIndex;
+            const targetIdx = evt.newIndex;
             
-            // 取得拖動元素
-            const itemEl = evt.item;
-            
-            // 判斷是否為「合併」操作 (如果放開的位置跟原本不同，判斷是否重疊在其他行)
-            // 註：Sortable 原生是排序，若要合併，我們檢測 newIndex 是否與原本的 item 對象位置衝突
-            
-            const item = currentSummary.splice(oldIndex, 1)[0];
-            currentSummary.splice(newIndex, 0, item);
-            
-            // 這裡簡單處理排序，若要「合併」，建議透過UI點擊或特定手勢。
-            // 為了保持穩定，手機版目前先完整支援「排序」。
-            renderDisplay();
+            if (srcIdx === targetIdx) return;
+
+            // 觸發合併邏輯：彈出視窗詢問
+            triggerMerge(srcIdx, targetIdx);
         }
     });
 }
 
-function showMessage(text) {
-    const toast = document.getElementById('toast');
-    toast.innerText = text;
-    toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 2000);
+function triggerMerge(srcIdx, targetIdx) {
+    const src = currentSummary[srcIdx];
+    const target = currentSummary[targetIdx];
+    const modal = document.getElementById('mainModal');
+    const modalMsg = document.getElementById('modalMsg');
+    const priceArea = document.getElementById('priceInputArea');
+    const priceInput = document.getElementById('customPrice');
+
+    priceArea.style.display = 'none';
+
+    // 判斷是否要合併？還是單純排序？
+    modalMsg.innerHTML = `您想將「${src.name}」與「${target.name}」進行：`;
+    document.getElementById('modalYes').innerText = "合併品項";
+    document.getElementById('modalNo').innerText = "僅調整順序";
+
+    if (src.price !== target.price) {
+        modalMsg.innerHTML = `⚠️ 單價不同！要合併嗎？<br><small>${src.name}($${src.price}) & ${target.name}($${target.price})</small>`;
+        priceArea.style.display = 'block';
+        priceInput.value = target.price;
+    }
+
+    modal.style.display = 'flex';
+
+    document.getElementById('modalYes').onclick = function() {
+        if (src.price !== target.price) {
+            target.price = parseInt(priceInput.value) || target.price;
+        }
+        target.qty += src.qty;
+        currentSummary.splice(srcIdx, 1);
+        checkMinorItems(); 
+        modal.style.display = 'none';
+        renderDisplay();
+        showMessage("品項已合併");
+    };
+
+    document.getElementById('modalNo').onclick = function() {
+        // 如果只是要排序，我們已經在 Array 裡移動過位置了，直接重新渲染即可
+        const item = currentSummary.splice(srcIdx, 1)[0];
+        currentSummary.splice(targetIdx, 0, item);
+        modal.style.display = 'none';
+        renderDisplay();
+    };
 }
 
+// 其餘原始邏輯保留
 function processOrder() {
     const input = document.getElementById('inputData').value.trim();
     if (!input) return;
     const lines = input.split('\n');
     const summaryObj = {};
     const mode = document.querySelector('input[name="calcMode"]:checked').value;
-
     lines.forEach(line => {
         let trimmed = line.trim();
         if (!trimmed || !trimmed.includes('-')) return;
@@ -445,8 +449,7 @@ function processOrder() {
             if (match) {
                 let detail = match[1].trim(); 
                 const price = parseInt(match[2], 10);
-                detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2');
-                detail = detail.replace(/\s+/g, ' ').trim();
+                detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2').replace(/\s+/g, ' ').trim();
                 const key = `${detail}_${price}`;
                 if (!summaryObj[key]) summaryObj[key] = { name: detail, qty: 0, price: price, isMinor: false, checked: false };
                 summaryObj[key].qty += 1;
@@ -481,28 +484,22 @@ function renderDisplay() {
     tbody.innerHTML = "";
     let totalQty = 0;
     let totalAmount = 0;
-
     currentSummary.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.dataset.index = index;
         if (item.checked) tr.classList.add('row-checked');
         const starHtml = item.isMinor ? '<span class="star-mark">*</span>' : '';
         const checkIconName = item.checked ? 'check-square' : 'square';
-        tr.innerHTML = `
-            <td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td>
-            <td>${item.name}${starHtml}</td>
-            <td>${item.qty}</td>
-        `;
+        tr.innerHTML = `<td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td><td>${item.name}${starHtml}</td><td>${item.qty}</td>`;
         tbody.appendChild(tr);
         totalQty += item.qty;
         totalAmount += (item.qty * item.price);
     });
-
     document.getElementById('totalQty').innerText = `${totalQty} 份`;
     document.getElementById('totalAmount').innerText = `$${totalAmount.toLocaleString()}`;
     document.getElementById('resultArea').style.display = 'block';
     initIcons();
-    initSortable(); // 渲染後初始化拖曳
+    initSortable();
 }
 
 function toggleCheck(index, event) {
@@ -520,23 +517,10 @@ function resetAllChecks() {
 function copyResult() {
     if (currentSummary.length === 0) return;
     let copyText = "【訂單統計結果】\n";
-    currentSummary.forEach(item => {
-        const starText = item.isMinor ? "*" : "";
-        copyText += `${item.name}${starText} * ${item.qty}\n`;
-    });
-    copyText += `\n總份數：${document.getElementById('totalQty').innerText}\n`;
-    copyText += `總金額：${document.getElementById('totalAmount').innerText}`;
-    const el = document.createElement('textarea');
-    el.value = copyText;
-    document.body.appendChild(el); 
-    el.select();
-    try {
-        document.execCommand('copy');
-        showMessage("統計結果已複製！");
-    } catch (err) {
-        showMessage("複製失敗");
-    }
-    document.body.removeChild(el);
+    currentSummary.forEach(item => { copyText += `${item.name}${item.isMinor?"*":""} * ${item.qty}\n`; });
+    copyText += `\n總份數：${document.getElementById('totalQty').innerText}\n總金額：${document.getElementById('totalAmount').innerText}`;
+    const el = document.createElement('textarea'); el.value = copyText; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el); showMessage("統計結果已複製！");
 }
 
 function clearContent() {
