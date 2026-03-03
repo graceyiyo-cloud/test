@@ -53,6 +53,7 @@ gap: 10px;
 font-size: 1.4rem;
 }
         
+        /* 統一圖示大小 */
         .lucide {
             width: 18px;
             height: 18px;
@@ -159,6 +160,31 @@ justify-content: center;
 #resultArea { margin-top: 20px; display: none; animation: fadeIn 0.5s; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* 重設勾選專用樣式 */
+        .table-header-tools {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .reset-check-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            min-width: auto;
+            text-decoration: underline;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .reset-check-btn:hover {
+            color: var(--primary-hover);
+            background: none;
+        }
+        .reset-check-btn .lucide { width: 14px; height: 14px; }
+
 #resultTable { 
 width: 100%; 
 border-collapse: collapse; 
@@ -179,25 +205,31 @@ border-bottom: 2px solid #eee;
 padding: 12px 8px; 
 border-bottom: 1px solid #f1f1f1; 
 color: var(--text-color); 
+cursor: grab; 
 position: relative; 
 vertical-align: middle; 
 word-break: break-all;
 }
 
+/* 精確控制欄位寬度 */
 #resultTable th:nth-child(1), #resultTable td:nth-child(1) { width: 50px; text-align: center; padding: 0; }
 #resultTable th:nth-child(2), #resultTable td:nth-child(2) { text-align: left; }
 #resultTable th:nth-child(3), #resultTable td:nth-child(3) { width: 50px; text-align: center; }
 
+/* --- 勾選欄位核心修正 --- */
 .check-cell { 
     cursor: pointer !important; 
     user-select: none; 
     color: #cbd5e0; 
     transition: color 0.2s; 
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
+    display: flex !important; /* 強制使用 flex */
+    align-items: center;      /* 垂直居中 */
+    justify-content: center;   /* 水平居中 */
+    min-height: 48px;          /* 給予最小高度確保置中空間 */
     height: 100%;
+}
+.check-cell i, .check-cell svg {
+    display: block;
 }
 
 .row-checked { color: var(--gray-color) !important; }
@@ -205,9 +237,9 @@ word-break: break-all;
 .row-checked .check-cell { color: var(--success-color); }
 .row-checked td:nth-child(2) { text-decoration: line-through; }
 
-/* Sortable 樣式優化 */
-.sortable-ghost { opacity: 0.2; background-color: var(--primary-color) !important; }
-.sortable-chosen { background-color: #f0f7ff; }
+/* --- SortableJS 拖放樣式 --- */
+.sortable-ghost { opacity: 0.4; background-color: #f0f0f0; }
+.drop-merge { background-color: #fff3e0 !important; outline: 2px solid #ff9800; z-index: 10; }
 
 /* --- 統計區塊 --- */
 .summary-box { 
@@ -225,7 +257,7 @@ margin-bottom: 5px;
 }
 .total-price { color: var(--danger-color); font-size: 20px; }
 
-/* --- 彈窗優化樣式 --- */
+/* --- 彈窗與訊息 --- */
 .modal { 
 display: none; 
 position: fixed; 
@@ -237,46 +269,23 @@ justify-content: center;
 }
 .modal-content { 
 background: white; 
-padding: 20px; 
-border-radius: 16px; 
-width: 90%;
-max-width: 320px; 
+padding: 25px; 
+border-radius: 12px; 
+width: 85%;
+max-width: 300px; 
 text-align: center; 
-box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
 }
-.merge-visual {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin: 15px 0;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border: 1px dashed #ddd;
-}
-.merge-item {
-    padding: 8px 12px;
-    border-radius: 6px;
-    width: 100%;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-.item-src { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-.item-target { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-weight: bold; }
-.merge-arrow { color: var(--gray-color); font-size: 20px; }
-
 .modal-input { 
-width: 100%; 
+width: 80%; 
 padding: 10px; 
-margin-top: 10px; 
-border: 2px solid var(--primary-color); 
-border-radius: 8px; 
+margin-bottom: 20px; 
+border: 2px solid #ddd; 
+border-radius: 6px; 
 font-size: 18px; 
 text-align: center; 
-box-sizing: border-box;
 }
-.modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+.modal-btns { display: flex; gap: 10px; }
 
 .msg-box { 
 position: fixed; 
@@ -309,18 +318,13 @@ vertical-align: middle;
 
 <div id="mainModal" class="modal">
 <div class="modal-content">
-<h3 style="margin-top: 0; font-size: 1.1rem;">確認合併操作</h3>
-<div class="merge-visual" id="mergeVisual">
-    <div class="merge-item item-src" id="srcText">品項 A</div>
-    <div class="merge-arrow">↓ 併入 ↓</div>
-    <div class="merge-item item-target" id="targetText">品項 B</div>
-</div>
-<div id="priceInputArea" style="display: none; text-align: left;">
-<p style="font-size: 13px; color: #d93025; margin-bottom: 5px;">⚠️ 單價不同，合併後單價：</p>
-<input type="number" id="customPrice" class="modal-input" placeholder="請輸入金額">
+<p id="modalMsg" style="margin-top: 0;">訊息內容</p>
+<div id="priceInputArea" style="display: none;">
+<p style="font-size: 13px; color: #666;">請確認或修改合併後的單價：</p>
+<input type="number" id="customPrice" class="modal-input" placeholder="金額">
 </div>
 <div class="modal-btns">
-<button class="process-btn" id="modalYes">合併品項</button>
+<button class="process-btn" id="modalYes">確定合併</button>
 <button class="clear-btn" id="modalNo">取消</button>
 </div>
 </div>
@@ -330,16 +334,26 @@ vertical-align: middle;
     <h2><i data-lucide="clipboard-list"></i> 訂單明細統計助手 <i data-lucide="clipboard-list"></i></h2>
 
 <div class="hint">
-<span><b>長按拖動</b>品項，放在另一個品項上即可 <b>合併</b></span>
-<span>若放在品項邊緣則為 <b>插入排序</b></span>
+<span>格式：姓名-餐點 價格 (支援「元」字)</span>
+<span>相同名稱但價格不同時會標註 *</span>
+<span><b>拖拉</b>品項可進行 <b>合併</b> 或 <b>排序</b></span>
 </div>
 
 <div class="mode-selector">
-<label><input type="radio" name="calcMode" value="split" checked><span>標準模式</span></label>
-<label><input type="radio" name="calcMode" value="combo"><span>套餐模式</span></label>
+<label>
+<input type="radio" name="calcMode" value="split" checked>
+<span>標準模式 (拆分 + 號)</span>
+</label>
+<label>
+<input type="radio" name="calcMode" value="combo">
+<span>套餐模式 (保留整行)</span>
+</label>
 </div>
 
-<textarea id="inputData" placeholder="請輸入訂單內容..."></textarea>
+<textarea id="inputData" placeholder="請輸入訂單，例如：
+王小明-排骨飯 100
+李大華-排骨飯 120元
+張阿三-雞腿飯 110+大冰紅 30元"></textarea>
 
 <div class="btn-group">
         <button class="process-btn" onclick="processOrder()"><i data-lucide="rocket"></i> 開始統計</button>
@@ -353,173 +367,192 @@ vertical-align: middle;
         </div>
 <table id="resultTable">
 <thead>
-<tr><th><i data-lucide="check-square"></i></th><th>品項與備註</th><th>數量</th></tr>
+<tr>
+    <th><i data-lucide="check-square"></i></th>
+    <th>品項與備註</th>
+    <th>數量</th>
+</tr>
 </thead>
 <tbody id="resultBody"></tbody>
 </table>
+
 <div class="summary-box">
-<div class="summary-line"><span>總份數：</span><span id="totalQty">0 份</span></div>
-<div class="summary-line"><span>應收總金額：</span><span id="totalAmount" class="total-price">$0</span></div>
+<div class="summary-line">
+<span>總份數：</span>
+<span id="totalQty">0 份</span>
+</div>
+<div class="summary-line">
+<span>應收總金額：</span>
+<span id="totalAmount" class="total-price">$0</span>
+</div>
 </div>
 </div>
 </div>
 
 <script>
+    function initIcons() {
+        lucide.createIcons();
+    }
+    
 let currentSummary = []; 
 let sortableInstance = null;
 
-function initIcons() { lucide.createIcons(); }
-
-function initSortable() {
-    const el = document.getElementById('resultBody');
-    if (sortableInstance) sortableInstance.destroy();
-
-    sortableInstance = new Sortable(el, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
-        delay: 200, 
-        delayOnTouchOnly: true,
-        onEnd: function (evt) {
-            const srcIdx = evt.oldIndex;
-            const targetIdx = evt.newIndex;
-            
-            if (srcIdx === targetIdx) return;
-
-            // 取得放開時相對於目標元素的 Y 軸位置
-            const targetRect = evt.item.getBoundingClientRect();
-            const relativeY = evt.originalEvent.clientY - targetRect.top;
-            const targetHeight = targetRect.height;
-
-            // 判斷邏輯：如果放開的位置在目標列高度的 25% ~ 75% 之間 (中間區塊)
-            // 則觸發「合併」，否則執行預設的「插入排序」
-            if (relativeY > targetHeight * 0.25 && relativeY < targetHeight * 0.75) {
-                // 先將畫面恢復原本順序 (因為 Sortable 已經偷偷幫你換位子了)
-                // 我們要手動控制邏輯
-                renderDisplay(); 
-                triggerMerge(srcIdx, targetIdx);
-            } else {
-                // 正常的插入排序：更新陣列數據
-                const item = currentSummary.splice(srcIdx, 1)[0];
-                currentSummary.splice(targetIdx, 0, item);
-                renderDisplay();
-            }
-        }
-    });
-}
-
-function triggerMerge(srcIdx, targetIdx) {
-    const src = currentSummary[srcIdx];
-    const target = currentSummary[targetIdx];
-    const modal = document.getElementById('mainModal');
-    const priceArea = document.getElementById('priceInputArea');
-    const priceInput = document.getElementById('customPrice');
-    
-    document.getElementById('srcText').innerText = `${src.name} ($${src.price})`;
-    document.getElementById('targetText').innerText = `${target.name} ($${target.price})`;
-
-    priceArea.style.display = 'none';
-    if (src.price !== target.price) {
-        priceArea.style.display = 'block';
-        priceInput.value = target.price;
-    }
-
-    modal.style.display = 'flex';
-
-    document.getElementById('modalYes').onclick = function() {
-        if (src.price !== target.price) {
-            target.price = parseInt(priceInput.value) || target.price;
-        }
-        target.qty += src.qty;
-        currentSummary.splice(srcIdx, 1);
-        checkMinorItems(); 
-        modal.style.display = 'none';
-        renderDisplay();
-        showMessage("品項已合併");
-    };
-
-    document.getElementById('modalNo').onclick = function() {
-        modal.style.display = 'none';
-        renderDisplay();
-    };
+function showMessage(text) {
+const toast = document.getElementById('toast');
+toast.innerText = text;
+toast.style.display = 'block';
+setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
 function processOrder() {
-    const input = document.getElementById('inputData').value.trim();
-    if (!input) return;
-    const lines = input.split('\n');
-    const summaryObj = {};
-    const mode = document.querySelector('input[name="calcMode"]:checked').value;
-    lines.forEach(line => {
-        let trimmed = line.trim();
-        if (!trimmed || !trimmed.includes('-')) return;
-        if (trimmed.includes('=')) trimmed = trimmed.split('=')[0].trim();
-        const parts = trimmed.split('-');
-        const content = parts.slice(1).join('-').trim();
-        const rawItems = (mode === 'combo') ? [content] : content.split('+');
-        rawItems.forEach(rawItem => {
-            const subItem = rawItem.trim();
-            const match = subItem.match(/^(.*?)(\d+)\s*元?$/);
-            if (match) {
-                let detail = match[1].trim(); 
-                const price = parseInt(match[2], 10);
-                detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2').replace(/\s+/g, ' ').trim();
-                const key = `${detail}_${price}`;
-                if (!summaryObj[key]) summaryObj[key] = { name: detail, qty: 0, price: price, isMinor: false, checked: false };
-                summaryObj[key].qty += 1;
-            }
-        });
-    });
-    currentSummary = Object.values(summaryObj);
-    checkMinorItems(); 
-    currentSummary.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
-    renderDisplay();
+const input = document.getElementById('inputData').value.trim();
+if (!input) return;
+
+const lines = input.split('\n');
+const summaryObj = {};
+const mode = document.querySelector('input[name="calcMode"]:checked').value;
+
+lines.forEach(line => {
+let trimmed = line.trim();
+if (!trimmed || !trimmed.includes('-')) return;
+if (trimmed.includes('=')) trimmed = trimmed.split('=')[0].trim();
+const parts = trimmed.split('-');
+const content = parts.slice(1).join('-').trim();
+const rawItems = (mode === 'combo') ? [content] : content.split('+');
+
+rawItems.forEach(rawItem => {
+const subItem = rawItem.trim();
+const match = subItem.match(/^(.*?)(\d+)\s*元?$/);
+if (match) {
+let detail = match[1].trim(); 
+const price = parseInt(match[2], 10);
+detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2');
+detail = detail.replace(/\s+/g, ' ').trim();
+const key = `${detail}_${price}`;
+if (!summaryObj[key]) {
+summaryObj[key] = { name: detail, qty: 0, price: price, isMinor: false, checked: false };
+}
+summaryObj[key].qty += 1;
+}
+});
+});
+
+currentSummary = Object.values(summaryObj);
+checkMinorItems(); 
+currentSummary.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+renderDisplay();
 }
 
 function checkMinorItems() {
-    currentSummary.forEach(item => item.isMinor = false);
-    const nameGroups = {};
-    currentSummary.forEach(item => {
-        const cleanName = item.name.replace(/\s+/g, ''); 
-        if (!nameGroups[cleanName]) nameGroups[cleanName] = [];
-        nameGroups[cleanName].push(item);
-    });
-    Object.keys(nameGroups).forEach(cleanName => {
-        const group = nameGroups[cleanName];
-        if (group.length > 1) {
-            group.sort((a, b) => (b.qty !== a.qty) ? (b.qty - a.qty) : (a.price - b.price));
-            for (let i = 1; i < group.length; i++) group[i].isMinor = true;
-        }
-    });
+currentSummary.forEach(item => item.isMinor = false);
+const nameGroups = {};
+currentSummary.forEach(item => {
+const cleanName = item.name.replace(/\s+/g, ''); 
+if (!nameGroups[cleanName]) nameGroups[cleanName] = [];
+nameGroups[cleanName].push(item);
+});
+Object.keys(nameGroups).forEach(cleanName => {
+const group = nameGroups[cleanName];
+if (group.length > 1) {
+group.sort((a, b) => (b.qty !== a.qty) ? (b.qty - a.qty) : (a.price - b.price));
+for (let i = 1; i < group.length; i++) group[i].isMinor = true;
+}
+});
 }
 
 function renderDisplay() {
+const tbody = document.getElementById('resultBody');
+tbody.innerHTML = "";
+let totalQty = 0;
+let totalAmount = 0;
+
+currentSummary.forEach((item, index) => {
+const tr = document.createElement('tr');
+tr.dataset.index = index;
+if (item.checked) tr.classList.add('row-checked');
+
+const starHtml = item.isMinor ? '<span class="star-mark">*</span>' : '';
+const checkIconName = item.checked ? 'check-square' : 'square';
+
+tr.innerHTML = `
+    <td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td>
+    <td>${item.name}${starHtml}</td>
+    <td>${item.qty}</td>
+`;
+
+tbody.appendChild(tr);
+totalQty += item.qty;
+totalAmount += (item.qty * item.price);
+});
+
+document.getElementById('totalQty').innerText = `${totalQty} 份`;
+document.getElementById('totalAmount').innerText = `$${totalAmount.toLocaleString()}`;
+document.getElementById('resultArea').style.display = 'block';
+initIcons();
+initSortable(); // 初始化或更新 Sortable
+}
+
+function initSortable() {
     const tbody = document.getElementById('resultBody');
-    tbody.innerHTML = "";
-    let totalQty = 0;
-    let totalAmount = 0;
-    currentSummary.forEach((item, index) => {
-        const tr = document.createElement('tr');
-        tr.dataset.index = index;
-        if (item.checked) tr.classList.add('row-checked');
-        const starHtml = item.isMinor ? '<span class="star-mark">*</span>' : '';
-        const checkIconName = item.checked ? 'check-square' : 'square';
-        tr.innerHTML = `<td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td><td>${item.name}${starHtml}</td><td>${item.qty}</td>`;
-        tbody.appendChild(tr);
-        totalQty += item.qty;
-        totalAmount += (item.qty * item.price);
+    if (sortableInstance) sortableInstance.destroy();
+    
+    sortableInstance = new Sortable(tbody, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function (evt) {
+            // 如果是合併動作，則不在此處理排序，讓 merge 邏輯接手
+            if (evt.originalEvent.target && evt.originalEvent.target.classList && evt.originalEvent.target.classList.contains('drop-merge')) {
+                return;
+            }
+            // 處理正常排序更新陣列
+            const item = currentSummary.splice(evt.oldIndex, 1)[0];
+            currentSummary.splice(evt.newIndex, 0, item);
+            renderDisplay();
+        },
+        // 利用 Sortable 的事件模擬合併邏輯
+        onMove: function (evt) {
+            // 清除之前的合併標記
+            document.querySelectorAll('.drop-merge').forEach(el => el.classList.remove('drop-merge'));
+            
+            // 判斷拖曳位置是否接近行中心
+            const rect = evt.related.getBoundingClientRect();
+            const centerY = rect.top + rect.height / 2;
+            const mouseY = evt.draggedRect.top + evt.draggedRect.height / 2;
+            
+            if (Math.abs(mouseY - centerY) < 10) {
+                evt.related.classList.add('drop-merge');
+                return false; // 這裡不交換位置
+            }
+        },
+        // 拖曳結束時檢查是否有合併標記
+        onDrop: function(evt) {
+            const targetEl = document.querySelector('.drop-merge');
+            if (targetEl) {
+                const srcIdx = evt.oldIndex;
+                const targetIdx = parseInt(targetEl.dataset.index);
+                targetEl.classList.remove('drop-merge');
+                if (srcIdx !== targetIdx) {
+                    triggerMerge(srcIdx, targetIdx);
+                }
+            }
+        }
     });
-    document.getElementById('totalQty').innerText = `${totalQty} 份`;
-    document.getElementById('totalAmount').innerText = `$${totalAmount.toLocaleString()}`;
-    document.getElementById('resultArea').style.display = 'block';
-    initIcons();
-    initSortable();
+    
+    // 監聽原生的 drop 事件來補捉 Sortable 沒提供的合併觸發點
+    tbody.addEventListener('touchend', (e) => {
+        const targetEl = document.querySelector('.drop-merge');
+        if (targetEl) {
+            const srcIdx = parseInt(document.querySelector('.sortable-ghost')?.dataset.index);
+            const targetIdx = parseInt(targetEl.dataset.index);
+            if (!isNaN(srcIdx)) triggerMerge(srcIdx, targetIdx);
+        }
+    }, { passive: true });
 }
 
 function toggleCheck(index, event) {
-    event.stopPropagation();
-    currentSummary[index].checked = !currentSummary[index].checked;
-    renderDisplay();
+event.stopPropagation();
+currentSummary[index].checked = !currentSummary[index].checked;
+renderDisplay();
 }
 
 function resetAllChecks() {
@@ -528,22 +561,67 @@ function resetAllChecks() {
     showMessage("已重設所有勾選狀態");
 }
 
+function triggerMerge(srcIdx, targetIdx) {
+const src = currentSummary[srcIdx];
+const target = currentSummary[targetIdx];
+const modal = document.getElementById('mainModal');
+const modalMsg = document.getElementById('modalMsg');
+const priceArea = document.getElementById('priceInputArea');
+const priceInput = document.getElementById('customPrice');
+priceArea.style.display = 'none';
+if (src.price !== target.price) {
+modalMsg.innerHTML = `⚠️ 兩品項單價不同！<br><span style="font-size:13px; color:#d93025;">${src.name} ($${src.price})<br>${target.name} ($${target.price})</span><br><br>合併後要使用哪個金額？`;
+priceArea.style.display = 'block';
+priceInput.value = target.price;
+} else {
+modalMsg.innerText = `將「${src.name}」合併至「${target.name}」？`;
+}
+modal.style.display = 'flex';
+document.getElementById('modalYes').onclick = function() {
+if (src.price !== target.price) target.price = parseInt(priceInput.value) || target.price;
+target.qty += src.qty;
+currentSummary.splice(srcIdx, 1);
+checkMinorItems(); 
+modal.style.display = 'none';
+renderDisplay();
+showMessage("品項已合併");
+};
+document.getElementById('modalNo').onclick = function() { 
+    modal.style.display = 'none'; 
+    renderDisplay(); // 取消合併時重新渲染還原位置
+};
+}
+
 function copyResult() {
-    if (currentSummary.length === 0) return;
-    let copyText = "【訂單統計結果】\n";
-    currentSummary.forEach(item => { copyText += `${item.name}${item.isMinor?"*":""} * ${item.qty}\n`; });
-    copyText += `\n總份數：${document.getElementById('totalQty').innerText}\n總金額：${document.getElementById('totalAmount').innerText}`;
-    const el = document.createElement('textarea'); el.value = copyText; document.body.appendChild(el); el.select();
-    document.execCommand('copy'); document.body.removeChild(el); showMessage("統計結果已複製！");
+if (currentSummary.length === 0) return;
+let copyText = "【訂單統計結果】\n";
+currentSummary.forEach(item => {
+const starText = item.isMinor ? "*" : "";
+copyText += `${item.name}${starText} * ${item.qty}\n`;
+});
+copyText += `\n總份數：${document.getElementById('totalQty').innerText}\n`;
+copyText += `總金額：${document.getElementById('totalAmount').innerText}`;
+const el = document.createElement('textarea');
+el.value = copyText;
+document.body.appendChild(el); 
+el.select();
+try {
+document.execCommand('copy');
+showMessage("統計結果已複製！");
+} catch (err) {
+showMessage("複製失敗，請手動複製");
+}
+document.body.removeChild(el);
 }
 
 function clearContent() {
-    document.getElementById('inputData').value = "";
-    document.getElementById('resultArea').style.display = 'none';
-    currentSummary = [];
+document.getElementById('inputData').value = "";
+document.getElementById('resultArea').style.display = 'none';
+currentSummary = [];
 }
 
 window.onload = initIcons;
 </script>
+
 </body>
 </html>
