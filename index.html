@@ -1,627 +1,786 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>訂單金額統計助手 - 整理優化版</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐點統計綜合管理系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<style>
-/* --- 變數定義 --- */
-:root {
---primary-color: #3498db;
---primary-hover: #2980b9;
---success-color: #27ae60;
---success-hover: #219150;
---danger-color: #e74c3c;
---gray-color: #95a5a6;
---gray-hover: #7f8c8d;
---bg-color: #f4f7f9;
---card-bg: #ffffff;
---text-color: #2c3e50;
---border-color: #e0e6ed;
---hint-bg: #e7f3ff;
---hint-border: #b3d7ff;
---hint-text: #0056b3;
-}
 
-/* --- 基礎樣式 --- */
-body { 
-font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; 
-max-width: 488px; 
-margin: 20px auto; 
-padding: 15px; 
-line-height: 1.6; 
-background-color: var(--bg-color); 
-color: var(--text-color);
-}
-
-.container { 
-background: var(--card-bg); 
-padding: 20px; 
-border-radius: 16px; 
-box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-}
-
-h2 { 
-text-align: center; 
-margin-top: 0; 
-display: flex; 
-align-items: center; 
-justify-content: center; 
-gap: 10px; 
-font-size: 1.4rem;
-}
-        
-        /* 統一圖示大小 */
-        .lucide {
-            width: 18px;
-            height: 18px;
-            stroke-width: 2px;
-        }
-
-/* --- 提示區域 --- */
-.hint { 
-background-color: var(--hint-bg); 
-border: 1px solid var(--hint-border); 
-color: var(--hint-text); 
-font-size: 13px; 
-padding: 12px 15px; 
-border-radius: 8px; 
-margin-bottom: 20px; 
-}
-.hint span { 
-display: block; 
-position: relative; 
-padding-left: 18px; 
-}
-.hint span::before { 
-content: "•"; 
-position: absolute; 
-left: 0; 
-font-weight: bold; 
-}
-
-/* --- 模式切換樣式 --- */
-.mode-selector {
-display: flex;
-background: #eee;
-padding: 4px;
-border-radius: 8px;
-margin-bottom: 15px;
-font-size: 14px;
-}
-.mode-selector label {
-flex: 1;
-text-align: center;
-padding: 8px;
-cursor: pointer;
-border-radius: 6px;
-transition: all 0.2s;
-}
-.mode-selector input { display: none; }
-.mode-selector input:checked + span {
-background: white;
-display: block;
-border-radius: 6px;
-box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-font-weight: bold;
-color: var(--primary-color);
-}
-
-/* --- 輸入區域 --- */
-textarea { 
-width: 100%; 
-height: 160px; 
-padding: 12px; 
-border: 2px solid var(--border-color); 
-border-radius: 10px; 
-font-size: 14px; 
-margin-bottom: 15px; 
-box-sizing: border-box; 
-resize: vertical; 
-transition: border-color 0.3s;
-}
-textarea:focus { 
-outline: none; 
-border-color: var(--primary-color); 
-}
-
-/* --- 按鈕樣式 --- */
-.btn-group { 
-display: flex; 
-flex-wrap: wrap;
-gap: 8px; 
-margin-bottom: 20px; 
-}
-button { 
-flex: 1; 
-min-width: 100px;
-padding: 10px 5px; 
-border: none; 
-border-radius: 8px; 
-cursor: pointer; 
-font-size: 13px; 
-font-weight: bold; 
-transition: all 0.3s; 
-display: flex;
-align-items: center;
-justify-content: center;
-            gap: 6px;
-}
-.process-btn { background-color: var(--primary-color); color: white; }
-.process-btn:hover { background-color: var(--primary-hover); }
-.copy-btn { background-color: var(--success-color); color: white; }
-.copy-btn:hover { background-color: var(--success-hover); }
-.clear-btn { background-color: var(--gray-color); color: white; }
-.clear-btn:hover { background-color: var(--gray-hover); }
-
-/* --- 結果表格 --- */
-#resultArea { margin-top: 20px; display: none; animation: fadeIn 0.5s; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 重設勾選專用樣式 */
-        .table-header-tools {
+    <style>
+        /* --- 全域導覽樣式 --- */
+        .app-nav {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 8px;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 9999;
         }
-        .reset-check-btn {
-            background: none;
+        .nav-btn {
+            padding: 12px 20px;
+            background: #455A64;
+            color: white;
             border: none;
-            color: var(--primary-color);
-            font-size: 12px;
+            border-radius: 30px;
             cursor: pointer;
-            padding: 0;
-            min-width: auto;
-            text-decoration: underline;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            white-space: nowrap;
+            text-align: center;
         }
-        .reset-check-btn:hover {
-            color: var(--primary-hover);
-            background: none;
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
         }
-        .reset-check-btn .lucide { width: 14px; height: 14px; }
+        .nav-btn.active {
+            background: #7A918D;
+            color: white;
+            font-weight: bold;
+            border: 2px solid white;
+        }
+        .page-container { display: none; }
+        .page-container.active { display: block; }
 
-#resultTable { 
-width: 100%; 
-border-collapse: collapse; 
-margin-bottom: 15px; 
-background: #fff; 
-border-radius: 8px;
-overflow: hidden;
-font-size: 14px;
-table-layout: fixed;
-}
-#resultTable th { 
-background-color: #f8f9fa; 
-color: #34495e; 
-padding: 12px 8px; 
-border-bottom: 2px solid #eee; 
-}
-#resultTable td { 
-padding: 12px 8px; 
-border-bottom: 1px solid #f1f1f1; 
-color: var(--text-color); 
-cursor: grab; 
-position: relative; 
-vertical-align: middle; 
-word-break: break-all;
-}
+        /* --- 網頁一：月結統計 CSS (原始保留) --- */
+        #page1 { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif; background: #F2F0EB; padding: 20px; letter-spacing: 0.05em; padding-bottom: 100px; }
+        #page1 .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        #page1 h1 { text-align: center; color: #455A64; font-weight: normal; margin-bottom: 30px; }
+        #page1 .control-panel { display: flex; gap: 20px; background: #E8E6E1; padding: 20px; border-radius: 8px; margin-bottom: 25px; align-items: center; color: #444; }
+        #page1 .main-content { display: grid; grid-template-columns: 1.2fr 2fr; gap: 25px; }
+        #page1 .section { border: 1px solid #EBEBEB; border-radius: 8px; padding: 20px; background: #fff; display: flex; flex-direction: column; margin-bottom: 25px; }
+        #page1 h3 { border-bottom: 2px solid #F0F0F0; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: #444; font-size: 1.1rem; font-weight: 600; }
+        #page1 .scroll-area { overflow-y: auto; border: 1px solid #F5F5F5; border-radius: 4px; max-height: 400px; }
+        #page1 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        #page1 th, #page1 td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #F0F0F0; }
+        #page1 #summaryTable th:nth-child(2), #page1 #summaryTable td:nth-child(2), #page1 #dailyTable th:nth-child(2), #page1 #dailyTable td:nth-child(2) { text-align: right; }
+        #page1 th { background-color: #E0E5DF; color: #333; position: sticky; top: 0; z-index: 10; font-weight: 700; }
+        #page1 .excluded-header-row { background-color: #F7F7F7; color: #777; font-size: 13px; text-align: center; padding: 8px; }
+        #page1 .excluded-row { background-color: #FCFCFC; color: #AAA; }
+        #page1 .name-cell { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        #page1 .btn { border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; color: white; font-size: 13px; display: none; }
+        #page1 #copyBtn { background-color: #7A918D; }
+        #page1 #copyImgBtn { background-color: #6B7C8A; }
+        #page1 .btn-group { display: flex; gap: 10px; }
+        #page1 .price-input { width: 70px; text-align: right; border: 1px solid #DDD; border-radius: 4px; padding: 5px; color: #B05B5B; }
+        #page1.capturing .price-input { display: none !important; }
+        #page1.capturing .price-text { display: inline !important; font-weight: bold; color: #B05B5B; }
+        .diff-warning { color: #d93025; font-size: 12px; margin-right: 4px; vertical-align: middle; cursor: help; }
 
-/* 精確控制欄位寬度 */
-#resultTable th:nth-child(1), #resultTable td:nth-child(1) { width: 50px; text-align: center; padding: 0; }
-#resultTable th:nth-child(2), #resultTable td:nth-child(2) { text-align: left; }
-#resultTable th:nth-child(3), #resultTable td:nth-child(3) { width: 50px; text-align: center; }
+        /* --- 網頁二：每日金額 CSS (原始保留) --- */
+        #page2 { background-color: #fdfbf7; font-family: 'Noto Sans TC', sans-serif; color: #57534e; padding: 20px; padding-bottom: 100px; }
+        #page2 .journal-box { background: #fff; border: 1px solid #e7e5e4; border-radius: 6px; }
 
-/* --- 勾選欄位核心修正 --- */
-.check-cell { 
-    cursor: pointer !important; 
-    user-select: none; 
-    color: #cbd5e0; 
-    transition: color 0.2s; 
-    display: flex !important; /* 強制使用 flex */
-    align-items: center;      /* 垂直居中 */
-    justify-content: center;   /* 水平居中 */
-    min-height: 48px;          /* 給予最小高度確保置中空間 */
-    height: 100%;
-}
-.check-cell i, .check-cell svg {
-    display: block;
-}
+        /* --- 網頁三：統計助手 CSS (套用深色質感版變數) --- */
+        #page3 {
+            --p3-primary: #3a6351;
+            --p3-primary-hover: #2a4a3c;
+            --p3-success: #6a9c89;
+            --p3-danger: #c94c4c;
+            --p3-gray: #7d8597;
+            --p3-bg: #e5e9e7;
+            --p3-hint-bg: #f0f4f2;
+            --p3-hint-border: #c8d6cf;
+            --p3-hint-text: #2d4f3f;
+            
+            background-color: var(--p3-bg);
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            color: #24292e;
+            padding: 10px 15px 100px;
+            min-height: 100vh;
+        }
+        #page3 .container {
+            background: #ffffff;
+            padding: 25px 22px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(58, 99, 81, 0.15);
+            max-width: 488px;
+            margin: 0 auto;
+        }
+        #page3 .header-area { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; }
+        #page3 h2 { text-align: center; margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.4rem; color: var(--p3-primary); font-weight: 800; letter-spacing: 1px; }
+        #page3 .help-toggle-btn { background: none; border: none; color: var(--p3-gray); cursor: pointer; padding: 5px; transition: all 0.2s; display: flex; align-items: center; margin-left: 8px; }
+        #page3 .help-toggle-btn:hover, #page3 .help-toggle-btn.active { color: var(--p3-primary); }
+        #page3 .lucide { width: 20px; height: 20px; stroke-width: 2.5px; }
+        
+        #page3 .hint { background-color: var(--p3-hint-bg); border: 1px solid var(--p3-hint-border); color: var(--p3-hint-text); font-size: 13px; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        #page3 .hint span { display: block; position: relative; padding-left: 20px; margin-bottom: 4px; }
+        #page3 .hint span::before { content: "◆"; position: absolute; left: 0; font-size: 10px; top: 2px; }
 
-.row-checked { color: var(--gray-color) !important; }
-.row-checked td { color: var(--gray-color) !important; }
-.row-checked .check-cell { color: var(--success-color); }
-.row-checked td:nth-child(2) { text-decoration: line-through; }
+        #page3 .mode-selector { display: flex; background: #dfe4e2; padding: 4px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; }
+        #page3 .mode-selector label { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 9px; transition: all 0.3s; }
+        #page3 .mode-selector input { display: none; }
+        #page3 .mode-selector input:checked + span { background: white; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); font-weight: bold; color: var(--p3-primary); }
 
-/* --- SortableJS 拖放樣式 --- */
-.sortable-ghost { opacity: 0.4; background-color: #f0f0f0; }
-.drop-merge { background-color: #fff3e0 !important; outline: 2px solid #ff9800; z-index: 10; }
+        #page3 textarea { width: 100%; height: 180px; padding: 15px; border: 2px solid #cbd5e0; border-radius: 14px; font-size: 14px; margin-bottom: 20px; box-sizing: border-box; background-color: #f8faf9; transition: all 0.3s; }
+        #page3 textarea:focus { outline: none; border-color: var(--p3-primary); background-color: #fff; box-shadow: 0 0 0 4px rgba(58, 99, 81, 0.1); }
 
-/* --- 統計區塊 --- */
-.summary-box { 
-background: #fdf9f2; 
-border-left: 5px solid #f1c40f; 
-padding: 15px; 
-border-radius: 8px; 
-}
-.summary-line { 
-display: flex; 
-justify-content: space-between; 
-font-size: 16px; 
-font-weight: bold; 
-margin-bottom: 5px;
-}
-.total-price { color: var(--danger-color); font-size: 20px; }
+        #page3 .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 25px; }
+        #page3 button.main-btn { flex: 1; min-width: 100px; padding: 12px 10px; border: none; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        #page3 button.main-btn:active { transform: scale(0.96); }
+        #page3 .process-btn { background-color: var(--p3-primary); color: white; box-shadow: 0 4px 12px rgba(58, 99, 81, 0.25); }
+        #page3 .copy-btn { background-color: var(--p3-success); color: white; }
+        #page3 .clear-btn { background-color: var(--p3-gray); color: white; }
 
-/* --- 彈窗與訊息 --- */
-.modal { 
-display: none; 
-position: fixed; 
-top: 0; left: 0; width: 100%; height: 100%; 
-background: rgba(0,0,0,0.6); 
-z-index: 2000; 
-align-items: center; 
-justify-content: center; 
-}
-.modal-content { 
-background: white; 
-padding: 25px; 
-border-radius: 12px; 
-width: 85%;
-max-width: 300px; 
-text-align: center; 
-box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
-}
-.modal-input { 
-width: 80%; 
-padding: 10px; 
-margin-bottom: 20px; 
-border: 2px solid #ddd; 
-border-radius: 6px; 
-font-size: 18px; 
-text-align: center; 
-}
-.modal-btns { display: flex; gap: 10px; }
+        #page3 .category-block { margin-bottom: 35px; }
+        #page3 .category-title { font-size: 14px; font-weight: 800; color: var(--p3-primary); background: #f1f4f3; padding: 4px 12px; border-radius: 6px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 6px; }
+        #page3 .table-header-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        #page3 .cat-mode-switch { display: flex; background: #dfe4e2; padding: 2px; border-radius: 20px; font-size: 11px; }
+        #page3 .cat-mode-switch label { padding: 2px 8px; cursor: pointer; border-radius: 18px; color: #718096; }
+        #page3 .cat-mode-switch input { display: none; }
+        #page3 .cat-mode-switch input:checked + span { background: var(--p3-primary); color: white; padding: 2px 8px; border-radius: 18px; display: block; font-weight: bold; }
 
-.msg-box { 
-position: fixed; 
-bottom: 30px; 
-left: 50%; 
-transform: translateX(-50%); 
-background: #333; 
-color: white; 
-padding: 10px 20px; 
-border-radius: 50px; 
-display: none; 
-z-index: 3000; 
-font-size: 13px; 
-box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-white-space: nowrap;
-}
+        #page3 .result-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 15px; background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; table-layout: fixed; border: 1px solid #cbd5e0; }
+        #page3 .result-table th { background-color: #f1f4f3; color: #4a5568; padding: 8px; border-bottom: 2px solid #cbd5e0; font-weight: 700; }
+        #page3 .result-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f0; vertical-align: middle; word-break: break-all; cursor: grab; }
+        #page3 .result-table th:nth-child(1), #page3 .result-table td:nth-child(1) { width: 45px; text-align: center; }
+        #page3 .result-table th:nth-child(3), #page3 .result-table td:nth-child(3) { width: 55px; text-align: center; font-weight: 800; }
 
-.star-mark { 
-color: var(--danger-color); 
-font-weight: bold; 
-margin-left: 4px; 
-font-size: 1.1em; 
-vertical-align: middle; 
-}
-</style>
+        #page3 .check-cell { cursor: pointer; color: #cbd5e0; display: flex; align-items: center; justify-content: center; min-height: 24px; }
+        #page3 .row-checked { background-color: #f7f9f8 !important; }
+        #page3 .row-checked td { color: #a0aec0 !important; }
+        #page3 .row-checked .check-cell { color: var(--p3-success); }
+        #page3 .row-checked td:nth-child(2) { text-decoration: line-through; opacity: 0.7; }
+
+        #page3 .drop-before td { border-top: 4px solid var(--p3-primary) !important; }
+        #page3 .drop-after td { border-bottom: 4px solid var(--p3-primary) !important; }
+        #page3 .dragging { opacity: 0.5; background-color: #edf2f1; }
+        #page3 .drop-merge { background-color: #fffaf0 !important; outline: 2px solid #ed8936; z-index: 10; }
+
+        #page3 .summary-box { background: #f8faf9; border: 1px solid #dce4e1; border-left: 6px solid var(--p3-primary); padding: 12px 15px; border-radius: 10px; margin-top: 10px; }
+        #page3 .summary-line { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #4a5568; }
+        #page3 .total-price { color: var(--danger-color); font-size: 18px; font-weight: 900; }
+
+        /* 通用彈窗與訊息 */
+        .p3-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 39, 35, 0.6); backdrop-filter: blur(3px); z-index: 9999; align-items: center; justify-content: center; }
+        .p3-modal-content { background: white; padding: 30px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .p3-msg-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #2d3748; color: white; padding: 12px 28px; border-radius: 50px; display: none; z-index: 9999; font-size: 14px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+    </style>
 </head>
 <body>
 
-<div id="toast" class="msg-box"></div>
+    <div id="p3-toast" class="p3-msg-box"></div>
 
-<div id="mainModal" class="modal">
-<div class="modal-content">
-<p id="modalMsg" style="margin-top: 0;">訊息內容</p>
-<div id="priceInputArea" style="display: none;">
-<p style="font-size: 13px; color: #666;">請確認或修改合併後的單價：</p>
-<input type="number" id="customPrice" class="modal-input" placeholder="金額">
-</div>
-<div class="modal-btns">
-<button class="process-btn" id="modalYes">確定合併</button>
-<button class="clear-btn" id="modalNo">取消</button>
-</div>
-</div>
-</div>
-
-<div class="container">
-    <h2><i data-lucide="clipboard-list"></i> 訂單明細統計助手 <i data-lucide="clipboard-list"></i></h2>
-
-<div class="hint">
-<span>格式：姓名-餐點 價格 (支援「元」字)</span>
-<span>相同名稱但價格不同時會標註 *</span>
-<span><b>拖拉</b>品項可進行 <b>合併</b> 或 <b>排序</b></span>
-</div>
-
-<div class="mode-selector">
-<label>
-<input type="radio" name="calcMode" value="split" checked>
-<span>標準模式 (拆分 + 號)</span>
-</label>
-<label>
-<input type="radio" name="calcMode" value="combo">
-<span>套餐模式 (保留整行)</span>
-</label>
-</div>
-
-<textarea id="inputData" placeholder="請輸入訂單，例如：
-王小明-排骨飯 100
-李大華-排骨飯 120元
-張阿三-雞腿飯 110+大冰紅 30元"></textarea>
-
-<div class="btn-group">
-        <button class="process-btn" onclick="processOrder()"><i data-lucide="rocket"></i> 開始統計</button>
-        <button class="copy-btn" onclick="copyResult()"><i data-lucide="copy"></i> 複製結果</button>
-        <button class="clear-btn" onclick="clearContent()"><i data-lucide="trash-2"></i> 清除</button>
-</div>
-
-<div id="resultArea">
-        <div class="table-header-tools">
-            <button class="reset-check-btn" onclick="resetAllChecks()"><i data-lucide="refresh-cw"></i> 重設所有勾選</button>
+    <div id="p3-mainModal" class="p3-modal">
+        <div class="p3-modal-content">
+            <p id="p3-modalMsg" style="margin-top: 0; font-weight: 700;">訊息內容</p>
+            <div id="p3-priceInputArea" style="display: none;">
+                <p style="font-size: 13px; color: #718096;">請確認或修改合併後的單價：</p>
+                <input type="number" id="p3-customPrice" style="width:100%; padding:10px; margin:15px 0; border:2px solid #cbd5e0; border-radius:10px; text-align:center;" placeholder="金額">
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="nav-btn" style="flex:1; background: #3a6351;" id="p3-modalYes">確定合併</button>
+                <button class="nav-btn" style="flex:1; background: #7d8597;" id="p3-modalNo">取消</button>
+            </div>
         </div>
-<table id="resultTable">
-<thead>
-<tr>
-    <th><i data-lucide="check-square"></i></th>
-    <th>品項與備註</th>
-    <th>數量</th>
-</tr>
-</thead>
-<tbody id="resultBody"></tbody>
-</table>
+    </div>
 
-<div class="summary-box">
-<div class="summary-line">
-<span>總份數：</span>
-<span id="totalQty">0 份</span>
-</div>
-<div class="summary-line">
-<span>應收總金額：</span>
-<span id="totalAmount" class="total-price">$0</span>
-</div>
-</div>
-</div>
-</div>
+    <nav class="app-nav">
+        <button class="nav-btn active" onclick="switchPage(1)">1. 月結統計</button>
+        <button class="nav-btn" onclick="switchPage(2)">2. 每日金額</button>
+        <button class="nav-btn" onclick="switchPage(3)">3. 統計助手</button>
+    </nav>
 
-<script>
-    function initIcons() {
-        lucide.createIcons();
-    }
-    
-let currentSummary = []; 
-let sortableInstance = null;
+    <!-- 網頁一：月結統計 -->
+    <div id="page1" class="page-container active">
+        <div class="container">
+            <h1>月結餐點費用統計</h1>
+            <div class="control-panel">
+                <div>1. 上傳檔案：<input type="file" id="fileInput" accept=".txt"></div>
+                <div>2. 選擇月份：<select id="monthSelect"></select></div>
+                <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">手動清除所有緩存</button></div>
+            </div>
+            <div class="main-content">
+                <div class="left-column">
+                    <div class="section">
+                        <h3><span>人員費用總計</span><span id="grandTotalDisplay" style="color: #5D4037;">0</span></h3>
+                        <div class="scroll-area" id="summaryScrollArea">
+                            <table id="summaryTable">
+                                <thead><tr><th style="width:70%">姓名</th><th style="width:30%">金額</th></tr></thead>
+                                <tbody id="includedBody"></tbody>
+                                <tbody><tr class="excluded-header-row"><td colspan="2">▼ 排除不計區域 (不列入總額)</td></tr></tbody>
+                                <tbody id="excludedBody" class="excluded-row"></tbody>
+                            </table>
+                        </div>
+                        <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
+                    </div>
+                    <div class="section">
+                        <h3><span>每日結算總額</span><span id="dailyGrandTotalDisplay" style="color: #5D4037;">0</span></h3>
+                        <div class="scroll-area"><table id="dailyTable"><thead><tr><th style="width:60%">日期</th><th style="width:40%">當日總額</th></tr></thead><tbody id="dailyBody"></tbody></table></div>
+                    </div>
+                </div>
+                <div class="section" style="min-height: 600px;">
+                    <h3><div>個人明細：<span id="selectedPersonName">-</span></div><div class="btn-group"><button id="copyBtn" class="btn">📋 複製文字</button><button id="copyImgBtn" class="btn">🖼️ 複製圖片</button></div></h3>
+                    <div id="captureArea" style="background: white; padding: 15px; border-radius: 6px;">
+                        <h4 id="imgTitle" style="margin: 0 0 15px 0; display:none; border-bottom: 2px solid #8FA39D; padding-bottom: 8px; font-size: 18px; color: #333;"></h4>
+                        <div id="personalDetail"></div>
+                        <div id="imgFooter" style="display:none; margin-top:25px; padding:15px; background-color:#F4F7F6; border-radius:8px; border:1px solid #E0EAE8;">
+                            <div style="transform: translateY(-5px); font-size:13px; color:#546E7A; line-height:1.6;">
+                                <div id="imgFooterMonthText" style="font-weight:bold; color:#455A64; margin-bottom:4px;">2月的午餐錢~Line pay或是匯款都可以~</div>
+                                <div style="margin-bottom:10px;">(不要ipass money)</div>
+                                <div style="font-size:11px; color:#90A4AE; letter-spacing:0.1em; border-top:1px solid #DCE6E5; padding-top:8px;">↓匯款帳號↓</div>
+                                <div style="font-family:monospace; font-size:14px; color:#37474F;">京城銀行 總行營業部 (054)<br>001280705711</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function showMessage(text) {
-const toast = document.getElementById('toast');
-toast.innerText = text;
-toast.style.display = 'block';
-setTimeout(() => { toast.style.display = 'none'; }, 2000);
-}
+    <!-- 網頁二：每日金額 -->
+    <div id="page2" class="page-container">
+        <div class="max-w-md mx-auto py-10">
+            <header class="mb-8 text-center"><h1 class="text-2xl font-normal tracking-[0.15em] text-stone-700 mb-3">．每日訂餐金額紀錄．</h1><div class="w-8 h-px bg-stone-300 mx-auto"></div></header>
+            <div class="space-y-6">
+                <section>
+                    <label class="text-xs font-medium text-stone-400 mb-2 block">輸入訂單內容</label>
+                    <textarea id="orderInput2" class="w-full h-44 p-4 journal-box outline-none resize-none text-sm text-stone-700 leading-relaxed" placeholder="請在此貼上..."></textarea>
+                    <div class="flex gap-3 mt-3">
+                        <button onclick="handleCalculate2()" class="flex-[2] bg-stone-600 text-white text-sm py-3 rounded shadow-sm">開始統計</button>
+                        <button onclick="handleClear2()" class="flex-1 border border-stone-300 text-stone-500 text-sm py-3 rounded hover:bg-stone-50">清空</button>
+                    </div>
+                </section>
+                <div id="resultArea2" class="hidden space-y-5">
+                    <article class="journal-box p-6 relative bg-[#fffdfa]">
+                        <div id="lunchResults2" class="space-y-2 text-base mb-5"></div>
+                        <div id="drinkResults2" class="space-y-2 text-base"></div>
+                        <div class="mt-6 pt-4 border-t border-dotted border-stone-300 space-y-2">
+                            <div id="floor1Row2" class="hidden flex justify-between items-baseline text-stone-500"><span class="text-xs tracking-widest font-medium">1F 合計</span><div class="text-lg font-light"><span id="floor1TotalDisplay2">0</span> 元</div></div>
+                            <div class="flex justify-between items-baseline text-stone-500"><span class="text-xs tracking-widest font-medium">3F 合計</span><div class="text-lg font-light"><span id="floor3TotalDisplay2">0</span> 元</div></div>
+                            <div class="flex justify-between items-baseline pt-2 border-t border-stone-100"><span class="text-xs text-stone-400">總合計</span><div class="text-2xl font-light text-stone-800"><span id="grandTotal2">0</span> <span class="text-xs font-normal">元</span></div></div>
+                        </div>
+                        <div class="flex gap-2 mt-5">
+                            <button onclick="saveToHistory2()" class="flex-1 py-3 border border-stone-200 text-stone-600 text-xs rounded">記入歷史</button>
+                            <button id="copyBtn2_real" onclick="handleCopy2()" class="flex-1 py-3 border border-stone-300 bg-stone-100 text-stone-600 text-xs rounded flex items-center justify-center gap-1">複製結果</button>
+                        </div>
+                    </article>
+                </div>
+                <section class="pt-6 border-t border-stone-200">
+                    <div class="flex justify-between items-end mb-4 px-1"><h3 class="text-xs font-medium text-stone-500">歷史紀錄</h3><select id="monthFilter2" onchange="renderHistory2()" class="bg-transparent text-xs text-stone-500 outline-none text-right"></select></div>
+                    <div class="bg-stone-100 p-3 rounded mb-4 flex justify-between items-center border border-stone-200"><span class="text-xs text-stone-500">本月累計</span><span class="text-lg font-normal text-stone-700" id="monthTotalDisplay2">0 元</span></div>
+                    <div id="historyList2" class="space-y-2"></div>
+                </section>
+            </div>
+        </div>
+        <textarea id="hiddenCopyArea2" class="absolute -top-full opacity-0" readonly></textarea>
+    </div>
 
-function processOrder() {
-const input = document.getElementById('inputData').value.trim();
-if (!input) return;
+    <!-- 網頁三：統計助手 (最新覆蓋) -->
+    <div id="page3" class="page-container">
+        <div class="container">
+            <div class="header-area">
+                <h2><i data-lucide="shield-check"></i> 訂單明細統計助手 <i data-lucide="shield-check"></i></h2>
+                <button class="help-toggle-btn" onclick="toggleP3Hint()" title="顯示幫助">
+                    <i data-lucide="help-circle"></i>
+                </button>
+            </div>
 
-const lines = input.split('\n');
-const summaryObj = {};
-const mode = document.querySelector('input[name="calcMode"]:checked').value;
+            <div class="hint" id="p3-hintBox">
+                <span><b>標準模式：</b>自動拆分「+」號，將複數品項分開統計。</span>
+                <span><b>套餐模式：</b>完整保留整行品項名稱（不拆分）。</span>
+                <span><b>分區統計：</b>支援同時貼入午餐、飲料等分類，系統將自動分區統計（自動過濾樓層資訊）。</span>
+                <span><b>互動操作：</b>可針對各分類獨立切換模式，拖拉品項可合併或排序。</span>
+            </div>
 
-lines.forEach(line => {
-let trimmed = line.trim();
-if (!trimmed || !trimmed.includes('-')) return;
-if (trimmed.includes('=')) trimmed = trimmed.split('=')[0].trim();
-const parts = trimmed.split('-');
-const content = parts.slice(1).join('-').trim();
-const rawItems = (mode === 'combo') ? [content] : content.split('+');
+            <div class="mode-selector">
+                <label><input type="radio" name="p3-calcMode" value="split" checked><span>標準模式</span></label>
+                <label><input type="radio" name="p3-calcMode" value="combo"><span>套餐模式</span></label>
+            </div>
 
-rawItems.forEach(rawItem => {
-const subItem = rawItem.trim();
-const match = subItem.match(/^(.*?)(\d+)\s*元?$/);
-if (match) {
-let detail = match[1].trim(); 
-const price = parseInt(match[2], 10);
-detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2');
-detail = detail.replace(/\s+/g, ' ').trim();
-const key = `${detail}_${price}`;
-if (!summaryObj[key]) {
-summaryObj[key] = { name: detail, qty: 0, price: price, isMinor: false, checked: false };
-}
-summaryObj[key].qty += 1;
-}
-});
-});
+            <textarea id="p3-inputData" placeholder="請輸入訂單內容，例如：
+午餐
+王小明-排骨飯 100
+飲料
+李大華-四季春 30"></textarea>
 
-currentSummary = Object.values(summaryObj);
-checkMinorItems(); 
-currentSummary.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
-renderDisplay();
-}
+            <div class="btn-group">
+                <button class="main-btn process-btn" onclick="p3_processOrder()"><i data-lucide="rocket"></i> 開始統計</button>
+                <button class="main-btn copy-btn" onclick="p3_copyResult()"><i data-lucide="copy"></i> 複製結果</button>
+                <button class="main-btn clear-btn" onclick="p3_clearContent()"><i data-lucide="trash-2"></i> 清除</button>
+            </div>
 
-function checkMinorItems() {
-currentSummary.forEach(item => item.isMinor = false);
-const nameGroups = {};
-currentSummary.forEach(item => {
-const cleanName = item.name.replace(/\s+/g, ''); 
-if (!nameGroups[cleanName]) nameGroups[cleanName] = [];
-nameGroups[cleanName].push(item);
-});
-Object.keys(nameGroups).forEach(cleanName => {
-const group = nameGroups[cleanName];
-if (group.length > 1) {
-group.sort((a, b) => (b.qty !== a.qty) ? (b.qty - a.qty) : (a.price - b.price));
-for (let i = 1; i < group.length; i++) group[i].isMinor = true;
-}
-});
-}
+            <div id="p3-resultArea" style="display:none;">
+                <div id="p3-categoryContainer"></div>
+            </div>
+        </div>
+    </div>
 
-function renderDisplay() {
-const tbody = document.getElementById('resultBody');
-tbody.innerHTML = "";
-let totalQty = 0;
-let totalAmount = 0;
+    <script>
+        // 通用切換邏輯
+        function switchPage(p) {
+            document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('page'+p).classList.add('active');
+            document.querySelectorAll('.nav-btn')[p-1].classList.add('active');
+            if(p === 1) render();
+            if(p === 3) lucide.createIcons();
+        }
 
-currentSummary.forEach((item, index) => {
-const tr = document.createElement('tr');
-tr.dataset.index = index;
-if (item.checked) tr.classList.add('row-checked');
+        function buttonFeedback(btn, originalText) {
+            btn.textContent = "✅ 已複製！";
+            setTimeout(() => { btn.textContent = originalText; }, 1500);
+        }
 
-const starHtml = item.isMinor ? '<span class="star-mark">*</span>' : '';
-const checkIconName = item.checked ? 'check-square' : 'square';
+        /* --- 網頁一 JS (月結統計) 保持不變 --- */
+        let rawFileText = ""; let forceIncludeDates = new Set(); let excludedUsers = new Set();
+        let personalStats = {}; let dailyStats = {}; let nonMonthlyDates = []; let currentSelectedUser = null;
 
-tr.innerHTML = `
-    <td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td>
-    <td>${item.name}${starHtml}</td>
-    <td>${item.qty}</td>
-`;
+        window.onload = function() { loadFromLocalStorage(); updateMonthSelector2(); renderHistory2(); lucide.createIcons(); };
 
-tbody.appendChild(tr);
-totalQty += item.qty;
-totalAmount += (item.qty * item.price);
-});
+        function saveToLocalStorage() {
+            const data = { rawFileText, forceIncludeDates: Array.from(forceIncludeDates), excludedUsers: Array.from(excludedUsers), lastSelectedMonth: document.getElementById('monthSelect').value };
+            localStorage.setItem('lunchStatsData', JSON.stringify(data));
+        }
 
-document.getElementById('totalQty').innerText = `${totalQty} 份`;
-document.getElementById('totalAmount').innerText = `$${totalAmount.toLocaleString()}`;
-document.getElementById('resultArea').style.display = 'block';
-initIcons();
-initSortable(); // 初始化或更新 Sortable
-}
-
-function initSortable() {
-    const tbody = document.getElementById('resultBody');
-    if (sortableInstance) sortableInstance.destroy();
-    
-    sortableInstance = new Sortable(tbody, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: function (evt) {
-            // 如果是合併動作，則不在此處理排序，讓 merge 邏輯接手
-            if (evt.originalEvent.target && evt.originalEvent.target.classList && evt.originalEvent.target.classList.contains('drop-merge')) {
-                return;
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('lunchStatsData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                rawFileText = data.rawFileText || "";
+                forceIncludeDates = new Set(data.forceIncludeDates || []);
+                excludedUsers = new Set(data.excludedUsers || []);
+                if (rawFileText) { updateMonthDropdown(data.lastSelectedMonth); render(); }
             }
-            // 處理正常排序更新陣列
-            const item = currentSummary.splice(evt.oldIndex, 1)[0];
-            currentSummary.splice(evt.newIndex, 0, item);
-            renderDisplay();
-        },
-        // 利用 Sortable 的事件模擬合併邏輯
-        onMove: function (evt) {
-            // 清除之前的合併標記
-            document.querySelectorAll('.drop-merge').forEach(el => el.classList.remove('drop-merge'));
-            
-            // 判斷拖曳位置是否接近行中心
-            const rect = evt.related.getBoundingClientRect();
-            const centerY = rect.top + rect.height / 2;
-            const mouseY = evt.draggedRect.top + evt.draggedRect.height / 2;
-            
-            if (Math.abs(mouseY - centerY) < 10) {
-                evt.related.classList.add('drop-merge');
-                return false; // 這裡不交換位置
+        }
+
+        function clearAllData(silent = false) {
+            if(silent || confirm("確定要清除所有紀錄並重設網頁嗎？")) {
+                localStorage.removeItem('lunchStatsData');
+                location.reload();
             }
-        },
-        // 拖曳結束時檢查是否有合併標記
-        onDrop: function(evt) {
-            const targetEl = document.querySelector('.drop-merge');
-            if (targetEl) {
-                const srcIdx = evt.oldIndex;
-                const targetIdx = parseInt(targetEl.dataset.index);
-                targetEl.classList.remove('drop-merge');
-                if (srcIdx !== targetIdx) {
-                    triggerMerge(srcIdx, targetIdx);
+        }
+
+        function updateMonthDropdown(preSelected) {
+            const matches = rawFileText.match(/\d{4}\.\d{2}\.\d{2}/g);
+            if(matches) {
+                const months = [...new Set(matches.map(d => d.substring(0, 7).replace(/\./g, '-')))].sort().reverse();
+                const select = document.getElementById('monthSelect');
+                select.innerHTML = months.map(m => `<option value="${m}">${m.replace(/-/g, '.')}月</option>`).join('');
+                if (preSelected && months.includes(preSelected)) select.value = preSelected;
+            }
+        }
+
+        function extractDayData(lines) {
+            const dayData = {};
+            lines.forEach(line => {
+                let t = line.trim();
+                if (!t || t.includes("$$月結") || t.includes("結單") || t === "---" || t === "午餐" || t.includes("飲料")) return;
+                const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
+                if (nameMatch) {
+                    let name = nameMatch[1].trim().replace(/^\$/, ''); if (name === "小計") return;
+                    let content = nameMatch[2].trim();
+                    if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
+                    let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
+                    if (isNaN(price)) { dayData[name].hasError = true; dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); }
+                    else { dayData[name].total += price; dayData[name].items.push({ text: content, price: price }); }
+                }
+            });
+            return dayData;
+        }
+
+        function parseLunchFile(text, targetMonth) {
+            const lines = text.split(/\r?\n/); const result = {};
+            const dateRegex = /^(\d{4}\.\d{2}\.\d{2})/; let datePositions = []; nonMonthlyDates = [];
+            lines.forEach((line, idx) => { const m = line.match(dateRegex); if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') }); });
+            datePositions.forEach((pos, i) => {
+                if (!pos.date.startsWith(targetMonth)) return;
+                const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
+                const dayLines = lines.slice(pos.idx, nextIdx);
+                if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
+                    let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
+                    if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
+                } else nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
+            });
+            return result;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', e => {
+            const reader = new FileReader();
+            reader.onload = () => { rawFileText = reader.result; updateMonthDropdown(); render(); saveToLocalStorage(); };
+            reader.readAsText(e.target.files[0]);
+        });
+
+        document.getElementById('monthSelect').addEventListener('change', () => { render(); saveToLocalStorage(); });
+
+        function render() {
+            const month = document.getElementById('monthSelect').value; if(!month) return;
+            const data = parseLunchFile(rawFileText, month); personalStats = {}; dailyStats = {};
+            for (let date in data) {
+                if (!dailyStats[date]) dailyStats[date] = 0;
+                for (let name in data[date]) {
+                    if (!personalStats[name]) personalStats[name] = { total: 0, details: [], error: false };
+                    personalStats[name].total += data[date][name].total; dailyStats[date] += data[date][name].total;
+                    if (data[date][name].hasError) personalStats[name].error = true;
+                    personalStats[name].details.push({ date, text: data[date][name].items.map(i=>i.text).join('、'), price: data[date][name].total });
                 }
             }
+            buildTable(); buildDailyTable(); renderNonMonthly();
         }
-    });
-    
-    // 監聽原生的 drop 事件來補捉 Sortable 沒提供的合併觸發點
-    tbody.addEventListener('touchend', (e) => {
-        const targetEl = document.querySelector('.drop-merge');
-        if (targetEl) {
-            const srcIdx = parseInt(document.querySelector('.sortable-ghost')?.dataset.index);
-            const targetIdx = parseInt(targetEl.dataset.index);
-            if (!isNaN(srcIdx)) triggerMerge(srcIdx, targetIdx);
+
+        function buildTable() {
+            const inc = document.getElementById('includedBody'); const exc = document.getElementById('excludedBody');
+            inc.innerHTML = ''; exc.innerHTML = ''; let grand = 0;
+            Object.keys(personalStats).sort().forEach(name => {
+                const isExc = excludedUsers.has(name); const stats = personalStats[name]; if (!isExc) grand += stats.total;
+                const tr = document.createElement('tr'); if (isExc) tr.className = 'excluded-row';
+                tr.innerHTML = `<td><div class="name-cell"><input type="checkbox" ${isExc?'':'checked'} onchange="toggleUser('${name}')"><span onclick="selectUser('${name}')">${name}${stats.error?'*':''}</span></div></td><td onclick="selectUser('${name}')" id="sum-${name}">${stats.total.toLocaleString()}</td>`;
+                if (isExc) exc.appendChild(tr); else inc.appendChild(tr);
+            });
+            document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
+            document.getElementById('dailyGrandTotalDisplay').textContent = grand.toLocaleString();
         }
-    }, { passive: true });
-}
 
-function toggleCheck(index, event) {
-event.stopPropagation();
-currentSummary[index].checked = !currentSummary[index].checked;
-renderDisplay();
-}
+        function toggleUser(name) { if (excludedUsers.has(name)) excludedUsers.delete(name); else excludedUsers.add(name); buildTable(); saveToLocalStorage(); }
+        function selectUser(name) { currentSelectedUser = name; updateDetail(name); }
+        
+        function buildDailyTable() {
+            const body = document.getElementById('dailyBody'); body.innerHTML = '';
+            const history = JSON.parse(localStorage.getItem('mealTracker_art_v2') || '[]');
+            Object.keys(dailyStats).sort().forEach(d => {
+                const displayDate = d.replace(/-/g,'/');
+                const historyEntry = history.find(h => h.date === displayDate);
+                const hasDiff = historyEntry && historyEntry.amount !== dailyStats[d];
+                const warningTag = hasDiff ? `<span class="diff-warning" title="與每日金額紀錄不符 (紀錄為 ${historyEntry.amount.toLocaleString()})">⚠️</span>` : '';
+                body.innerHTML += `<tr><td>${displayDate}</td><td id="daily-sum-${d}" style="text-align:right;">${warningTag}${dailyStats[d].toLocaleString()}</td></tr>`;
+            });
+        }
 
-function resetAllChecks() {
-    currentSummary.forEach(item => item.checked = false);
-    renderDisplay();
-    showMessage("已重設所有勾選狀態");
-}
+        function updateDetail(name) {
+            const stats = personalStats[name]; document.getElementById('selectedPersonName').textContent = name;
+            document.getElementById('copyBtn').style.display = document.getElementById('copyImgBtn').style.display = 'inline-block';
+            const box = document.getElementById('personalDetail');
+            box.innerHTML = stats.details.sort((a,b)=>a.date.localeCompare(b.date)).map((d,i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
+                    <div style="flex:1; display:flex; align-items:center;">
+                        <span style="font-size:14px; margin-top:-2px;">${d.date.substring(5).replace('-','/')}：${d.text}</span>
+                    </div>
+                    <input type="number" class="price-input" value="${d.price}" oninput="handlePriceChange('${name}', ${i}, this.value, this)">
+                    <span class="price-text" style="display:none;">${d.price}</span>
+                </div>
+            `).join('') + `<div style="text-align:right; font-weight:bold; margin-top:10px;">總計：<span id="detail-total-${name}">${stats.total.toLocaleString()}</span></div>`;
+        }
 
-function triggerMerge(srcIdx, targetIdx) {
-const src = currentSummary[srcIdx];
-const target = currentSummary[targetIdx];
-const modal = document.getElementById('mainModal');
-const modalMsg = document.getElementById('modalMsg');
-const priceArea = document.getElementById('priceInputArea');
-const priceInput = document.getElementById('customPrice');
-priceArea.style.display = 'none';
-if (src.price !== target.price) {
-modalMsg.innerHTML = `⚠️ 兩品項單價不同！<br><span style="font-size:13px; color:#d93025;">${src.name} ($${src.price})<br>${target.name} ($${target.price})</span><br><br>合併後要使用哪個金額？`;
-priceArea.style.display = 'block';
-priceInput.value = target.price;
-} else {
-modalMsg.innerText = `將「${src.name}」合併至「${target.name}」？`;
-}
-modal.style.display = 'flex';
-document.getElementById('modalYes').onclick = function() {
-if (src.price !== target.price) target.price = parseInt(priceInput.value) || target.price;
-target.qty += src.qty;
-currentSummary.splice(srcIdx, 1);
-checkMinorItems(); 
-modal.style.display = 'none';
-renderDisplay();
-showMessage("品項已合併");
-};
-document.getElementById('modalNo').onclick = function() { 
-    modal.style.display = 'none'; 
-    renderDisplay(); // 取消合併時重新渲染還原位置
-};
-}
+        function handlePriceChange(name, idx, val, el) {
+            val = parseInt(val) || 0; const old = personalStats[name].details[idx].price; const date = personalStats[name].details[idx].date;
+            personalStats[name].details[idx].price = val; personalStats[name].total += (val - old);
+            dailyStats[date] += (val - old); buildTable(); buildDailyTable(); updateDetail(name);
+        }
 
-function copyResult() {
-if (currentSummary.length === 0) return;
-let copyText = "【訂單統計結果】\n";
-currentSummary.forEach(item => {
-const starText = item.isMinor ? "*" : "";
-copyText += `${item.name}${starText} * ${item.qty}\n`;
-});
-copyText += `\n總份數：${document.getElementById('totalQty').innerText}\n`;
-copyText += `總金額：${document.getElementById('totalAmount').innerText}`;
-const el = document.createElement('textarea');
-el.value = copyText;
-document.body.appendChild(el); 
-el.select();
-try {
-document.execCommand('copy');
-showMessage("統計結果已複製！");
-} catch (err) {
-showMessage("複製失敗，請手動複製");
-}
-document.body.removeChild(el);
-}
+        function renderNonMonthly() {
+            const el = document.getElementById('nonMonthlyList'); if (nonMonthlyDates.length > 0) {
+                el.style.display = 'block'; el.innerHTML = `<strong>非月結日期：</strong><br>` + nonMonthlyDates.map(d => `<span onclick="forceIncludeDates.add('${d}');render();saveToLocalStorage();" style="cursor:pointer; text-decoration:underline; margin-right:8px;">${d}</span>`).join('');
+            } else el.style.display = 'none';
+        }
 
-function clearContent() {
-document.getElementById('inputData').value = "";
-document.getElementById('resultArea').style.display = 'none';
-currentSummary = [];
-}
+        function getCurrentMonthLabel() {
+            const select = document.getElementById('monthSelect');
+            if (select && select.value) { const parts = select.value.split('-'); return parseInt(parts[1], 10).toString(); }
+            return (new Date().getMonth() + 1).toString();
+        }
 
-window.onload = initIcons;
-</script>
+        document.getElementById('copyBtn').onclick = function() {
+            const monthStr = getCurrentMonthLabel();
+            let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
+            navigator.clipboard.writeText(txt).then(() => { buttonFeedback(this, "📋 複製文字"); });
+        };
 
+        document.getElementById('copyImgBtn').onclick = function() {
+            const area = document.getElementById('captureArea'); const title = document.getElementById('imgTitle');
+            const footer = document.getElementById('imgFooter'); const footerMonthText = document.getElementById('imgFooterMonthText');
+            const btn = this; const monthStr = getCurrentMonthLabel();
+            footerMonthText.textContent = `${monthStr}月的午餐錢~Line pay或是匯款都可以~`;
+            title.style.display = 'block'; title.textContent = `【${currentSelectedUser} 餐費明細】`;
+            footer.style.display = 'block'; document.getElementById('page1').classList.add('capturing');
+            html2canvas(area, { scale: 2 }).then(canvas => {
+                canvas.toBlob(blob => { navigator.clipboard.write([new ClipboardItem({"image/png": blob})]).then(() => { buttonFeedback(btn, "🖼️ 複製圖片"); }); });
+                title.style.display = 'none'; footer.style.display = 'none'; document.getElementById('page1').classList.remove('capturing');
+            });
+        };
+
+        /* --- 網頁二 JS (每日金額) 保持不變 --- */
+        let currentStats2 = null; let historyData2 = JSON.parse(localStorage.getItem('mealTracker_art_v2') || '[]');
+        function handleCalculate2() {
+            const raw = document.getElementById('orderInput2').value.trim(); if (!raw) return;
+            const stats = { lunch: { '3F': 0, '1F': 0, total: 0 }, drink: { '3F': 0, '1F': 0, total: 0 } };
+            let cat = '', floor = '';
+            raw.split('\n').forEach(line => {
+                const t = line.trim(); if (t.includes('午餐')) cat = 'lunch'; else if (t.includes('飲料')) cat = 'drink';
+                if (t.toUpperCase().includes('3F')) floor = '3F'; else if (t.toUpperCase().includes('1F')) floor = '1F';
+                const match = t.match(/(\d+)\s*元?\s*$/);
+                if (match && cat && floor) { const v = parseInt(match[1]); stats[cat][floor] += v; stats[cat].total += v; }
+            });
+            currentStats2 = stats; renderUI2();
+        }
+        function renderUI2() {
+            document.getElementById('resultArea2').classList.remove('hidden');
+            const gen = (d, t) => d.total === 0 ? '' : `<div class="text-xs text-stone-400 mb-1 border-b pb-1">${t}</div>` + (d['3F']>0 ? `<div class="flex justify-between"><span>3F</span><span>${d['3F'].toLocaleString()}</span></div>` : '') + (d['1F']>0 ? `<div class="flex justify-between"><span>1F</span><span>${d['1F'].toLocaleString()}</span></div>` : '');
+            document.getElementById('lunchResults2').innerHTML = gen(currentStats2.lunch, '午餐');
+            document.getElementById('drinkResults2').innerHTML = gen(currentStats2.drink, '飲料');
+            const f1 = currentStats2.lunch['1F'] + currentStats2.drink['1F']; const f3 = currentStats2.lunch['3F'] + currentStats2.drink['3F'];
+            document.getElementById('floor1Row2').classList.toggle('hidden', f1 === 0);
+            document.getElementById('floor1TotalDisplay2').textContent = f1.toLocaleString();
+            document.getElementById('floor3TotalDisplay2').textContent = f3.toLocaleString();
+            document.getElementById('grandTotal2').textContent = (f1 + f3).toLocaleString();
+        }
+        function saveToHistory2() {
+            if (!currentStats2) return; const total = currentStats2.lunch.total + currentStats2.drink.total;
+            const date = new Date().toISOString().split('T')[0].replace(/-/g,'/');
+            historyData2.push({ id: Date.now(), date, month: date.substring(0,7), amount: total });
+            localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2));
+            updateMonthSelector2(); renderHistory2();
+        }
+        function updateMonthSelector2() {
+            const months = [...new Set(historyData2.map(i => i.month))].sort().reverse();
+            document.getElementById('monthFilter2').innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('') || '<option value="">無</option>';
+        }
+        function renderHistory2() {
+            const m = document.getElementById('monthFilter2').value;
+            const filtered = historyData2.filter(i => i.month === m).sort((a, b) => a.date.localeCompare(b.date));
+            document.getElementById('monthTotalDisplay2').textContent = filtered.reduce((s,i)=>s+i.amount, 0).toLocaleString() + " 元";
+            document.getElementById('historyList2').innerHTML = filtered.map(i => `<div class="journal-box p-3 flex justify-between items-center"><span class="text-xs text-stone-400">${i.date}</span><div class="flex items-center gap-2"><span class="text-xs text-stone-400">$</span><input type="text" onchange="editAmount2(${i.id}, this.value)" value="${i.amount.toLocaleString()}" class="bg-transparent outline-none w-24 text-right"><button onclick="deleteRecord2(${i.id})" class="text-stone-300 hover:text-stone-500">✕</button></div></div>`).join('');
+        }
+        function editAmount2(id, val) {
+            const idx = historyData2.findIndex(i => i.id === id);
+            if (idx > -1) { historyData2[idx].amount = parseInt(val.replace(/,/g, '')) || 0; localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2)); renderHistory2(); }
+        }
+        function deleteRecord2(id) { if (confirm("是否移除此紀錄？")) { historyData2 = historyData2.filter(i => i.id !== id); localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2)); updateMonthSelector2(); renderHistory2(); } }
+        function handleCopy2() {
+            if (!currentStats2) return;
+            const b = (t, d) => d.total === 0 ? '' : `${t}\n` + (d['3F']>0?`3F：${d['3F']}\n`:'') + (d['1F']>0?`1F：${d['1F']}\n`:'');
+            const txt = b("午餐", currentStats2.lunch) + b("飲料", currentStats2.drink) + `\n3F總計：${currentStats2.lunch['3F'] + currentStats2.drink['3F']}\n\n$$月結`;
+            document.getElementById('hiddenCopyArea2').value = txt; document.getElementById('hiddenCopyArea2').select();
+            document.execCommand('copy'); buttonFeedback(document.getElementById('copyBtn2_real'), "複製結果");
+        }
+        function handleClear2() { document.getElementById('orderInput2').value = ''; document.getElementById('resultArea2').classList.add('hidden'); }
+
+        /* --- 網頁三 JS (最新統計助手邏輯) --- */
+        let categoryData = []; 
+        let dragSrcInfo = null;
+        let currentDropTargetInfo = null;
+        let dropAction = null; 
+
+        function p3_showMessage(text) {
+            const toast = document.getElementById('p3-toast');
+            toast.innerText = text;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        function toggleP3Hint() {
+            const hintBox = document.getElementById('p3-hintBox');
+            const btn = document.querySelector('#page3 .help-toggle-btn');
+            const isHidden = window.getComputedStyle(hintBox).display === 'none';
+            hintBox.style.display = isHidden ? 'block' : 'none';
+            isHidden ? btn.classList.add('active') : btn.classList.remove('active');
+        }
+
+        function p3_parseLinesToItems(lines, mode) {
+            const summaryObj = {};
+            lines.forEach(line => {
+                let trimmed = line.trim();
+                if (trimmed.includes('=')) trimmed = trimmed.split('=')[0].trim();
+                const parts = trimmed.split('-');
+                const content = parts.slice(1).join('-').trim();
+                const rawItems = (mode === 'combo') ? [content] : content.split('+');
+                rawItems.forEach(rawItem => {
+                    const subItem = rawItem.trim();
+                    const match = subItem.match(/^(.*?)(\d+)\s*元?$/);
+                    if (match) {
+                        let detail = match[1].trim(); 
+                        const price = parseInt(match[2], 10);
+                        detail = detail.replace(/([^\s])(無糖|微糖|一分糖|二分糖|三分糖|半糖|少糖|七分糖|去冰|微冰|少冰|多冰|正常|熱)/g, '$1 $2').replace(/\s+/g, ' ').trim();
+                        const key = `${detail}_${price}`;
+                        if (!summaryObj[key]) summaryObj[key] = { name: detail, qty: 0, price: price, isMinor: false, checked: false };
+                        summaryObj[key].qty += 1;
+                    }
+                });
+            });
+            return Object.values(summaryObj).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+        }
+
+        function p3_processOrder() {
+            const input = document.getElementById('p3-inputData').value.trim();
+            if (!input) return;
+            const lines = input.split('\n');
+            const defaultMode = document.querySelector('input[name="p3-calcMode"]:checked').value;
+            const tempCategoryMap = new Map();
+            let currentCatName = "一般品項";
+
+            lines.forEach(line => {
+                let trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('---')) return;
+                if (!trimmed.includes('-')) {
+                    if (trimmed.match(/^\d+[fF樓]$/) || trimmed.length <= 1 || trimmed.includes('結單')) return;
+                    currentCatName = trimmed;
+                    return;
+                }
+                if (!tempCategoryMap.has(currentCatName)) tempCategoryMap.set(currentCatName, []);
+                tempCategoryMap.get(currentCatName).push(trimmed);
+            });
+
+            categoryData = Array.from(tempCategoryMap).map(([name, rawLines]) => ({
+                catName: name, mode: defaultMode, rawLines, items: p3_parseLinesToItems(rawLines, defaultMode)
+            }));
+            p3_checkAllMinorItems();
+            p3_renderDisplay();
+        }
+
+        function p3_changeCatMode(catIdx, newMode) {
+            const cat = categoryData[catIdx];
+            cat.mode = newMode;
+            cat.items = p3_parseLinesToItems(cat.rawLines, newMode);
+            p3_checkAllMinorItems();
+            p3_renderDisplay();
+        }
+
+        function p3_checkAllMinorItems() {
+            categoryData.forEach(cat => {
+                cat.items.forEach(item => item.isMinor = false);
+                const nameGroups = {};
+                cat.items.forEach(item => {
+                    const cleanName = item.name.replace(/\s+/g, ''); 
+                    if (!nameGroups[cleanName]) nameGroups[cleanName] = [];
+                    nameGroups[cleanName].push(item);
+                });
+                Object.values(nameGroups).forEach(group => {
+                    if (group.length > 1) {
+                        group.sort((a, b) => (b.qty !== a.qty) ? (b.qty - a.qty) : (a.price - b.price));
+                        for (let i = 1; i < group.length; i++) group[i].isMinor = true;
+                    }
+                });
+            });
+        }
+
+        function p3_renderDisplay() {
+            const container = document.getElementById('p3-categoryContainer');
+            container.innerHTML = "";
+            categoryData.forEach((cat, catIdx) => {
+                let catQty = 0, catAmount = 0;
+                const block = document.createElement('div');
+                block.className = "category-block";
+                block.innerHTML = `
+                    <div class="category-title"><i data-lucide="tag"></i> ${cat.catName}</div>
+                    <div class="table-header-tools">
+                        <div class="cat-mode-switch">
+                            <label onclick="p3_changeCatMode(${catIdx}, 'split')"><input type="radio" name="p3-m-${catIdx}" ${cat.mode === 'split' ? 'checked' : ''}><span>標準</span></label>
+                            <label onclick="p3_changeCatMode(${catIdx}, 'combo')"><input type="radio" name="p3-m-${catIdx}" ${cat.mode === 'combo' ? 'checked' : ''}><span>套餐</span></label>
+                        </div>
+                        <button class="reset-check-btn" onclick="p3_resetCatChecks(${catIdx})"><i data-lucide="refresh-cw"></i> 重設勾選</button>
+                    </div>
+                    <table class="result-table">
+                        <thead><tr><th><i data-lucide="check-circle"></i></th><th>品項與備註</th><th>數量</th></tr></thead>
+                        <tbody id="p3-tbody-${catIdx}"></tbody>
+                    </table>
+                    <div class="summary-box">
+                        <div class="summary-line"><span>份數統計</span><span id="p3-qty-${catIdx}">0 份</span></div>
+                        <div class="summary-line" style="margin-top: 5px; padding-top: 5px; border-top: 1px dashed #cbd5e0;">
+                            <span>分類金額</span><span id="p3-amt-${catIdx}" class="total-price">$0</span>
+                        </div>
+                    </div>`;
+                const tbody = block.querySelector(`#p3-tbody-${catIdx}`);
+                cat.items.forEach((item, itemIdx) => {
+                    const tr = document.createElement('tr');
+                    tr.draggable = true; tr.dataset.catIdx = catIdx; tr.dataset.itemIdx = itemIdx;
+                    if (item.checked) tr.classList.add('row-checked');
+                    const starHtml = item.isMinor ? '<span class="p3-star-mark" style="color:#c94c4c; font-weight:bold; margin-left:5px;">*</span>' : '';
+                    tr.innerHTML = `
+                        <td><div class="check-cell" onclick="p3_toggleCheck(${catIdx}, ${itemIdx}, event)"><i data-lucide="${item.checked ? 'check-circle' : 'circle'}"></i></div></td>
+                        <td>${item.name}${starHtml}</td>
+                        <td>${item.qty}</td>`;
+                    tr.addEventListener('dragstart', p3_handleDragStart);
+                    tr.addEventListener('dragover', p3_handleDragOver);
+                    tr.addEventListener('dragleave', p3_handleDragLeave);
+                    tr.addEventListener('drop', p3_handleDrop);
+                    tr.addEventListener('dragend', p3_handleDragEnd);
+                    tbody.appendChild(tr);
+                    catQty += item.qty; catAmount += (item.qty * item.price);
+                });
+                block.querySelector(`#p3-qty-${catIdx}`).innerText = `${catQty} 份`;
+                block.querySelector(`#p3-amt-${catIdx}`).innerText = `$${catAmount.toLocaleString()}`;
+                container.appendChild(block);
+            });
+            document.getElementById('p3-resultArea').style.display = 'block';
+            lucide.createIcons();
+        }
+
+        function p3_toggleCheck(catIdx, itemIdx, event) {
+            event.stopPropagation();
+            categoryData[catIdx].items[itemIdx].checked = !categoryData[catIdx].items[itemIdx].checked;
+            p3_renderDisplay();
+        }
+
+        function p3_resetCatChecks(catIdx) { categoryData[catIdx].items.forEach(i => i.checked = false); p3_renderDisplay(); }
+
+        function p3_handleDragStart(e) { dragSrcInfo = { catIdx: parseInt(this.dataset.catIdx), itemIdx: parseInt(this.dataset.itemIdx) }; this.classList.add('dragging'); }
+        function p3_handleDragOver(e) {
+            e.preventDefault();
+            const targetCatIdx = parseInt(this.dataset.catIdx);
+            const targetItemIdx = parseInt(this.dataset.itemIdx);
+            if (targetCatIdx !== dragSrcInfo.catIdx || targetItemIdx === dragSrcInfo.itemIdx) return;
+            const rect = this.getBoundingClientRect();
+            const relY = e.clientY - rect.top;
+            this.classList.remove('drop-before', 'drop-after', 'drop-merge');
+            if (relY < rect.height * 0.3) { this.classList.add('drop-before'); dropAction = 'before'; }
+            else if (relY > rect.height * 0.7) { this.classList.add('drop-after'); dropAction = 'after'; }
+            else { this.classList.add('drop-merge'); dropAction = 'merge'; }
+            currentDropTargetInfo = { catIdx: targetCatIdx, itemIdx: targetItemIdx };
+        }
+        function p3_handleDragLeave() { this.classList.remove('drop-before', 'drop-after', 'drop-merge'); }
+        function p3_handleDrop(e) {
+            e.stopPropagation();
+            if (!currentDropTargetInfo || dragSrcInfo.catIdx !== currentDropTargetInfo.catIdx) return;
+            const cat = categoryData[dragSrcInfo.catIdx];
+            if (dropAction === 'merge') { p3_triggerMerge(dragSrcInfo, currentDropTargetInfo); }
+            else { const item = cat.items.splice(dragSrcInfo.itemIdx, 1)[0]; cat.items.splice(currentDropTargetInfo.itemIdx, 0, item); p3_renderDisplay(); }
+        }
+        function p3_handleDragEnd() { document.querySelectorAll('#page3 .result-table tr').forEach(r => r.classList.remove('dragging', 'drop-before', 'drop-after', 'drop-merge')); }
+
+        function p3_triggerMerge(src, target) {
+            const cat = categoryData[src.catIdx];
+            const srcItem = cat.items[src.itemIdx];
+            const targetItem = cat.items[target.itemIdx];
+            const modal = document.getElementById('p3-mainModal');
+            const priceArea = document.getElementById('p3-priceInputArea');
+            const priceInput = document.getElementById('p3-customPrice');
+            priceArea.style.display = (srcItem.price !== targetItem.price) ? 'block' : 'none';
+            if (srcItem.price !== targetItem.price) {
+                document.getElementById('p3-modalMsg').innerHTML = `⚠️ 單價不同！使用哪個金額？<br><small>${srcItem.name}($${srcItem.price}) / ${targetItem.name}($${targetItem.price})</small>`;
+                priceInput.value = targetItem.price;
+            } else { document.getElementById('p3-modalMsg').innerText = `將「${srcItem.name}」併入「${targetItem.name}」？`; }
+            modal.style.display = 'flex';
+            document.getElementById('p3-modalYes').onclick = () => {
+                if (srcItem.price !== targetItem.price) targetItem.price = parseInt(priceInput.value) || targetItem.price;
+                targetItem.qty += srcItem.qty; cat.items.splice(src.itemIdx, 1);
+                p3_checkAllMinorItems(); modal.style.display = 'none'; p3_renderDisplay(); p3_showMessage("品項已合併");
+            };
+            document.getElementById('p3-modalNo').onclick = () => modal.style.display = 'none';
+        }
+
+        function p3_copyResult() {
+            if (categoryData.length === 0) return;
+            let blocks = [];
+            categoryData.forEach(cat => {
+                let catQty = 0, catAmount = 0, itemLines = [];
+                cat.items.forEach(item => {
+                    itemLines.push(`${item.name}${item.isMinor ? "*" : ""} * ${item.qty}`);
+                    catQty += item.qty; catAmount += (item.qty * item.price);
+                });
+                blocks.push(`${itemLines.join('\n')}\n\n份數：${catQty} 份\n金額：$${catAmount.toLocaleString()}`);
+            });
+            const finalCopyText = blocks.join('\n\n----------------\n\n');
+            const el = document.createElement('textarea');
+            el.value = finalCopyText; document.body.appendChild(el); el.select();
+            try { document.execCommand('copy'); p3_showMessage("統計結果已複製！"); } catch (err) { p3_showMessage("複製失敗"); }
+            document.body.removeChild(el);
+        }
+
+        function p3_clearContent() { document.getElementById('p3-inputData').value = ""; document.getElementById('p3-resultArea').style.display = 'none'; categoryData = []; }
+    </script>
 </body>
 </html>
