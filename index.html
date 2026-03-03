@@ -206,26 +206,29 @@ border-bottom: 1px solid #f1f1f1;
 color: var(--text-color); 
 cursor: grab; 
 position: relative; 
-vertical-align: middle; /* 確保內容垂直居中對齊 */
+vertical-align: middle; 
 word-break: break-all;
 }
 
 /* 精確控制欄位寬度 */
-#resultTable th:nth-child(1), #resultTable td:nth-child(1) { width: 45px; text-align: center; }
+#resultTable th:nth-child(1), #resultTable td:nth-child(1) { width: 50px; text-align: center; padding: 0; }
 #resultTable th:nth-child(2), #resultTable td:nth-child(2) { text-align: left; }
 #resultTable th:nth-child(3), #resultTable td:nth-child(3) { width: 50px; text-align: center; }
 
-/* 核對欄位樣式修正 */
+/* --- 勾選欄位核心修正 --- */
 .check-cell { 
     cursor: pointer !important; 
     user-select: none; 
     color: #cbd5e0; 
     transition: color 0.2s; 
-    /* 移除 flex 佈局，回歸純 td 對齊 */
+    display: flex !important; /* 強制使用 flex */
+    align-items: center;      /* 垂直居中 */
+    justify-content: center;   /* 水平居中 */
+    min-height: 48px;         /* 給予最小高度確保置中空間 */
+    height: 100%;
 }
 .check-cell i, .check-cell svg {
     display: block;
-    margin: 0 auto;
 }
 
 .row-checked { color: var(--gray-color) !important; }
@@ -476,7 +479,7 @@ const starHtml = item.isMinor ? '<span class="star-mark">*</span>' : '';
 const checkIconName = item.checked ? 'check-square' : 'square';
 
 tr.innerHTML = `
-    <td class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></td>
+    <td><div class="check-cell" onclick="toggleCheck(${index}, event)"><i data-lucide="${checkIconName}"></i></div></td>
     <td>${item.name}${starHtml}</td>
     <td>${item.qty}</td>
 `;
