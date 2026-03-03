@@ -159,27 +159,6 @@ justify-content: center;
 #resultArea { margin-top: 20px; display: none; animation: fadeIn 0.5s; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .table-header-tools {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 8px;
-        }
-        .reset-check-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-size: 12px;
-            cursor: pointer;
-            padding: 0;
-            min-width: auto;
-            text-decoration: underline;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .reset-check-btn:hover { color: var(--primary-hover); background: none; }
-        .reset-check-btn .lucide { width: 14px; height: 14px; }
-
 #resultTable { 
 width: 100%; 
 border-collapse: collapse; 
@@ -246,7 +225,7 @@ margin-bottom: 5px;
 }
 .total-price { color: var(--danger-color); font-size: 20px; }
 
-/* --- 彈窗與訊息 --- */
+/* --- 彈窗優化樣式 --- */
 .modal { 
 display: none; 
 position: fixed; 
@@ -258,23 +237,46 @@ justify-content: center;
 }
 .modal-content { 
 background: white; 
-padding: 25px; 
-border-radius: 12px; 
-width: 85%;
-max-width: 300px; 
+padding: 20px; 
+border-radius: 16px; 
+width: 90%;
+max-width: 320px; 
 text-align: center; 
-box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
 }
+.merge-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px dashed #ddd;
+}
+.merge-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 100%;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.item-src { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.item-target { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-weight: bold; }
+.merge-arrow { color: var(--gray-color); font-size: 20px; }
+
 .modal-input { 
-width: 80%; 
+width: 100%; 
 padding: 10px; 
-margin-bottom: 20px; 
-border: 2px solid #ddd; 
-border-radius: 6px; 
+margin-top: 10px; 
+border: 2px solid var(--primary-color); 
+border-radius: 8px; 
 font-size: 18px; 
 text-align: center; 
+box-sizing: border-box;
 }
-.modal-btns { display: flex; gap: 10px; }
+.modal-btns { display: flex; gap: 10px; margin-top: 20px; }
 
 .msg-box { 
 position: fixed; 
@@ -307,14 +309,19 @@ vertical-align: middle;
 
 <div id="mainModal" class="modal">
 <div class="modal-content">
-<p id="modalMsg" style="margin-top: 0;">訊息內容</p>
-<div id="priceInputArea" style="display: none;">
-<p style="font-size: 13px; color: #666;">請確認或修改合併後的單價：</p>
-<input type="number" id="customPrice" class="modal-input" placeholder="金額">
+<h3 style="margin-top: 0; font-size: 1.1rem;">確認合併操作</h3>
+<div class="merge-visual" id="mergeVisual">
+    <div class="merge-item item-src" id="srcText">品項 A</div>
+    <div class="merge-arrow">↓ 併入 ↓</div>
+    <div class="merge-item item-target" id="targetText">品項 B</div>
+</div>
+<div id="priceInputArea" style="display: none; text-align: left;">
+<p style="font-size: 13px; color: #d93025; margin-bottom: 5px;">⚠️ 單價不同，合併後單價：</p>
+<input type="number" id="customPrice" class="modal-input" placeholder="請輸入金額">
 </div>
 <div class="modal-btns">
-<button class="process-btn" id="modalYes">確定合併</button>
-<button class="clear-btn" id="modalNo">取消</button>
+<button class="process-btn" id="modalYes">合併品項</button>
+<button class="clear-btn" id="modalNo">僅調順序</button>
 </div>
 </div>
 </div>
@@ -323,8 +330,7 @@ vertical-align: middle;
     <h2><i data-lucide="clipboard-list"></i> 訂單明細統計助手 <i data-lucide="clipboard-list"></i></h2>
 
 <div class="hint">
-<span>格式：姓名-餐點 價格</span>
-<span><b>長按拖動</b>品項，放開於他項之上即可 <b>合併</b></span>
+<span><b>長按拖動</b>品項，放在另一個品項上即可 <b>合併</b></span>
 </div>
 
 <div class="mode-selector">
@@ -332,7 +338,7 @@ vertical-align: middle;
 <label><input type="radio" name="calcMode" value="combo"><span>套餐模式</span></label>
 </div>
 
-<textarea id="inputData" placeholder="請輸入訂單..."></textarea>
+<textarea id="inputData" placeholder="請輸入訂單內容..."></textarea>
 
 <div class="btn-group">
         <button class="process-btn" onclick="processOrder()"><i data-lucide="rocket"></i> 開始統計</button>
@@ -376,10 +382,7 @@ function initSortable() {
         onEnd: function (evt) {
             const srcIdx = evt.oldIndex;
             const targetIdx = evt.newIndex;
-            
             if (srcIdx === targetIdx) return;
-
-            // 觸發合併邏輯：彈出視窗詢問
             triggerMerge(srcIdx, targetIdx);
         }
     });
@@ -389,19 +392,15 @@ function triggerMerge(srcIdx, targetIdx) {
     const src = currentSummary[srcIdx];
     const target = currentSummary[targetIdx];
     const modal = document.getElementById('mainModal');
-    const modalMsg = document.getElementById('modalMsg');
     const priceArea = document.getElementById('priceInputArea');
     const priceInput = document.getElementById('customPrice');
+    
+    // 更新視覺化文字
+    document.getElementById('srcText').innerText = `${src.name} ($${src.price})`;
+    document.getElementById('targetText').innerText = `${target.name} ($${target.price})`;
 
     priceArea.style.display = 'none';
-
-    // 判斷是否要合併？還是單純排序？
-    modalMsg.innerHTML = `您想將「${src.name}」與「${target.name}」進行：`;
-    document.getElementById('modalYes').innerText = "合併品項";
-    document.getElementById('modalNo').innerText = "僅調整順序";
-
     if (src.price !== target.price) {
-        modalMsg.innerHTML = `⚠️ 單價不同！要合併嗎？<br><small>${src.name}($${src.price}) & ${target.name}($${target.price})</small>`;
         priceArea.style.display = 'block';
         priceInput.value = target.price;
     }
@@ -421,7 +420,7 @@ function triggerMerge(srcIdx, targetIdx) {
     };
 
     document.getElementById('modalNo').onclick = function() {
-        // 如果只是要排序，我們已經在 Array 裡移動過位置了，直接重新渲染即可
+        // 僅調整順序：根據移動後的位置更新陣列
         const item = currentSummary.splice(srcIdx, 1)[0];
         currentSummary.splice(targetIdx, 0, item);
         modal.style.display = 'none';
@@ -429,7 +428,6 @@ function triggerMerge(srcIdx, targetIdx) {
     };
 }
 
-// 其餘原始邏輯保留
 function processOrder() {
     const input = document.getElementById('inputData').value.trim();
     if (!input) return;
