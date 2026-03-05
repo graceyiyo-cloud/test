@@ -50,7 +50,6 @@
         .display-area { background: #FFFFFF; border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
         .section-title { font-size: 0.9rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
         
-        /* 齊頭對齊樣式 */
         .formula { font-size: 0.95rem; margin-bottom: 12px; line-height: 1.8; color: #333; }
         .formula strong { color: #000; font-weight: 700; }
         .formula-row { display: flex; align-items: flex-start; }
@@ -70,6 +69,7 @@
         
         .check-label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text); font-weight: bold; }
         .check-label input[type="checkbox"] { width: 18px; height: 18px; margin: 0; }
+        .check-label.disabled { opacity: 0.5; cursor: not-allowed; }
 
         .toggle-group { display: flex; background: #ECEBE4; border-radius: 8px; padding: 3px; gap: 2px; border: 1px solid var(--border); }
         .toggle-btn { 
@@ -234,7 +234,7 @@
             </div>
             <div class="row" style="margin-top: 5px;">
                 <div class="col">
-                    <label class="check-label" style="color: var(--accent);">
+                    <label class="check-label" id="taxInclusiveRetentionLabel" style="color: var(--accent);">
                         <input type="checkbox" id="isTaxInclusiveRetention" onchange="calculate()"> 
                         發票金額含保留款 (分列應付與發票)
                     </label>
@@ -281,6 +281,7 @@
         <div class="display-area">
             <div class="section-title">階層計算列示</div>
             <div id="processFormula" class="formula">請輸入資料...</div>
+            <button class="btn-info" style="width: 100%; margin-top: 10px; background: var(--success);" onclick="copyFormulaText(this)">📋 複製明細文字</button>
             <div class="payment-result" id="paymentDetail"></div>
         </div>
 
@@ -637,7 +638,21 @@
         const cleanFeeInput = document.getElementById('cleanFeeAmount');
         const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
         const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
-        const isTaxInclusiveRetention = document.getElementById('isTaxInclusiveRetention').checked;
+        
+        const retentionCheck = document.getElementById('retentionCheck');
+        const isTaxInclusiveRetention = document.getElementById('isTaxInclusiveRetention');
+        const taxInclusiveLabel = document.getElementById('taxInclusiveRetentionLabel');
+        
+        if (!retentionCheck.checked) {
+            isTaxInclusiveRetention.checked = false;
+            isTaxInclusiveRetention.disabled = true;
+            taxInclusiveLabel.classList.add('disabled');
+        } else {
+            isTaxInclusiveRetention.disabled = false;
+            taxInclusiveLabel.classList.remove('disabled');
+        }
+        
+        const isTaxInclusiveRetentionChecked = isTaxInclusiveRetention.checked;
         
         let raw = 0;
         let tax = 0;
@@ -674,7 +689,7 @@
         if(!isManualClean) cleanFeeInput.value = cleanFee || "";
 
         const subtotal = baseForDeduction - cleanFee;
-        const hasRetention = document.getElementById('retentionCheck').checked;
+        const hasRetention = retentionCheck.checked;
         const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
         let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
         
@@ -694,7 +709,7 @@
             }
         }
         
-        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote, isTaxInclusiveRetention, calcBase: currentCalcBase };
+        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote, isTaxInclusiveRetention: isTaxInclusiveRetentionChecked, calcBase: currentCalcBase };
         document.getElementById('netAmount').value = net;
         renderFormula(net);
         renderDetail();
@@ -707,35 +722,41 @@
     }
 
     function renderFormula(currentNet) {
-        let html = `<div style="font-weight: bold; margin-bottom: 8px;">【工程費用計算明細】</div>`;
+        let html = "";
         const state = lastCalcState;
         const isRetentionChecked = state.isTaxInclusiveRetention;
         
+        let currentStep = 1;
+        const getCircleNum = () => {
+            const circles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
+            return circles[currentStep++ - 1] || `${currentStep++}`;
+        };
+
         // ① 基礎金額
         if (state.calcBase === '含稅') {
-            html += `<div class="formula-row"><span class="formula-num">①</span><span>總金額：${fmt.format(state.raw)}+稅${fmt.format(state.tax)}=<strong>${fmt.format(state.total)}</strong></span></div>`;
+            html += `<div class="formula-row"><span class="formula-num">${getCircleNum()}</span><span>總金額：${fmt.format(state.raw)}+稅${fmt.format(state.tax)}=<strong>${fmt.format(state.total)}</strong></span></div>`;
         } else {
-            html += `<div class="formula-row"><span class="formula-num">①</span><span>未稅金額：<strong>${fmt.format(state.raw)}</strong></span></div>`;
+            html += `<div class="formula-row"><span class="formula-num">${getCircleNum()}</span><span>未稅金額：<strong>${fmt.format(state.raw)}</strong></span></div>`;
         }
 
         const baseVal = (state.calcBase === '含稅') ? state.total : state.raw;
 
         // ② 清潔費
         if (state.cleanFee !== 0) {
-            html += `<div class="formula-row"><span class="formula-num">②</span><span>清潔費：${fmt.format(baseVal)} × ${state.cRate}% = <strong>-${fmt.format(state.cleanFee)}</strong></span></div>`;
+            html += `<div class="formula-row"><span class="formula-num">${getCircleNum()}</span><span>清潔費：${fmt.format(baseVal)} × ${state.cRate}% = <strong>-${fmt.format(state.cleanFee)}</strong></span></div>`;
             html += `<div class="indent-row"><span class="subtotal-line">小計：${fmt.format(baseVal)} - ${fmt.format(state.cleanFee)} = <strong>${fmt.format(state.subtotal)}</strong></span></div>`;
         }
 
         // ③ 保留款
         if (state.retention !== 0) {
-            html += `<div class="formula-row"><span class="formula-num">③</span><span>保留款：${fmt.format(state.subtotal)} × ${state.rRate}% = <strong>-${fmt.format(state.retention)}</strong></span></div>`;
+            html += `<div class="formula-row"><span class="formula-num">${getCircleNum()}</span><span>保留款：${fmt.format(state.subtotal)} × ${state.rRate}% = <strong>-${fmt.format(state.retention)}</strong></span></div>`;
             if (state.calcBase === '未稅') {
                 const subNet = state.subtotal - state.retention;
                 html += `<div class="indent-row"><span class="subtotal-line">淨額：${fmt.format(state.subtotal)} - ${fmt.format(state.retention)} = <strong>${fmt.format(subNet)}</strong></span></div>`;
             }
         }
 
-        // 加扣款事由
+        // 加扣款項
         if (state.adj !== 0) {
             const adjType = state.adj > 0 ? "加項" : "扣項";
             const adjSign = state.adj > 0 ? "+" : "-";
@@ -744,10 +765,8 @@
 
         html += `<div style="margin: 8px 0; border-top: 1px solid #CCC; width: 80%;"></div>`;
 
-        // 最終金額輸出
+        // 計算發票金額與應付金額邏輯
         let finalInvoice = 0;
-        let finalPayable = currentNet;
-
         if (state.calcBase === '未稅') {
             const invRaw = state.subtotal + state.adj;
             const invTax = Math.round(invRaw * 0.05);
@@ -759,9 +778,63 @@
         if (isRetentionChecked) {
             html += `<div class="formula-row"><span class="formula-num">●</span><span>本次發票金額：${fmt.format(finalInvoice)} (含保留款)</span></div>`;
         }
-        html += `<div class="formula-row"><span class="formula-num">●</span><span style="color: var(--primary); font-weight: bold;">本次應付金額：${fmt.format(finalPayable)}</span></div>`;
+
+        // 應付金額算式 (去除 -0 或 +0)
+        let payableProcess = "";
+        let hasOp = false; // 標記是否有運算過程
+        if (state.calcBase === '含稅') {
+            payableProcess = `${fmt.format(state.subtotal)}`;
+            if (state.retention !== 0) { payableProcess += `-${fmt.format(state.retention)}`; hasOp = true; }
+            if (state.adj !== 0) { payableProcess += `${state.adj > 0 ? '+' : '-'}${fmt.format(Math.abs(state.adj))}`; hasOp = true; }
+        } else {
+            if (state.retention !== 0) {
+                payableProcess = `(${fmt.format(state.subtotal)}-${fmt.format(state.retention)})`;
+                hasOp = true;
+            } else {
+                payableProcess = `${fmt.format(state.subtotal)}`;
+            }
+            if (state.tax > 0) { payableProcess += `+稅${fmt.format(state.tax)}`; hasOp = true; }
+            if (state.adj !== 0) { payableProcess += `${state.adj > 0 ? '+' : '-'}${fmt.format(Math.abs(state.adj))}`; hasOp = true; }
+        }
+
+        // 如果沒有運算過程，直接顯示金額，否則顯示算式=金額
+        const finalPayableText = hasOp ? `${payableProcess}=${fmt.format(currentNet)}` : fmt.format(currentNet);
+
+        html += `<div class="formula-row"><span class="formula-num">●</span><span style="color: var(--primary); font-weight: bold;">本次應付金額：${finalPayableText}</span></div>`;
         
         document.getElementById('processFormula').innerHTML = html;
+    }
+
+    function copyFormulaText(btn) {
+        const formulaDiv = document.getElementById('processFormula');
+        const rows = formulaDiv.querySelectorAll('.formula-row, .indent-row');
+        let lines = [];
+        
+        rows.forEach(row => {
+            if (row.classList.contains('formula-row')) {
+                const num = row.querySelector('.formula-num').innerText.trim();
+                const text = row.querySelector('span:not(.formula-num)').innerText.trim();
+                lines.push(`${num} ${text}`);
+            } else if (row.classList.contains('indent-row')) {
+                lines.push(`   ${row.innerText.trim()}`);
+            }
+        });
+        
+        const textArea = document.createElement("textarea");
+        textArea.value = lines.join('\n');
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            const originalText = btn.innerText;
+            btn.innerText = "✅ 已成功複製明細";
+            btn.style.background = "#1b5e20";
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                btn.style.background = "var(--success)";
+            }, 1500);
+        } catch (err) {}
+        document.body.removeChild(textArea);
     }
 
     function getCalculatedDate(addMonths, useSlash = true) {
@@ -906,11 +979,11 @@
 
     function updateSummary() {
         const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
+        const filterMonthVal = document.getElementById('filterMonth').value;
         const filterDateVal = document.getElementById('filterDate').value.trim();
         const filtered = db.filter(item => {
             const matchComp = (filterComp === "全部" || item.company === filterComp);
-            const matchMon = (filterMon === "全部" || item.saveMonth === filterMon);
+            const matchMon = (filterMonthVal === "全部" || item.saveMonth === filterMonthVal);
             const matchDate = (!filterDateVal || item.date.includes(filterDateVal));
             return matchComp && matchMon && matchDate;
         });
@@ -926,14 +999,14 @@
 
     function renderTable() {
         const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
+        const filterMonthVal = document.getElementById('filterMonth').value;
         const filterDateVal = document.getElementById('filterDate').value.trim();
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = "";
         let counter = 1;
         const filtered = db.filter(item => {
             const matchComp = (filterComp === "全部" || item.company === filterComp);
-            const matchMon = (filterMon === "全部" || item.saveMonth === filterMon);
+            const matchMon = (filterMonthVal === "全部" || item.saveMonth === filterMonthVal);
             const matchDate = (!filterDateVal || item.date.includes(filterDateVal));
             return matchComp && matchMon && matchDate;
         });
@@ -1002,18 +1075,73 @@
     
     function copyToClipboard(type, btn) {
         const filterComp = document.getElementById('filterCompany').value;
-        const filterMon = document.getElementById('filterMonth').value;
+        const filterMonthVal = document.getElementById('filterMonth').value;
         const filterDateVal = document.getElementById('filterDate').value.trim();
         const filtered = db.filter(item => {
             const matchComp = (filterComp === "全部" || item.company === filterComp);
-            const matchMon = (filterMon === "全部" || item.saveMonth === filterMon);
+            const matchMon = (filterMonthVal === "全部" || item.saveMonth === filterMonthVal);
             const matchDate = (!filterDateVal || item.date.includes(filterDateVal));
             return matchComp && matchMon && matchDate && checkedIds.has(item.id);
         });
         if (filtered.length === 0) return;
+        
+        // --- 針對亞鼎營造的合併邏輯開始 ---
+        const grouped = [];
+        const processedIds = new Set();
+
+        for (let i = 0; i < filtered.length; i++) {
+            const item = filtered[i];
+            if (processedIds.has(item.id)) continue;
+
+            // 判斷是否為「亞鼎」相關資料 (若戶名包含亞鼎，或明細內包含-亞鼎-)
+            const isYaDing = (item.owner && item.owner.includes("亞鼎營造")) || (item.desc && item.desc.includes("-亞鼎-"));
+            let mergedItem = { ...item };
+            
+            if (isYaDing) {
+                const projectSite = item.desc.split('-')[0];
+                let mergeCandidates = [item];
+
+                // 往後尋找相同條件的項目
+                for (let j = i + 1; j < filtered.length; j++) {
+                    const nextItem = filtered[j];
+                    if (processedIds.has(nextItem.id)) continue;
+                    
+                    const nextIsYaDing = (nextItem.owner && nextItem.owner.includes("亞鼎營造")) || (nextItem.desc && nextItem.desc.includes("-亞鼎-"));
+                    const nextProjectSite = nextItem.desc.split('-')[0];
+                    
+                    // 合併條件：同為亞鼎、日期相同、案場相同、公司相同
+                    if (nextIsYaDing && nextItem.date === item.date && nextProjectSite === projectSite && nextItem.company === item.company) {
+                        mergeCandidates.push(nextItem);
+                    }
+                }
+
+                // 若有兩筆以上，執行合併處理
+                if (mergeCandidates.length > 1) {
+                    let mergedDesc = mergeCandidates.map(c => `${c.desc}=${fmt.format(c.amount)}`).join('+');
+                    let totalAmount = mergeCandidates.reduce((sum, c) => sum + c.amount, 0);
+                    
+                    mergedItem.desc = mergedDesc;
+                    mergedItem.amount = totalAmount;
+                    
+                    mergeCandidates.forEach(c => processedIds.add(c.id));
+                } else {
+                    processedIds.add(item.id);
+                }
+            } else {
+                processedIds.add(item.id);
+            }
+            
+            grouped.push(mergedItem);
+        }
+        // --- 合併邏輯結束 ---
+
         let text = "";
-        if (type === 'claim') text = filtered.map(i => `${i.date}\t${i.desc}\t${i.amount}`).join('\n');
-        else if (type === 'bank') text = filtered.map(i => `${i.date}\t${i.bank}\t${i.acc}\t${i.owner}\t${i.amount}`).join('\n');
+        if (type === 'claim') {
+            text = grouped.map(i => `${i.date}\t${i.desc}\t${i.amount}`).join('\n');
+        } else if (type === 'bank') {
+            text = grouped.map(i => `${i.date}\t${i.bank}\t${i.acc}\t${i.owner}\t${i.amount}`).join('\n');
+        }
+        
         const textArea = document.createElement("textarea");
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -1047,7 +1175,7 @@
         document.getElementById('baseDate').value = `${y}${m}${d}`;
     }
     document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
-    window.onload = () => { db.forEach(i => checkedIds.add(i.id)); initMonthFilter(); initBaseDate(); };
+    window.onload = () => { db.forEach(i => checkedIds.add(i.id)); initMonthFilter(); initBaseDate(); calculate(); };
 </script>
 
 </body>
