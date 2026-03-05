@@ -12,7 +12,7 @@
             --accent: #8D6E50;
             --text: #2D2D2D;
             --border: #C0BEB3;
-            --danger: #c0392B;
+            --danger: #c0392b;
             --success: #1b5e20;
             --info: #3d868a;
             --dark: #1a252f;
@@ -50,11 +50,14 @@
         .display-area { background: #FFFFFF; border: 1px solid var(--border); padding: 20px; border-radius: 10px; margin-top: 20px; min-height: 50px; }
         .section-title { font-size: 0.9rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; border-left: 4px solid var(--primary); padding-left: 8px; }
         
+        /* 齊頭對齊樣式 */
         .formula { font-size: 0.95rem; margin-bottom: 12px; line-height: 1.8; color: #333; }
         .formula strong { color: #000; font-weight: 700; }
+        .formula-row { display: flex; align-items: flex-start; }
+        .formula-num { width: 2.2em; flex-shrink: 0; }
+        .indent-row { padding-left: 2.2em; }
         
-        .formula-row { display: grid; grid-template-columns: 1.8em 1fr; margin-bottom: 2px; }
-        .formula-sub { padding-left: 1.8em; color: #666; font-size: 0.9rem; margin-bottom: 4px; }
+        .subtotal-line { background: #E6E9DD; padding: 2px 8px; border-radius: 4px; color: var(--primary) !important; display: inline-block; margin: 2px 0; }
         
         .payment-result { margin-top: 15px; padding-top: 10px; border-top: 2px dashed var(--border); }
         .date-line { font-family: monospace; font-weight: bold; font-size: 1.2rem; color: var(--accent); margin-bottom: 5px; }
@@ -202,14 +205,10 @@
         <div class="config-box">
             <div class="row" style="margin-bottom: 10px;">
                 <div class="col">
-                    <label>計算基準 <span class="tip">(只影響計算過程，不影響最後金額)</span></label>
+                    <label>計算基準 (影響加扣款前的計算順序)</label>
                     <div class="toggle-group" id="calcBaseToggle">
-                        <label>
-                            <button class="toggle-btn active" onclick="setCalcBase('未稅')">未稅額</button>
-                        </label>
-                        <label>
-                            <button class="toggle-btn" onclick="setCalcBase('含稅')">全額(含稅)</button>
-                        </label>
+                        <button class="toggle-btn active" onclick="setCalcBase('含稅')">全額(含稅)</button>
+                        <button class="toggle-btn" onclick="setCalcBase('未稅')">未稅額</button>
                     </div>
                 </div>
             </div>
@@ -258,6 +257,24 @@
             <div class="col">
                 <label>最終淨額 (可手動修改)</label>
                 <input type="number" id="netAmount" oninput="updateFormulaOnly()">
+            </div>
+        </div>
+
+        <div class="payment-box">
+            <div class="row">
+                <div class="col">
+                    <label>付款基準日 (格式: 1150212)</label>
+                    <input type="text" id="baseDate" placeholder="例如: 1150212" oninput="renderDetail()">
+                </div>
+            </div>
+            <label>付款比例 / 期數 (月)</label>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p1Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
+            </div>
+            <div class="row">
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Pct" placeholder="比例" oninput="renderDetail()"><span class="unit-label">%</span></div></div>
+                <div class="col"><div class="input-with-unit"><input type="number" id="p2Mon" placeholder="期數" oninput="renderDetail()"><span class="unit-label">月</span></div></div>
             </div>
         </div>
 
@@ -371,7 +388,6 @@
 
 <script>
     const fmt = new Intl.NumberFormat('zh-TW');
-    const circles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'];
     let db = JSON.parse(localStorage.getItem('paymentRecords')) || [];
     let vendors = JSON.parse(localStorage.getItem('vendorList')) || [];
     let currentSortOrder = 'asc';
@@ -379,9 +395,9 @@
     
     let currentDocType = '發票';
     let currentTaxMode = '未稅';
-    let currentCalcBase = '未稅'; 
+    let currentCalcBase = '含稅'; 
 
-    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "", isTaxInclusiveRetention: false, calcBase: '未稅', hasClean: false, hasRetention: false };
+    let lastCalcState = { raw: 0, tax: 0, total: 0, cRate: 0, cleanFee: 0, subtotal: 0, rRate: 0, retention: 0, adj: 0, adjNote: "", isTaxInclusiveRetention: false, calcBase: '含稅' };
 
     function setDocType(type) {
         currentDocType = type;
@@ -389,16 +405,12 @@
         btns.forEach(b => b.classList.toggle('active', b.innerText === type));
         const taxGroup = document.getElementById('taxModeToggle');
         if (type === '收據') {
-            if (taxGroup) {
-                taxGroup.style.opacity = '0.2';
-                taxGroup.style.pointerEvents = 'none';
-            }
+            taxGroup.style.opacity = '0.2';
+            taxGroup.style.pointerEvents = 'none';
             setTaxMode('未稅');
         } else {
-            if (taxGroup) {
-                taxGroup.style.opacity = '1';
-                taxGroup.style.pointerEvents = 'auto';
-            }
+            taxGroup.style.opacity = '1';
+            taxGroup.style.pointerEvents = 'auto';
         }
         calculate();
     }
@@ -419,9 +431,9 @@
 
     function searchVendor(val) {
         const resultsDiv = document.getElementById('searchResults');
-        if (!val) { if(resultsDiv) resultsDiv.style.display = 'none'; return; }
+        if (!val) { resultsDiv.style.display = 'none'; return; }
         const filtered = vendors.filter(v => v.name.includes(val) || v.owner.includes(val) || (v.account && v.account.includes(val)));
-        if (filtered.length > 0 && resultsDiv) {
+        if (filtered.length > 0) {
             resultsDiv.innerHTML = filtered.map(v => `
                 <div class="search-item" onclick="selectVendor('${v.name}', '${v.bankCode}', '${v.account}', '${v.owner}')">
                     <div><strong>${v.name}</strong> (${v.owner})</div>
@@ -429,26 +441,17 @@
                 </div>
             `).join('');
             resultsDiv.style.display = 'block';
-        } else if(resultsDiv) {
+        } else {
             resultsDiv.style.display = 'none';
         }
     }
 
     function selectVendor(name, bank, acc, owner) {
-        const vendorInput = document.getElementById('vendorSearch');
-        if(vendorInput) vendorInput.value = name;
-        
-        const bankInput = document.getElementById('tempBankCode');
-        if(bankInput) bankInput.value = bank || "";
-        
-        const accInput = document.getElementById('tempAccount');
-        if(accInput) accInput.value = acc || "";
-        
-        const ownerInput = document.getElementById('tempOwner');
-        if(ownerInput) ownerInput.value = owner || "";
-        
-        const resultsDiv = document.getElementById('searchResults');
-        if(resultsDiv) resultsDiv.style.display = 'none';
+        document.getElementById('vendorSearch').value = name;
+        document.getElementById('tempBankCode').value = bank || "";
+        document.getElementById('tempAccount').value = acc || "";
+        document.getElementById('tempOwner').value = owner || "";
+        document.getElementById('searchResults').style.display = 'none';
 
         const lastRecord = [...db].reverse().find(r => r.owner === owner);
         if (lastRecord && lastRecord.settings) {
@@ -456,43 +459,21 @@
             if (s.docType) setDocType(s.docType);
             if (s.taxMode) setTaxMode(s.taxMode);
             if (s.calcBase) setCalcBase(s.calcBase); 
-            
-            const cleanCheck = document.getElementById('cleanCheck');
-            if(cleanCheck) cleanCheck.checked = s.cleanCheck;
-            
-            const cleanRate = document.getElementById('cleanRate');
-            if(cleanRate) cleanRate.value = s.cleanRate;
-            
-            const retentionCheck = document.getElementById('retentionCheck');
-            if(retentionCheck) retentionCheck.checked = s.retentionCheck;
-            
-            const retentionRate = document.getElementById('retentionRate');
-            if(retentionRate) retentionRate.value = s.retentionRate;
-            
-            const isTaxInclusiveRetention = document.getElementById('isTaxInclusiveRetention');
-            if(isTaxInclusiveRetention && s.isTaxInclusiveRetention !== undefined) 
-                isTaxInclusiveRetention.checked = s.isTaxInclusiveRetention;
-            
-            const p1Pct = document.getElementById('p1Pct');
-            if(p1Pct) p1Pct.value = s.p1Pct;
-            
-            const p1Mon = document.getElementById('p1Mon');
-            if(p1Mon) p1Mon.value = s.p1Mon;
-            
-            const p2Pct = document.getElementById('p2Pct');
-            if(p2Pct) p2Pct.value = s.p2Pct;
-            
-            const p2Mon = document.getElementById('p2Mon');
-            if(p2Mon) p2Mon.value = s.p2Mon;
-            
+            document.getElementById('cleanCheck').checked = s.cleanCheck;
+            document.getElementById('cleanRate').value = s.cleanRate;
+            document.getElementById('retentionCheck').checked = s.retentionCheck;
+            document.getElementById('retentionRate').value = s.retentionRate;
+            if(s.isTaxInclusiveRetention !== undefined) document.getElementById('isTaxInclusiveRetention').checked = s.isTaxInclusiveRetention;
+            document.getElementById('p1Pct').value = s.p1Pct;
+            document.getElementById('p1Mon').value = s.p1Mon;
+            document.getElementById('p2Pct').value = s.p2Pct;
+            document.getElementById('p2Mon').value = s.p2Mon;
             calculate(); 
         }
     }
 
     function copyLastPart(btn) {
-        const noteEl = document.getElementById('workNote');
-        if(!noteEl) return;
-        const note = noteEl.value.trim();
+        const note = document.getElementById('workNote').value.trim();
         if (!note) return;
         const parts = note.split('-');
         let copyText = parts[parts.length - 1].trim();
@@ -515,28 +496,155 @@
         document.body.removeChild(textArea);
     }
 
+    function exportFullBackup() {
+        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
+        link.click();
+    }
+
+    function importFullBackup(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.paymentRecords && imported.vendorList) {
+                    db = imported.paymentRecords;
+                    vendors = imported.vendorList;
+                    localStorage.setItem('paymentRecords', JSON.stringify(db));
+                    localStorage.setItem('vendorList', JSON.stringify(vendors));
+                    alert("系統還原成功！");
+                    location.reload();
+                } else { alert("備份檔案格式不正確。"); }
+            } catch (err) { alert("讀取檔案失敗：" + err); }
+        };
+        reader.readAsText(file);
+    }
+
+    function autoFillRecordsByOwner() {
+        let count = 0;
+        db.forEach(item => {
+            if ((!item.bank || !item.acc) && item.owner) {
+                const match = vendors.find(v => v.owner === item.owner.trim());
+                if (match) {
+                    item.bank = match.bankCode;
+                    item.acc = match.account;
+                    count++;
+                }
+            }
+        });
+        if (count > 0) {
+            localStorage.setItem('paymentRecords', JSON.stringify(db));
+            renderTable();
+            alert(`成功補齊 ${count} 筆匯款資料！`);
+        } else { alert("未找到相符戶名的廠商資料。"); }
+    }
+
+    function manualAddVendor() {
+        const name = document.getElementById('newVName').value.trim();
+        const bank = document.getElementById('newVBank').value.trim();
+        const acc = document.getElementById('newVAcc').value.trim();
+        const owner = document.getElementById('newVOwner').value.trim();
+        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
+        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
+        localStorage.setItem('vendorList', JSON.stringify(vendors));
+        renderVendorTable();
+        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => document.getElementById(id).value = "");
+        alert("廠商新增成功！");
+    }
+
+    function importVendorCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').filter(r => r.trim() !== "");
+            rows.slice(1).forEach(row => {
+                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
+                if (cols.length >= 4) {
+                    vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
+                }
+            });
+            localStorage.setItem('vendorList', JSON.stringify(vendors));
+            renderVendorTable();
+            alert("匯入成功！");
+            input.value = "";
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function exportVendorExcel() {
+        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
+        let csvContent = "\ufeff廠商名稱,解款行,帳號,戶名\n";
+        vendors.forEach(v => {
+            csvContent += `"${v.name}","${v.bankCode || ''}","${v.account || ''}","${v.owner || ''}"\n`;
+        });
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
+        link.click();
+    }
+
+    function renderVendorTable() {
+        const tbody = document.getElementById('vendorTableBody');
+        tbody.innerHTML = vendors.map(v => `
+            <tr>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
+                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
+                <td class="action-cell">
+                    <button class="btn-del" onclick="deleteVendor('${v.id}')">×</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updateVendorField(id, field, value) {
+        const idx = vendors.findIndex(v => v.id == id);
+        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
+    }
+
+    function deleteVendor(id) {
+        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
+    }
+
+    function clearVendors() {
+        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
+    }
+
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        btn.classList.add('active');
+        if(pageId === 'listPage') { initMonthFilter(); renderTable(); }
+        if(pageId === 'vendorPage') { renderVendorTable(); }
+    }
+
     function calculate(isManualRetention = false, isManualClean = false, isManualRaw = false, isManualTax = false) {
-        const inputAmountEl = document.getElementById('inputAmount');
-        if(!inputAmountEl) return;
-        
-        const inputVal = parseFloat(inputAmountEl.value) || 0;
+        const inputVal = parseFloat(document.getElementById('inputAmount').value) || 0;
         const rawInput = document.getElementById('rawAmount');
         const taxInput = document.getElementById('taxAmount');
         const retentionInput = document.getElementById('retentionAmount');
         const cleanFeeInput = document.getElementById('cleanFeeAmount');
-        const adjEl = document.getElementById('adjustmentAmount');
-        const adjNoteEl = document.getElementById('adjustmentNote');
-        const isTaxInclusiveRetentionEl = document.getElementById('isTaxInclusiveRetention');
+        const adj = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
+        const adjNote = document.getElementById('adjustmentNote').value || "加扣款";
+        const isTaxInclusiveRetention = document.getElementById('isTaxInclusiveRetention').checked;
         
-        const adj = adjEl ? (parseFloat(adjEl.value) || 0) : 0;
-        const adjNote = (adjNoteEl && adjNoteEl.value.trim()) || "加扣款";
-        const isTaxInclusiveRetention = isTaxInclusiveRetentionEl ? isTaxInclusiveRetentionEl.checked : false;
-        
-        let raw = 0, tax = 0;
+        let raw = 0;
+        let tax = 0;
 
         if (isManualRaw || isManualTax) {
-            raw = (rawInput && parseFloat(rawInput.value)) || 0;
-            tax = (taxInput && parseFloat(taxInput.value)) || 0;
+            raw = parseFloat(rawInput.value) || 0;
+            tax = parseFloat(taxInput.value) || 0;
         } else {
             if (currentDocType === '發票') {
                 if (currentTaxMode === '未稅') {
@@ -550,30 +658,27 @@
                 raw = inputVal;
                 tax = 0;
             }
-            if(rawInput) rawInput.value = raw || "";
-            if(taxInput) taxInput.value = tax || "";
+            rawInput.value = raw || "";
+            taxInput.value = tax || "";
         }
         
         const total = raw + tax;
-        const cleanCheckEl = document.getElementById('cleanCheck');
-        const hasClean = cleanCheckEl ? cleanCheckEl.checked : false;
-        const cleanRateEl = document.getElementById('cleanRate');
-        const cRate = cleanRateEl ? (parseFloat(cleanRateEl.value) || 0) : 0;
+        const hasClean = document.getElementById('cleanCheck').checked;
+        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
         const baseForDeduction = (currentCalcBase === '含稅') ? total : raw;
 
         let cleanFee = 0;
         if (hasClean) {
-            cleanFee = isManualClean ? (cleanFeeInput ? (parseFloat(cleanFeeInput.value) || 0) : 0) : Math.round(baseForDeduction * (cRate / 100));
+            cleanFee = isManualClean ? (parseFloat(cleanFeeInput.value) || 0) : Math.round(baseForDeduction * (cRate / 100));
         }
-        if(!isManualClean && cleanFeeInput) cleanFeeInput.value = cleanFee || "";
+        if(!isManualClean) cleanFeeInput.value = cleanFee || "";
 
         const subtotal = baseForDeduction - cleanFee;
-        const retentionCheckEl = document.getElementById('retentionCheck');
-        const hasRetention = retentionCheckEl ? retentionCheckEl.checked : false;
-        const retentionRateEl = document.getElementById('retentionRate');
-        const rRate = retentionRateEl ? (parseFloat(retentionRateEl.value) || 0) : 0;
-        let retention = hasRetention ? (isManualRetention ? (retentionInput ? (parseFloat(retentionInput.value) || 0) : 0) : Math.round(subtotal * (rRate / 100))) : 0;
-        if(!isManualRetention && retentionInput) retentionInput.value = retention || "";
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
+        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
+        
+        if(!isManualRetention) retentionInput.value = retention || "";
         
         let net = 0;
         if (currentCalcBase === '含稅') {
@@ -582,121 +687,85 @@
             const amountBeforeTax = subtotal - retention;
             const finalTax = (currentDocType === '發票' && !isManualTax) ? Math.round(amountBeforeTax * 0.05) : tax;
             net = amountBeforeTax + finalTax + adj;
-            if (!isManualTax && currentDocType === '發票' && taxInput) {
+            
+            if (!isManualTax && currentDocType === '發票') {
                 taxInput.value = finalTax;
                 tax = finalTax;
             }
         }
         
-        lastCalcState = { 
-            raw, tax, total, cRate, cleanFee, subtotal, rRate, 
-            retention, adj, adjNote, isTaxInclusiveRetention, 
-            calcBase: currentCalcBase, hasClean, hasRetention,
-            isManualRetention
-        };
-        const netAmountEl = document.getElementById('netAmount');
-        if(netAmountEl) netAmountEl.value = net;
+        lastCalcState = { raw, tax, total, cRate, cleanFee, subtotal, rRate, retention, adj, adjNote, isTaxInclusiveRetention, calcBase: currentCalcBase };
+        document.getElementById('netAmount').value = net;
         renderFormula(net);
         renderDetail();
     }
 
     function updateFormulaOnly() {
-        const netAmountEl = document.getElementById('netAmount');
-        const manualNet = netAmountEl ? (parseFloat(netAmountEl.value) || 0) : 0;
+        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
         renderFormula(manualNet);
         renderDetail();
     }
 
     function renderFormula(currentNet) {
-        const formulaEl = document.getElementById('processFormula');
-        if(!formulaEl) return;
-
-        if (!lastCalcState.raw && lastCalcState.raw !== 0) return;
-        if (lastCalcState.raw === 0 && lastCalcState.adj === 0) {
-            formulaEl.innerHTML = "請輸入資料...";
-            return;
-        }
-
-        const s = lastCalcState;
-        const isRawBase = s.calcBase === '未稅';
-        let html = "";
-        let stepIdx = 0;
-
-        if (isRawBase) {
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>未稅金額：<strong>${fmt.format(s.raw)}</strong></span></div>`;
+        let html = `<div style="font-weight: bold; margin-bottom: 8px;">【工程費用計算明細】</div>`;
+        const state = lastCalcState;
+        const isRetentionChecked = state.isTaxInclusiveRetention;
+        
+        // ① 基礎金額
+        if (state.calcBase === '含稅') {
+            html += `<div class="formula-row"><span class="formula-num">①</span><span>總金額：${fmt.format(state.raw)}+稅${fmt.format(state.tax)}=<strong>${fmt.format(state.total)}</strong></span></div>`;
         } else {
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>總金額：${fmt.format(s.raw)} + 稅${fmt.format(s.tax)} = <strong>${fmt.format(s.total)}</strong></span></div>`;
+            html += `<div class="formula-row"><span class="formula-num">①</span><span>未稅金額：<strong>${fmt.format(state.raw)}</strong></span></div>`;
         }
 
-        const baseAmt = isRawBase ? s.raw : s.total;
-        if (s.hasClean && s.cleanFee !== 0) {
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>清潔費：${fmt.format(baseAmt)} × ${s.cRate}% = <strong>-${fmt.format(s.cleanFee)}</strong></span></div>`;
-            html += `<div class="formula-sub">小計：${fmt.format(baseAmt)} - ${fmt.format(s.cleanFee)} = ${fmt.format(s.subtotal)}</div>`;
+        const baseVal = (state.calcBase === '含稅') ? state.total : state.raw;
+
+        // ② 清潔費
+        if (state.cleanFee !== 0) {
+            html += `<div class="formula-row"><span class="formula-num">②</span><span>清潔費：${fmt.format(baseVal)} × ${state.cRate}% = <strong>-${fmt.format(state.cleanFee)}</strong></span></div>`;
+            html += `<div class="indent-row"><span class="subtotal-line">小計：${fmt.format(baseVal)} - ${fmt.format(state.cleanFee)} = <strong>${fmt.format(state.subtotal)}</strong></span></div>`;
         }
 
-        if (s.hasRetention && s.retention !== 0) {
-            const retCalc = s.isManualRetention ? `(手動調整)` : `× ${s.rRate}%`;
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>保留款：${fmt.format(s.subtotal)} ${retCalc} = <strong>-${fmt.format(s.retention)}</strong></span></div>`;
-            if (isRawBase) {
-                const netRaw = s.subtotal - s.retention;
-                html += `<div class="formula-sub">淨額：${fmt.format(s.subtotal)} - ${fmt.format(s.retention)} = ${fmt.format(netRaw)}</div>`;
+        // ③ 保留款
+        if (state.retention !== 0) {
+            html += `<div class="formula-row"><span class="formula-num">③</span><span>保留款：${fmt.format(state.subtotal)} × ${state.rRate}% = <strong>-${fmt.format(state.retention)}</strong></span></div>`;
+            if (state.calcBase === '未稅') {
+                const subNet = state.subtotal - state.retention;
+                html += `<div class="indent-row"><span class="subtotal-line">淨額：${fmt.format(state.subtotal)} - ${fmt.format(state.retention)} = <strong>${fmt.format(subNet)}</strong></span></div>`;
             }
         }
 
-        if (s.adj !== 0) {
-            const label = s.adj >= 0 ? "加款" : "扣款";
-            const reason = s.adjNote ? `(${s.adjNote})` : "";
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>${label}${reason}：<strong>${s.adj >= 0 ? '+' : ''}${fmt.format(s.adj)}</strong></span></div>`;
+        // 加扣款事由
+        if (state.adj !== 0) {
+            const adjType = state.adj > 0 ? "加項" : "扣項";
+            const adjSign = state.adj > 0 ? "+" : "-";
+            html += `<div class="indent-row">${adjType}(${state.adjNote})：<strong>${adjSign}${fmt.format(Math.abs(state.adj))}</strong></div>`;
         }
 
-        html += `<div style="margin-top:10px; border-top:1.5px solid #EEE; padding-top:10px;">`;
+        html += `<div style="margin: 8px 0; border-top: 1px solid #CCC; width: 80%;"></div>`;
 
-        if (isRawBase) {
-            const netRaw = s.subtotal - s.retention;
-            const netTax = Math.round(netRaw * 0.05);
-            const subtotalTax = Math.round(s.subtotal * 0.05);
+        // 最終金額輸出
+        let finalInvoice = 0;
+        let finalPayable = currentNet;
 
-            if (s.isTaxInclusiveRetention && s.hasRetention && s.retention !== 0) {
-                const invAmt = (s.subtotal + subtotalTax) + s.adj;
-                let invPath = `${fmt.format(s.subtotal)} + 稅${fmt.format(subtotalTax)}`;
-                if (s.adj !== 0) invPath += ` ${s.adj >= 0 ? '+' : ''}加扣${fmt.format(s.adj)}`;
-                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
-                html += `<div style="font-size: 1rem; color: var(--accent); font-weight: bold;">● 本次發票金額：${fmt.format(invAmt)} <span class="tip">(含保留款)</span></div>`;
-            }
-            
-            let payablePath = `${fmt.format(netRaw)} + 稅${fmt.format(netTax)}`;
-            if (s.adj !== 0) payablePath += ` ${s.adj >= 0 ? '+' : ''}加扣${fmt.format(s.adj)}`;
-            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
-            html += `<div style="font-size: 1rem; color: var(--primary); font-weight: bold;">● 本次應付金額：${fmt.format(currentNet)}</div>`;
-
+        if (state.calcBase === '未稅') {
+            const invRaw = state.subtotal + state.adj;
+            const invTax = Math.round(invRaw * 0.05);
+            finalInvoice = invRaw + invTax;
         } else {
-            if (s.isTaxInclusiveRetention && s.hasRetention && s.retention !== 0) {
-                const invAmt = s.subtotal + s.adj;
-                let invPath = `${fmt.format(s.total)}`;
-                if (s.hasClean && s.cleanFee !== 0) invPath += ` - ${fmt.format(s.cleanFee)}`;
-                if (s.adj !== 0) invPath += ` ${s.adj >= 0 ? '+' : ''}加扣${fmt.format(s.adj)}`;
-                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
-                html += `<div style="font-size: 1rem; color: var(--accent); font-weight: bold;">● 本次發票金額：${fmt.format(invAmt)} <span class="tip">(含保留款)</span></div>`;
-            }
-
-            let payablePathParts = [];
-            payablePathParts.push(fmt.format(s.total));
-            if (s.hasClean && s.cleanFee !== 0) payablePathParts.push(`- ${fmt.format(s.cleanFee)}`);
-            if (s.hasRetention && s.retention !== 0) payablePathParts.push(`- ${fmt.format(s.retention)}`);
-            if (s.adj !== 0) payablePathParts.push(`${s.adj >= 0 ? '+' : ''}加扣${fmt.format(s.adj)}`);
-            let payablePath = payablePathParts.join(" ");
-
-            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
-            html += `<div style="font-size: 1rem; color: var(--primary); font-weight: bold;">● 本次應付金額：${fmt.format(currentNet)}</div>`;
+            finalInvoice = state.subtotal + state.adj;
         }
 
-        html += `</div>`;
-        formulaEl.innerHTML = html;
+        if (isRetentionChecked) {
+            html += `<div class="formula-row"><span class="formula-num">●</span><span>本次發票金額：${fmt.format(finalInvoice)} (含保留款)</span></div>`;
+        }
+        html += `<div class="formula-row"><span class="formula-num">●</span><span style="color: var(--primary); font-weight: bold;">本次應付金額：${fmt.format(finalPayable)}</span></div>`;
+        
+        document.getElementById('processFormula').innerHTML = html;
     }
 
     function getCalculatedDate(addMonths, useSlash = true) {
-        const baseDateEl = document.getElementById('baseDate');
-        const rawBase = baseDateEl ? baseDateEl.value : "";
+        const rawBase = document.getElementById('baseDate').value;
         if (!/^\d{7}$/.test(rawBase)) return "格式錯誤";
         let year = parseInt(rawBase.substring(0, 3)) + 1911;
         let month = parseInt(rawBase.substring(3, 5)) - 1;
@@ -713,47 +782,35 @@
     }
 
     function renderDetail() {
-        const netAmountEl = document.getElementById('netAmount');
-        const net = netAmountEl ? (parseFloat(netAmountEl.value) || 0) : 0;
-        const p1PctEl = document.getElementById('p1Pct');
-        const p1Pct = p1PctEl ? (parseFloat(p1PctEl.value) || 0) : 0;
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value) || 0;
         const pDetail = document.getElementById('paymentDetail');
-        if(!pDetail) return;
         if(net <= 0 || isNaN(p1Pct)) { pDetail.innerHTML = ""; return; }
         const pay1 = Math.round(net * (p1Pct / 100));
-        const p1MonEl = document.getElementById('p1Mon');
-        const date1 = getCalculatedDate(parseInt((p1MonEl && p1MonEl.value) || 0), true);
+        const date1 = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), true);
         let html = `<div class="section-title">付款排程 (預覽)</div><div class="date-line">${date1} &nbsp; $${fmt.format(pay1)}</div>`;
         if (p1Pct < 100) {
             const pay2 = net - pay1;
-            const p2MonEl = document.getElementById('p2Mon');
-            const date2 = getCalculatedDate(parseInt((p2MonEl && p2MonEl.value) || 0), true);
+            const date2 = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), true);
             html += `<div class="date-line">${date2} &nbsp; $${fmt.format(pay2)}</div>`;
         }
         pDetail.innerHTML = html;
     }
 
     function saveData() {
-        const netAmountEl = document.getElementById('netAmount');
-        const net = netAmountEl ? (parseFloat(netAmountEl.value) || 0) : 0;
-        const p1PctEl = document.getElementById('p1Pct');
-        if (net <= 0 || !p1PctEl || !p1PctEl.value) { alert("請輸入金額與比例"); return; }
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        if (net <= 0 || !document.getElementById('p1Pct').value) { alert("請輸入金額與比例"); return; }
         const timestamp = Date.now();
         const saveMonthLabel = `${new Date().getFullYear()}.${(new Date().getMonth()+1).toString().padStart(2, '0')}`;
-        const p1Pct = parseFloat(p1PctEl.value);
+        const p1Pct = parseFloat(document.getElementById('p1Pct').value);
         const pay1 = Math.round(net * (p1Pct / 100));
-        const workNoteEl = document.getElementById('workNote');
-        const workNote = (workNoteEl && workNoteEl.value) || "工程";
-        const retentionCheckEl = document.getElementById('retentionCheck');
-        const hasRetention = retentionCheckEl ? retentionCheckEl.checked : false;
-        const rRateEl = document.getElementById('retentionRate');
-        const rRate = rRateEl ? rRateEl.value : "";
-        const adjAmtEl = document.getElementById('adjustmentAmount');
-        const adjAmt = adjAmtEl ? (parseFloat(adjAmtEl.value) || 0) : 0;
-        const adjNoteEl = document.getElementById('adjustmentNote');
-        const adjNoteText = adjNoteEl ? adjNoteEl.value.trim() : "";
-        const baseDateEl = document.getElementById('baseDate');
-        const currentBaseDate = baseDateEl ? baseDateEl.value : ""; 
+        const workNoteElement = document.getElementById('workNote');
+        const workNote = workNoteElement.value || "工程";
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const rRate = document.getElementById('retentionRate').value;
+        const adjAmt = parseFloat(document.getElementById('adjustmentAmount').value) || 0;
+        const adjNoteText = document.getElementById('adjustmentNote').value.trim();
+        const currentBaseDate = document.getElementById('baseDate').value; 
         
         const firstDashIdx = workNote.indexOf('-');
         const keptPrefix = firstDashIdx !== -1 ? workNote.substring(0, firstDashIdx + 1) : "";
@@ -770,40 +827,37 @@
             docType: currentDocType,
             taxMode: currentTaxMode,
             calcBase: currentCalcBase, 
-            cleanCheck: document.getElementById('cleanCheck') ? document.getElementById('cleanCheck').checked : false,
-            cleanRate: document.getElementById('cleanRate') ? document.getElementById('cleanRate').value : "",
-            retentionCheck: hasRetention,
-            retentionRate: rRate,
-            isTaxInclusiveRetention: document.getElementById('isTaxInclusiveRetention') ? document.getElementById('isTaxInclusiveRetention').checked : false,
-            p1Pct: p1Pct,
-            p1Mon: document.getElementById('p1Mon') ? document.getElementById('p1Mon').value : "",
-            p2Pct: document.getElementById('p2Pct') ? document.getElementById('p2Pct').value : "",
-            p2Mon: document.getElementById('p2Mon') ? document.getElementById('p2Mon').value : "",
+            cleanCheck: document.getElementById('cleanCheck').checked,
+            cleanRate: document.getElementById('cleanRate').value,
+            retentionCheck: document.getElementById('retentionCheck').checked,
+            retentionRate: document.getElementById('retentionRate').value,
+            isTaxInclusiveRetention: document.getElementById('isTaxInclusiveRetention').checked,
+            p1Pct: document.getElementById('p1Pct').value,
+            p1Mon: document.getElementById('p1Mon').value,
+            p2Pct: document.getElementById('p2Pct').value,
+            p2Mon: document.getElementById('p2Mon').value,
             baseDate: currentBaseDate 
         };
         const recordBase = { 
-            company: document.getElementById('companySelect') ? document.getElementById('companySelect').value : "", 
-            bank: document.getElementById('tempBankCode') ? document.getElementById('tempBankCode').value : "", 
-            acc: document.getElementById('tempAccount') ? document.getElementById('tempAccount').value : "", 
-            owner: document.getElementById('tempOwner') ? document.getElementById('tempOwner').value : "", 
-            formula: document.getElementById('processFormula') ? document.getElementById('processFormula').innerHTML : "", 
+            company: document.getElementById('companySelect').value, 
+            bank: document.getElementById('tempBankCode').value || "", 
+            acc: document.getElementById('tempAccount').value || "", 
+            owner: document.getElementById('tempOwner').value || "", 
+            formula: document.getElementById('processFormula').innerHTML, 
             saveMonth: saveMonthLabel,
             settings: settings 
         };
-        const p1MonEl = document.getElementById('p1Mon');
-        const date1_save = getCalculatedDate(parseInt((p1MonEl && p1MonEl.value) || 0), false);
+        const date1_save = getCalculatedDate(parseInt(document.getElementById('p1Mon').value || 0), false);
         const item1 = { ...recordBase, id: timestamp + "_1", date: date1_save, desc: isInstallment ? `${baseDesc}(2-1)` : baseDesc, amount: pay1 };
         db.push(item1);
         checkedIds.add(item1.id);
         if (isInstallment) { 
-            const p2MonEl = document.getElementById('p2Mon');
-            const date2_save = getCalculatedDate(parseInt((p2MonEl && p2MonEl.value) || 0), false);
+            const date2_save = getCalculatedDate(parseInt(document.getElementById('p2Mon').value || 0), false);
             const item2 = { ...recordBase, id: timestamp + "_2", date: date2_save, desc: `${baseDesc}(2-2)`, amount: net - pay1 };
             db.push(item2); 
             checkedIds.add(item2.id);
         }
         localStorage.setItem('paymentRecords', JSON.stringify(db));
-        
         clearInputFields(currentBaseDate, currentDocType, currentTaxMode, keptPrefix);
     }
 
@@ -811,28 +865,16 @@
         ['vendorSearch', 'workNote', 'inputAmount', 'rawAmount', 'taxAmount', 'cleanFeeAmount', 'retentionAmount', 'adjustmentNote', 'adjustmentAmount', 'netAmount', 'p1Pct', 'p1Mon', 'p2Pct', 'p2Mon', 'tempBankCode', 'tempAccount', 'tempOwner'].forEach(id => {
             const el = document.getElementById(id);
             if(el) {
-                if (id === 'workNote') {
-                    el.value = keptPrefix || ""; 
-                } else {
-                    el.value = "";
-                }
+                if (id === 'workNote') el.value = keptPrefix || "";
+                else el.value = "";
             }
         });
-        const isTaxInclusiveRetentionEl = document.getElementById('isTaxInclusiveRetention');
-        if(isTaxInclusiveRetentionEl) isTaxInclusiveRetentionEl.checked = false;
-        
-        const processFormulaEl = document.getElementById('processFormula');
-        if(processFormulaEl) processFormulaEl.innerHTML = "請輸入資料...";
-        
-        const paymentDetailEl = document.getElementById('paymentDetail');
-        if(paymentDetailEl) paymentDetailEl.innerHTML = "";
-        
-        const baseDateEl = document.getElementById('baseDate');
-        if (keptBaseDate && baseDateEl) {
-            baseDateEl.value = keptBaseDate;
-        } else if (baseDateEl && !baseDateEl.value) {
-            initBaseDate();
-        }
+        document.getElementById('isTaxInclusiveRetention').checked = false;
+        document.getElementById('processFormula').innerHTML = "請輸入資料...";
+        document.getElementById('paymentDetail').innerHTML = "";
+
+        if (keptBaseDate) document.getElementById('baseDate').value = keptBaseDate;
+        else initBaseDate();
 
         if (keptDocType) setDocType(keptDocType);
         if (keptTaxMode) setTaxMode(keptTaxMode);
@@ -863,14 +905,9 @@
     }
 
     function updateSummary() {
-        const companySelectEl = document.getElementById('filterCompany');
-        const monthSelectEl = document.getElementById('filterMonth');
-        const filterDateEl = document.getElementById('filterDate');
-        
-        const filterComp = companySelectEl ? companySelectEl.value : "全部";
-        const filterMon = monthSelectEl ? monthSelectEl.value : "全部";
-        const filterDateVal = filterDateEl ? filterDateEl.value.trim() : "";
-        
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filterDateVal = document.getElementById('filterDate').value.trim();
         const filtered = db.filter(item => {
             const matchComp = (filterComp === "全部" || item.company === filterComp);
             const matchMon = (filterMon === "全部" || item.saveMonth === filterMon);
@@ -883,23 +920,15 @@
             filteredSum += i.amount;
             if (checkedIds.has(i.id)) checkedSum += i.amount;
         });
-        const filteredTotalEl = document.getElementById('filteredTotal');
-        const checkedTotalEl = document.getElementById('checkedTotal');
-        if(filteredTotalEl) filteredTotalEl.innerText = '$' + fmt.format(filteredSum);
-        if(checkedTotalEl) checkedTotalEl.innerText = '$' + fmt.format(checkedSum);
+        document.getElementById('filteredTotal').innerText = '$' + fmt.format(filteredSum);
+        document.getElementById('checkedTotal').innerText = '$' + fmt.format(checkedSum);
     }
 
     function renderTable() {
-        const companySelectEl = document.getElementById('filterCompany');
-        const monthSelectEl = document.getElementById('filterMonth');
-        const filterDateEl = document.getElementById('filterDate');
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filterDateVal = document.getElementById('filterDate').value.trim();
         const tbody = document.getElementById('tableBody');
-        if(!tbody) return;
-        
-        const filterComp = companySelectEl ? companySelectEl.value : "全部";
-        const filterMon = monthSelectEl ? monthSelectEl.value : "全部";
-        const filterDateVal = filterDateEl ? filterDateEl.value.trim() : "";
-        
         tbody.innerHTML = "";
         let counter = 1;
         const filtered = db.filter(item => {
@@ -908,9 +937,9 @@
             const matchDate = (!filterDateVal || item.date.includes(filterDateVal));
             return matchComp && matchMon && matchDate;
         });
+
         filtered.forEach(item => {
-            const selectAllEl = document.getElementById('selectAll');
-            if (!checkedIds.has(item.id) && selectAllEl && selectAllEl.checked) checkedIds.add(item.id);
+            if (!checkedIds.has(item.id) && document.getElementById('selectAll').checked) checkedIds.add(item.id);
             const tr = document.createElement('tr');
             tr.className = "draggable-row";
             tr.dataset.id = item.id;
@@ -953,12 +982,7 @@
     }
     function showFormula(id) {
         const record = db.find(i => i.id === id);
-        if(record) { 
-            const modalBody = document.getElementById('modalBody');
-            const infoModal = document.getElementById('infoModal');
-            if(modalBody) modalBody.innerHTML = record.formula; 
-            if(infoModal) infoModal.style.display = 'flex'; 
-        }
+        if(record) { document.getElementById('modalBody').innerHTML = record.formula; document.getElementById('infoModal').style.display = 'flex'; }
     }
     function updateField(id, field, value) {
         const idx = db.findIndex(i => i.id === id);
@@ -977,14 +1001,9 @@
     function clearData() { if(confirm("【警告】確定要清空所有的付款排程資料嗎？此操作不可還原。")) { db = []; checkedIds.clear(); localStorage.removeItem('paymentRecords'); renderTable(); } }
     
     function copyToClipboard(type, btn) {
-        const companySelectEl = document.getElementById('filterCompany');
-        const monthSelectEl = document.getElementById('filterMonth');
-        const filterDateEl = document.getElementById('filterDate');
-        
-        const filterComp = companySelectEl ? companySelectEl.value : "全部";
-        const filterMon = monthSelectEl ? monthSelectEl.value : "全部";
-        const filterDateVal = filterDateEl ? filterDateEl.value.trim() : "";
-        
+        const filterComp = document.getElementById('filterCompany').value;
+        const filterMon = document.getElementById('filterMonth').value;
+        const filterDateVal = document.getElementById('filterDate').value.trim();
         const filtered = db.filter(item => {
             const matchComp = (filterComp === "全部" || item.company === filterComp);
             const matchMon = (filterMon === "全部" || item.saveMonth === filterMon);
@@ -1002,149 +1021,33 @@
         try {
             document.execCommand('copy');
             const originalText = btn.innerText;
-            const originalBg = btn.style.background;
             btn.innerText = "✅ 已成功複製";
+            const oldBg = btn.style.background;
             btn.style.background = "#1b5e20"; 
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = originalBg; 
-            }, 2000);
+            setTimeout(() => { btn.innerText = originalText; btn.style.background = oldBg; }, 2000);
         } catch (err) {}
         document.body.removeChild(textArea);
     }
 
     function initMonthFilter() {
-        const el = document.getElementById('filterMonth');
-        if(!el) return;
         const months = new Set();
         db.forEach(item => { if(item.saveMonth) months.add(item.saveMonth); });
         const now = new Date();
         const currentLabel = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2, '0')}`;
         months.add(currentLabel);
         const sorted = Array.from(months).sort().reverse();
-        el.innerHTML = `<option value="全部">全部月份</option>` + sorted.map(m => `<option value="${m}">${m}</option>`).join('');
-        el.value = currentLabel;
+        document.getElementById('filterMonth').innerHTML = `<option value="全部">全部月份</option>` + sorted.map(m => `<option value="${m}">${m}</option>`).join('');
+        document.getElementById('filterMonth').value = currentLabel;
     }
     function initBaseDate() {
         const now = new Date();
         const y = now.getFullYear() - 1911;
         const m = (now.getMonth() + 1).toString().padStart(2, '0');
         const d = now.getDate().toString().padStart(2, '0');
-        const el = document.getElementById('baseDate');
-        if(el) el.value = `${y}${m}${d}`;
+        document.getElementById('baseDate').value = `${y}${m}${d}`;
     }
-    function manualAddVendor() {
-        const name = document.getElementById('newVName').value.trim();
-        const bank = document.getElementById('newVBank').value.trim();
-        const acc = document.getElementById('newVAcc').value.trim();
-        const owner = document.getElementById('newVOwner').value.trim();
-        if(!name || !acc) { alert("廠商名稱與帳號為必填！"); return; }
-        vendors.push({ id: Date.now() + Math.random(), name, bankCode: bank, account: acc, owner });
-        localStorage.setItem('vendorList', JSON.stringify(vendors));
-        renderVendorTable();
-        ['newVName', 'newVBank', 'newVAcc', 'newVOwner'].forEach(id => {
-            const input = document.getElementById(id);
-            if(input) input.value = "";
-        });
-        alert("廠商新增成功！");
-    }
-    function renderVendorTable() {
-        const tbody = document.getElementById('vendorTableBody');
-        if(!tbody) return;
-        tbody.innerHTML = vendors.map(v => `
-            <tr>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'name', this.innerText)" contenteditable="true">${v.name}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'bankCode', this.innerText)" contenteditable="true">${v.bankCode || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'account', this.innerText)" contenteditable="true">${v.account || ''}</span></td>
-                <td><span class="editable" onblur="updateVendorField('${v.id}', 'owner', this.innerText)" contenteditable="true">${v.owner || ''}</span></td>
-                <td class="action-cell"><button class="btn-del" onclick="deleteVendor('${v.id}')">×</button></td>
-            </tr>
-        `).join('');
-    }
-    function updateVendorField(id, field, value) {
-        const idx = vendors.findIndex(v => v.id == id);
-        if(idx !== -1) { vendors[idx][field] = value.trim(); localStorage.setItem('vendorList', JSON.stringify(vendors)); }
-    }
-    function deleteVendor(id) {
-        if(confirm("確定刪除此廠商？")) { vendors = vendors.filter(v => v.id != id); localStorage.setItem('vendorList', JSON.stringify(vendors)); renderVendorTable(); }
-    }
-    function clearVendors() {
-        if(confirm("確定清空所有廠商資料？")) { vendors = []; localStorage.removeItem('vendorList'); renderVendorTable(); }
-    }
-    function exportVendorExcel() {
-        if(vendors.length === 0) return alert("目前無廠商資料可匯出");
-        let csvContent = "\ufeff廠商名稱,解款行,帳號,戶名\n";
-        vendors.forEach(v => { csvContent += `"${v.name}","${v.bankCode || ''}","${v.account || ''}","${v.owner || ''}"\n`; });
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `廠商資料庫_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
-        link.click();
-    }
-    function importVendorCSV(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const rows = text.split('\n').filter(r => r.trim() !== "");
-            rows.slice(1).forEach(row => {
-                const cols = row.split(',').map(s => s.trim().replace(/^="|"$/g, '').replace(/^'/, ''));
-                if (cols.length >= 4) vendors.push({ id: Date.now() + Math.random(), name: cols[0], bankCode: cols[1], account: cols[2], owner: cols[3] });
-            });
-            localStorage.setItem('vendorList', JSON.stringify(vendors));
-            renderVendorTable();
-            alert("匯入成功！");
-            input.value = "";
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
-    function exportFullBackup() {
-        const backupData = { paymentRecords: db, vendorList: vendors, backupDate: new Date().toISOString() };
-        const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `工程系統全備份_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`;
-        link.click();
-    }
-    function importFullBackup(input) {
-        const file = input.files[0];
-        if (!file) return;
-        if (!confirm("還原系統將會蓋掉目前電腦中的所有資料，確定要繼續嗎？")) { input.value = ""; return; }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (imported.paymentRecords && imported.vendorList) {
-                    db = imported.paymentRecords; vendors = imported.vendorList;
-                    localStorage.setItem('paymentRecords', JSON.stringify(db));
-                    localStorage.setItem('vendorList', JSON.stringify(vendors));
-                    alert("系統還原成功！"); location.reload();
-                } else { alert("備份檔案格式不正確。"); }
-            } catch (err) { alert("讀取檔案失敗：" + err); }
-        };
-        reader.readAsText(file);
-    }
-    document.addEventListener('click', e => { 
-        if (!e.target.closest('.col')) {
-            const resultsDiv = document.getElementById('searchResults');
-            if(resultsDiv) resultsDiv.style.display = 'none';
-        }
-    });
-    window.onload = () => { 
-        db.forEach(i => checkedIds.add(i.id)); 
-        initMonthFilter(); 
-        initBaseDate(); 
-    };
-    function switchPage(pageId, btn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        const page = document.getElementById(pageId);
-        if(page) page.classList.add('active');
-        if(btn) btn.classList.add('active');
-        if(pageId === 'listPage') { initMonthFilter(); renderTable(); }
-        if(pageId === 'vendorPage') { renderVendorTable(); }
-    }
+    document.addEventListener('click', e => { if (!e.target.closest('.col')) document.getElementById('searchResults').style.display = 'none'; });
+    window.onload = () => { db.forEach(i => checkedIds.add(i.id)); initMonthFilter(); initBaseDate(); };
 </script>
 
 </body>
