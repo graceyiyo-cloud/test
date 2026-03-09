@@ -200,43 +200,39 @@
                     });
                     setCategories(fetchedCats);
                     
-                    // 修正排序邏輯：將日期轉為 YYYYMMDD 的純數字字串進行比較，完全避開 new Date() 跨平台解析錯誤的風險
+                    // 終極防呆排序邏輯：直接強制萃取純數字，轉化成數學數值進行比大小，免疫所有格式/隱藏空白等問題
                     const sorted = list.sort((a, b) => {
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
                         
-                        const getSortString = (item) => {
-                            let dateStr = "";
-                            if (item.status === 'finished') dateStr = item.finishDate || item.addDate || "";
-                            else if (item.status === 'dropped') dateStr = item.dropDate || item.addDate || "";
-                            else dateStr = item.addDate || "";
+                        const getSortValue = (item) => {
+                            let dateVal = item.addDate;
+                            if (item.status === 'finished') dateVal = item.finishDate || item.addDate;
+                            else if (item.status === 'dropped') dateVal = item.dropDate || item.addDate;
                             
-                            if (!dateStr) return "00000000";
+                            // 確保 dateVal 存在且為字串型態，否則回傳最小值 0
+                            if (!dateVal || typeof dateVal !== 'string') return 0;
                             
-                            // 清理字串，將可能的特殊符號統一，並依照分隔符拆解
-                            const cleanStr = dateStr.trim().replace(/[／]/g, '/').replace(/[－]/g, '-');
-                            const parts = cleanStr.split(/[-/]/);
-                            
-                            // 若能成功拆解出年月日，則自動補零（例：2026/2/5 -> 20260205）
-                            if (parts.length >= 3) {
-                                const y = parts[0].padStart(4, '0');
-                                const m = parts[1].padStart(2, '0');
-                                const d = parts[2].padStart(2, '0');
-                                return `${y}${m}${d}`;
+                            // 萃取所有連續的數字陣列 (例如 "2026/02/03" 會抓出 ["2026", "02", "03"])
+                            const match = dateVal.match(/(\d+)/g);
+                            if (match && match.length > 0) {
+                                const y = parseInt(match[0], 10) || 0;
+                                const m = match.length > 1 ? parseInt(match[1], 10) : 0;
+                                const d = match.length > 2 ? parseInt(match[2], 10) : 0;
+                                // 將年月日轉換為一個可直接比大小的純數字，例如 20260203
+                                return y * 10000 + m * 100 + d;
                             }
-                            
-                            // 防呆：無法拆解就回傳原字串
-                            return cleanStr;
+                            return 0;
                         };
                         
-                        const strA = getSortString(a);
-                        const strB = getSortString(b);
+                        const valA = getSortValue(a);
+                        const valB = getSortValue(b);
                         
-                        // 進行字串字典順序比對 (例如 "20260205" 必定大於 "20260115" 與 "20240101")
-                        if (strA !== strB) {
-                            return strA < strB ? 1 : -1; // 降序：數字越大的（越新）排越前面
+                        // 比較純數字，降序排列（數字越大代表日期越新，排在越上面）
+                        if (valA !== valB) {
+                            return valB - valA; 
                         }
                         
-                        // 日期相同時退回建立順序比較
+                        // 如果日期一模一樣（例如都是同一天加入或完食的），則回退比較 Firebase 的系統建立時間
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
                     
