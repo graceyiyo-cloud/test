@@ -200,24 +200,29 @@
                     });
                     setCategories(fetchedCats);
                     
+                    // 修正排序邏輯：將 "-" 替換為 "/" 確保 iOS/Safari 上的 new Date() 能正確解析
                     const sorted = list.sort((a, b) => {
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                        
                         const getSortTime = (item) => {
                             let dateStr = "";
                             if (item.status === 'finished') dateStr = item.finishDate || item.addDate || "";
                             else if (item.status === 'dropped') dateStr = item.dropDate || item.addDate || "";
                             else dateStr = item.addDate || "";
                             
-                            // 將短橫線替換為斜線，確保跨瀏覽器與裝置的解析準確性
-                            const safeDateStr = dateStr.replace(/-/g, '/');
+                            // 替換連字號為斜線，例如 "2026-03-08" -> "2026/03/08"
+                            const safeDateStr = dateStr.trim().replace(/-/g, '/');
                             const d = new Date(safeDateStr);
                             return isNaN(d.getTime()) ? 0 : d.getTime();
                         };
+                        
                         const timeA = getSortTime(a);
                         const timeB = getSortTime(b);
-                        if (timeA !== timeB) return timeB - timeA;
+                        
+                        if (timeA !== timeB) return timeB - timeA; // 降序：時間越大的排越前面
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
+                    
                     setBooks(sorted);
                     setLoading(false);
                 });
@@ -479,7 +484,21 @@
                                             <CategoryPicker selectedCategories={editForm.category || []} allCategories={categories} onToggle={c => setEditForm(p => ({...p, category: p.category.includes(c) ? p.category.filter(x=>x!==c) : [...p.category, c]}))} onAddNew={c => handleUpdateCategories([...categories, c])} onDelete={c => handleUpdateCategories(categories.filter(x => x !== c))} />
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">字數</label><input value={editForm.wordCount} onChange={e=>setEditForm({...editForm, wordCount:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
-                                                <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">加入日期</label><input type="date" value={editForm.addDate} onChange={e=>setEditForm({...editForm, addDate:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">
+                                                        {book.status === 'finished' ? '完食日期' : book.status === 'dropped' ? '棄書日期' : '加入日期'}
+                                                    </label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={book.status === 'finished' ? (editForm.finishDate || editForm.addDate) : book.status === 'dropped' ? (editForm.dropDate || editForm.addDate) : editForm.addDate} 
+                                                        onChange={e => {
+                                                            if (book.status === 'finished') setEditForm({...editForm, finishDate: e.target.value});
+                                                            else if (book.status === 'dropped') setEditForm({...editForm, dropDate: e.target.value});
+                                                            else setEditForm({...editForm, addDate: e.target.value});
+                                                        }} 
+                                                        className="w-full p-1.5 border-b outline-none bg-transparent" 
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="space-y-0.5"><label className="text-[10px] text-stone-400 uppercase tracking-tighter font-normal">推薦連結/備註</label><input value={editForm.reviewUrl || ''} onChange={e=>setEditForm({...editForm, reviewUrl:e.target.value})} className="w-full p-1.5 border-b outline-none bg-transparent" /></div>
                                             {book.status === 'dropped' && (
