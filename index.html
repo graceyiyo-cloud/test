@@ -200,24 +200,43 @@
                     });
                     setCategories(fetchedCats);
                     
+                    // 修正排序邏輯：將日期轉為 YYYYMMDD 的純數字字串進行比較，完全避開 new Date() 跨平台解析錯誤的風險
                     const sorted = list.sort((a, b) => {
                         if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
                         
-                        const getSortTime = (item) => {
+                        const getSortString = (item) => {
                             let dateStr = "";
                             if (item.status === 'finished') dateStr = item.finishDate || item.addDate || "";
                             else if (item.status === 'dropped') dateStr = item.dropDate || item.addDate || "";
                             else dateStr = item.addDate || "";
                             
-                            const safeDateStr = dateStr.trim().replace(/-/g, '/');
-                            const d = new Date(safeDateStr);
-                            return isNaN(d.getTime()) ? 0 : d.getTime();
+                            if (!dateStr) return "00000000";
+                            
+                            // 清理字串，將可能的特殊符號統一，並依照分隔符拆解
+                            const cleanStr = dateStr.trim().replace(/[／]/g, '/').replace(/[－]/g, '-');
+                            const parts = cleanStr.split(/[-/]/);
+                            
+                            // 若能成功拆解出年月日，則自動補零（例：2026/2/5 -> 20260205）
+                            if (parts.length >= 3) {
+                                const y = parts[0].padStart(4, '0');
+                                const m = parts[1].padStart(2, '0');
+                                const d = parts[2].padStart(2, '0');
+                                return `${y}${m}${d}`;
+                            }
+                            
+                            // 防呆：無法拆解就回傳原字串
+                            return cleanStr;
                         };
                         
-                        const timeA = getSortTime(a);
-                        const timeB = getSortTime(b);
+                        const strA = getSortString(a);
+                        const strB = getSortString(b);
                         
-                        if (timeA !== timeB) return timeB - timeA; 
+                        // 進行字串字典順序比對 (例如 "20260205" 必定大於 "20260115" 與 "20240101")
+                        if (strA !== strB) {
+                            return strA < strB ? 1 : -1; // 降序：數字越大的（越新）排越前面
+                        }
+                        
+                        // 日期相同時退回建立順序比較
                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
                     });
                     
