@@ -673,7 +673,7 @@
                       {currentColumns.map((c, i) => {
                         const isSticky = ['樓層', '編號', '買方', '成交總價'].includes(c);
                         const leftPos = c==='樓層'?'44px':c==='編號'?'89px':c==='買方'?'134px':c==='成交總價'?'244px':'0px';
-                        const colClass = c==='樓層'?'col-floor':c==='編號'?'col-unit':c==='買方'?'col-buyer':c==='成交總價'?'col-total':'';
+                        const colClass = c==='買方'?'col-buyer':c==='成交總價'?'col-total':'';
                         return <th key={i} className={`px-2 py-3 border-b text-center ${colClass} ${isSticky ? 'sticky z-50 bg-[#F9F9F8] border-r sticky-shadow' : ''}`} style={isSticky?{left:leftPos}:{}}>{c}</th>
                       })}
                     </tr>
@@ -723,24 +723,26 @@
                     })}
                     <tr className="h-10"><td colSpan={currentColumns.length + 1} className="border-none bg-transparent"></td></tr>
                   </tbody>
-                  {/* 固定底欄 (Sticky Footer) */}
-                  <tfoot className="sticky bottom-0 z-40 bg-[#F1F3F1] font-bold text-[10px] sticky-bottom-shadow">
-                    <tr>
-                      <td className="px-1 py-3 text-center border-r bg-[#F1F3F1] sticky left-0 z-50">合計</td>
-                      {currentColumns.map((c, i) => {
-                        const isSticky = ['樓層', '編號', '買方', '成交總價'].includes(c);
-                        const leftPos = c==='樓層'?'44px':c==='編號'?'89px':c==='買方'?'134px':c==='成交總價'?'244px':'0px';
-                        const colClass = c==='樓層'?'col-floor':c==='編號'?'col-unit':c==='買方'?'col-buyer':c==='成交總價'?'col-total':'';
-                        return (
-                          <td key={i} 
-                              className={`px-2 py-3 border-r ${colClass} text-right ${isSticky ? 'sticky z-50 bg-[#F1F3F1] border-r' : ''}`} 
-                              style={isSticky ? { left: leftPos } : {}}>
-                            {totalsData[c] ? totalsData[c].toLocaleString() : ''}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </tfoot>
+                  {/* 固定底欄 (Sticky Footer) - 隱藏於客戶資料與換約前手資料 */}
+                  {!activeTab.includes('客戶') && !activeTab.match(/換約|讓渡/) && (
+                    <tfoot className="sticky bottom-0 z-40 bg-[#F1F3F1] font-bold text-[10px] sticky-bottom-shadow">
+                      <tr>
+                        <td className="px-1 py-3 text-center border-r bg-[#F1F3F1] sticky left-0 z-50">合計</td>
+                        {currentColumns.map((c, i) => {
+                          const isSticky = ['樓層', '編號', '買方', '成交總價'].includes(c);
+                          const leftPos = c==='樓層'?'44px':c==='編號'?'89px':c==='買方'?'134px':c==='成交總價'?'244px':'0px';
+                          const colClass = c==='買方'?'col-buyer':c==='成交總價'?'col-total':'';
+                          return (
+                            <td key={i} 
+                                className={`px-2 py-3 border-r ${colClass} text-right ${isSticky ? 'sticky z-50 bg-[#F1F3F1] border-r' : ''}`} 
+                                style={isSticky ? { left: leftPos } : {}}>
+                              {totalsData[c] ? totalsData[c].toLocaleString() : ''}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
             </div>
