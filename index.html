@@ -314,7 +314,6 @@
                   {sortedUnitKeys.map(key => (
                     <option key={key} value={key}>
                       {masterUnits[key].floor}{masterUnits[key].unit}
-                      {masterUnits[key].buyer !== '未填寫' ? ` (${masterUnits[key].buyer})` : ''}
                     </option>
                   ))}
                 </select>
