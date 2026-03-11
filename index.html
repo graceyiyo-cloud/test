@@ -51,6 +51,20 @@
     const db = getFirestore(app);
     const defaultAppId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'qingsenyuan-admin'; 
 
+    // 定義所有期款階段，供系統全局使用
+    const PAYMENT_STAGES = [
+      { k: '訂金', l: '訂金' },
+      { k: '簽約', l: '簽約金' },
+      { k: '2F', l: '2F工程' },
+      { k: '5F', l: '5F工程' },
+      { k: '7F', l: '7F工程' },
+      { k: '10F', l: '10F工程' },
+      { k: '13F', l: '13F工程' },
+      { k: '使照', l: '使照款' },
+      { k: '銀貸', l: '銀貸' },
+      { k: '交屋', l: '交屋款' }
+    ];
+
     function App() {
       const [route, setRoute] = useState('form');
       const [isAdminAuth, setIsAdminAuth] = useState(false);
@@ -111,31 +125,71 @@
           (snap) => {
             const units = {};
             snap.forEach(docSnap => {
-              if (docSnap.id.includes('收款總表')) {
-                const rows = docSnap.data().rows || [];
-                rows.forEach(row => {
-                  const f = String(row['樓層'] || '').trim().replace(/\.0$/, '');
-                  const u = String(row['編號'] || '').trim().replace(/\.0$/, '');
-                  if (f && u && !f.includes('合計')) {
-                    const unitKey = `${f}_${u}`;
-                    
-                    // 使照款專屬邏輯：應收(合約) - 已付 = 應收(未付餘額)
-                    const contractAmt = parseFloat(String(row['應付使照'] || row['使照-應收'] || '').replace(/,/g, '')) || 0;
-                    const paidAmt = parseFloat(String(row['使照-已付'] || '').replace(/,/g, '')) || 0;
-                    let unpaidAmt = parseFloat(String(row['使照-未付'] || '').replace(/,/g, ''));
-                    if (isNaN(unpaidAmt)) {
-                      unpaidAmt = contractAmt - paidAmt;
+              const rows = docSnap.data().rows || [];
+              rows.forEach(row => {
+                // 寬鬆比對：取得樓層與編號
+                let f = String(row['樓層'] || '').trim().replace(/\.0$/, '');
+                let u = String(row['編號'] || '').trim().replace(/\.0$/, '');
+                
+                // 防呆：如果表格裡只有填寫「戶別」欄位 (例如: 10A1)
+                const combined = String(row['戶別'] || row['戶名'] || '').trim().replace(/\.0$/, '');
+                if (combined && (!f || !u)) {
+                  const match = combined.match(/^(\d+)([A-Z]\d*)$/i);
+                  if (match) { f = match[1]; u = match[2]; } else { u = combined; }
+                }
+
+                if (f && u && !f.includes('合計') && !f.includes('總計')) {
+                  const unitKey = `${f}_${u}`;
+                  
+                  if (!units[unitKey]) {
+                    units[unitKey] = { floor: f, unit: u, buyer: '未填寫', stages: {} };
+                  }
+
+                  // 1. 抓取買方名稱 (支援買方、姓名、客戶名稱)
+                  const buyer = row['買方'] || row['姓名'] || row['客戶名稱'] || '';
+                  if (buyer.trim() !== '' && units[unitKey].buyer === '未填寫') {
+                    units[unitKey].buyer = buyer.trim();
+                  }
+
+                  // 2. 自動迴圈抓取「所有期款」的應收/已付/未付金額
+                  PAYMENT_STAGES.forEach(stage => {
+                    const stKey = stage.k;
+                    let contractAmt = 0;
+                    let paidAmt = 0;
+                    let unpaidAmt = NaN;
+
+                    Object.keys(row).forEach(key => {
+                      const valStr = String(row[key] || '').replace(/,/g, '');
+                      const val = parseFloat(valStr) || 0;
+                      if (key.includes(stKey)) {
+                         if (key.includes('應收') || key.includes('應付')) contractAmt += val;
+                         if (key.includes('已付') || key.includes('實收')) paidAmt += val;
+                         if (key.includes('未付') || key.includes('餘額')) unpaidAmt = parseFloat(valStr);
+                      }
+                    });
+
+                    // 初步計算餘額
+                    let finalUnpaid = 0;
+                    if (!isNaN(unpaidAmt) && unpaidAmt !== 0) {
+                       finalUnpaid = unpaidAmt;
+                    } else if (contractAmt > 0) {
+                       finalUnpaid = contractAmt - paidAmt;
                     }
 
-                    units[unitKey] = {
-                      floor: f,
-                      unit: u,
-                      buyer: row['買方'] || '未填寫',
-                      expectedAmount: unpaidAmt
-                    };
-                  }
-                });
-              }
+                    // 強制優先讀取：若有明確標示的欄位名稱 (例如：2F-未付 或 2F-應收)
+                    if (row[`${stKey}-未付`] !== undefined && String(row[`${stKey}-未付`]).trim() !== '') {
+                        finalUnpaid = parseFloat(String(row[`${stKey}-未付`]).replace(/,/g, '')) || 0;
+                    } else if (row[`${stKey}-應收`] !== undefined && String(row[`${stKey}-應收`]).trim() !== '') {
+                        const specificContract = parseFloat(String(row[`${stKey}-應收`]).replace(/,/g, '')) || 0;
+                        const specificPaid = parseFloat(String(row[`${stKey}-已付`] || '0').replace(/,/g, '')) || 0;
+                        finalUnpaid = specificContract - specificPaid;
+                    }
+
+                    // 儲存進該戶別的 stages 物件中，若原本已有數值則累加 (處理跨 Sheet 相同欄位)
+                    units[unitKey].stages[stKey] = (units[unitKey].stages[stKey] || 0) + finalUnpaid;
+                  });
+                }
+              });
             });
             setMasterUnits(units);
             setIsReady(true);
@@ -323,6 +377,9 @@
     }
 
     function AdminDashboard({ remittances, invoices, masterUnits, handleLogout }) {
+      // 新增：目前正在對帳的期款目標 (預設為 使照)
+      const [selectedStage, setSelectedStage] = useState('使照');
+
       const updateInvoiceData = async (remittanceId, field, value) => {
         const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
         const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices');
@@ -354,12 +411,32 @@
       };
 
       const sortedRemittances = [...remittances].sort((a, b) => (b.id || 0) - (a.id || 0));
+      const stageLabel = PAYMENT_STAGES.find(s => s.k === selectedStage)?.l || selectedStage;
 
       return (
         <div className="py-6 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto mb-6 flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-[#EAEAEA]">
-            <div className="flex items-center"><Lock className="w-5 h-5 text-[#8BA39E] mr-2" /><h1 className="text-lg font-bold text-gray-800">內部對帳管理中心 (已連接青森苑資料庫)</h1></div>
-            <button onClick={handleLogout} className="flex items-center text-sm text-gray-500 hover:text-gray-800"><LogOut className="w-4 h-4 mr-1" /> 登出</button>
+          {/* 頂部導航與期款切換器 */}
+          <div className="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl shadow-sm border border-[#EAEAEA] gap-4">
+            <div className="flex items-center">
+              <Lock className="w-5 h-5 text-[#8BA39E] mr-2" />
+              <h1 className="text-lg font-bold text-gray-800">內部對帳管理中心</h1>
+            </div>
+            
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                <span className="text-sm font-bold text-gray-600 mr-2">對帳期款目標：</span>
+                <select 
+                  value={selectedStage}
+                  onChange={(e) => setSelectedStage(e.target.value)}
+                  className="bg-white border border-gray-300 rounded text-sm px-2 py-1 outline-none focus:ring-1 focus:ring-[#8BA39E] text-gray-700 font-medium"
+                >
+                  {PAYMENT_STAGES.map(s => (
+                    <option key={s.k} value={s.k}>{s.l}</option>
+                  ))}
+                </select>
+              </div>
+              <button onClick={handleLogout} className="flex items-center text-sm text-gray-500 hover:text-gray-800 whitespace-nowrap"><LogOut className="w-4 h-4 mr-1" /> 登出</button>
+            </div>
           </div>
 
           <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-[#EAEAEA] overflow-hidden">
@@ -370,7 +447,7 @@
                     <th className="p-4 font-medium">狀態</th>
                     <th className="p-4 font-medium">戶別 / 買方</th>
                     <th className="p-4 font-medium">匯款日期 / 帳號資訊</th>
-                    <th className="p-4 font-medium">金額比對 (使照款)</th>
+                    <th className="p-4 font-medium">金額比對 ({stageLabel})</th>
                     <th className="p-4 font-medium">發票日期 (自動同步)</th>
                     <th className="p-4 font-medium">發票號碼 (自動同步)</th>
                     <th className="p-4 font-medium text-center">操作</th>
@@ -380,7 +457,9 @@
                   {sortedRemittances.map((sub) => {
                     const master = masterUnits[sub.unitKey];
                     const invData = invoices[sub.id] || {};
-                    const expectedAmt = master ? master.expectedAmount : 0;
+                    
+                    // 動態抓取選擇的期款尚欠餘額
+                    const expectedAmt = master?.stages?.[selectedStage] || 0;
                     const isReconciled = invData['已對帳'] || false;
 
                     return (
@@ -410,7 +489,7 @@
                               <XCircle className="w-4 h-4 text-orange-400 ml-2" title="金額不符" />
                             ) : null}
                           </div>
-                          <div className="text-xs text-gray-500">應收使照款: ${expectedAmt.toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">應收{stageLabel}: ${expectedAmt.toLocaleString()}</div>
                         </td>
                         <td className="p-4">
                           <input type="date" value={invData['發票日期'] ? invData['發票日期'].replace(/\//g, '-') : ''} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value.replace(/-/g, '/'))} className="px-2 py-1 border rounded text-sm outline-none focus:ring-1 focus:ring-[#8BA39E]" />
