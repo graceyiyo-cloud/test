@@ -75,7 +75,11 @@
       const [isReady, setIsReady] = useState(false);
 
       const [masterUnits, setMasterUnits] = useState({}); 
-      const [remittances, setRemittances] = useState([]); 
+      
+      // 將匯款紀錄分為「已對帳(正式寫入青森苑)」與「待對帳(暫存區)」
+      const [reconciledRems, setReconciledRems] = useState([]); 
+      const [pendingRems, setPendingRems] = useState([]);
+      
       const [invoices, setInvoices] = useState({});       
 
       useEffect(() => {
@@ -101,15 +105,30 @@
 
         const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
         
+        // 1. 監聽已對帳紀錄 (青森苑系統會讀取的正式資料庫 custom/additions)
         const unsubCustom = onSnapshot(
           doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), 
           (snap) => {
             if (snap.exists()) {
-              const data = snap.data();
-              setRemittances(data.remittances || []);
+              setReconciledRems(snap.data().remittances || []);
+            } else {
+              setReconciledRems([]);
             }
           },
-          (error) => console.error("讀取匯款紀錄失敗:", error)
+          (error) => console.error("讀取已對帳紀錄失敗:", error)
+        );
+
+        // 2. 監聽待對帳紀錄 (住戶剛送出，尚未正式進入青森苑的暫存區)
+        const unsubPending = onSnapshot(
+          doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances'), 
+          (snap) => {
+            if (snap.exists()) {
+              setPendingRems(snap.data().remittances || []);
+            } else {
+              setPendingRems([]);
+            }
+          },
+          (error) => console.error("讀取待對帳紀錄失敗:", error)
         );
 
         const unsubInv = onSnapshot(
@@ -200,7 +219,7 @@
           }
         );
 
-        return () => { unsubCustom(); unsubInv(); unsubMaster(); };
+        return () => { unsubCustom(); unsubPending(); unsubInv(); unsubMaster(); };
       }, [user]);
 
       useEffect(() => {
@@ -232,7 +251,7 @@
         <div className="min-h-screen bg-[#F9F8F6] text-[#4A4A4A] font-sans relative">
           {route === 'form' && <ResidentForm masterUnits={masterUnits} />}
           {route === 'admin' && !isAdminAuth && <AdminLogin passwordInput={passwordInput} setPasswordInput={setPasswordInput} handleLogin={handleLogin} loginError={loginError} />}
-          {route === 'admin' && isAdminAuth && <AdminDashboard remittances={remittances} invoices={invoices} masterUnits={masterUnits} handleLogout={handleLogout} />}
+          {route === 'admin' && isAdminAuth && <AdminDashboard pendingRems={pendingRems} reconciledRems={reconciledRems} invoices={invoices} masterUnits={masterUnits} handleLogout={handleLogout} />}
         </div>
       );
     }
@@ -268,7 +287,8 @@
         };
 
         try {
-          const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'additions');
+          // 修改為：寫入到待對帳暫存區 (pending_remittances)，先不讓青森苑系統讀到
+          const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
           await setDoc(docRef, { remittances: arrayUnion(newRemittance) }, { merge: true });
           
           setSubmitSuccess(true);
@@ -375,9 +395,15 @@
       );
     }
 
-    function AdminDashboard({ remittances, invoices, masterUnits, handleLogout }) {
-      // 新增：目前正在對帳的期款目標 (預設為 使照)
+    function AdminDashboard({ pendingRems, reconciledRems, invoices, masterUnits, handleLogout }) {
       const [selectedStage, setSelectedStage] = useState('使照');
+
+      // 組合所有匯款紀錄 (包含待對帳與已對帳)
+      const combinedRemittances = useMemo(() => {
+        const p = pendingRems.map(r => ({ ...r, _isReconciled: false }));
+        const r = reconciledRems.map(r => ({ ...r, _isReconciled: true }));
+        return [...p, ...r].sort((a, b) => (b.id || 0) - (a.id || 0));
+      }, [pendingRems, reconciledRems]);
 
       const updateInvoiceData = async (remittanceId, field, value) => {
         const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
@@ -394,22 +420,59 @@
         }
       };
 
-      const handleDeleteRemittance = async (remittanceId) => {
+      // 切換「已對帳」狀態：在暫存區與正式區之間搬移資料
+      const handleToggleReconcile = async (rem, checked) => {
+        const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
+        const additionsRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'additions');
+        const pendingRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
+
+        // 移除內部使用標記再儲存
+        const cleanRem = { ...rem };
+        delete cleanRem._isReconciled;
+
+        try {
+          // 同步紀錄發票的勾選狀態以維持 UI 邏輯
+          updateInvoiceData(rem.id, '已對帳', checked);
+
+          if (checked) {
+            // 打勾：從 pending 移除，寫入正式的 additions (青森苑將正式吃進這筆帳)
+            const newPending = pendingRems.filter(r => r.id !== rem.id);
+            await setDoc(pendingRef, { remittances: newPending }, { merge: true });
+            await setDoc(additionsRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
+          } else {
+            // 取消打勾：從正式 additions 撤回，退回暫存區 pending
+            const newReconciled = reconciledRems.filter(r => r.id !== rem.id);
+            await setDoc(additionsRef, { remittances: newReconciled }, { merge: true });
+            await setDoc(pendingRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
+          }
+        } catch (error) {
+          console.error("狀態切換失敗:", error);
+          alert("狀態切換失敗，請稍後再試。");
+        }
+      };
+
+      const handleDeleteRemittance = async (rem) => {
         if (!window.confirm("確定要刪除這筆回報紀錄嗎？")) return;
         const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
-        const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'additions');
-        
-        const updatedRemittances = remittances.filter(r => r.id !== remittanceId);
         
         try {
-          await setDoc(docRef, { remittances: updatedRemittances }, { merge: true });
+          if (rem._isReconciled) {
+            // 如果已經是已對帳狀態，從 additions 刪除
+            const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'additions');
+            const updated = reconciledRems.filter(r => r.id !== rem.id);
+            await setDoc(docRef, { remittances: updated }, { merge: true });
+          } else {
+            // 若為待對帳，從 pending 刪除
+            const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
+            const updated = pendingRems.filter(r => r.id !== rem.id);
+            await setDoc(docRef, { remittances: updated }, { merge: true });
+          }
         } catch (error) {
           console.error("刪除失敗:", error);
           alert("刪除失敗，請稍後再試。");
         }
       };
 
-      const sortedRemittances = [...remittances].sort((a, b) => (b.id || 0) - (a.id || 0));
       const stageLabel = PAYMENT_STAGES.find(s => s.k === selectedStage)?.l || selectedStage;
 
       return (
@@ -453,20 +516,29 @@
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
-                  {sortedRemittances.map((sub) => {
+                  {combinedRemittances.map((sub) => {
                     const master = masterUnits[sub.unitKey];
                     const invData = invoices[sub.id] || {};
                     
                     // 動態抓取選擇的期款尚欠餘額
                     const expectedAmt = master?.stages?.[selectedStage] || 0;
-                    const isReconciled = invData['已對帳'] || false;
+                    
+                    // 從紀錄所在的陣列判斷是否已對帳
+                    const isReconciled = sub._isReconciled; 
 
                     return (
                       <tr key={sub.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4">
                           <label className="flex items-center cursor-pointer">
-                            <input type="checkbox" checked={isReconciled} onChange={(e) => updateInvoiceData(sub.id, '已對帳', e.target.checked)} className="w-5 h-5 text-[#8BA39E] rounded cursor-pointer" />
-                            <span className={`ml-2 font-medium ${isReconciled ? 'text-green-600' : 'text-gray-400'}`}>{isReconciled ? '已對帳' : '待處理'}</span>
+                            <input 
+                              type="checkbox" 
+                              checked={isReconciled} 
+                              onChange={(e) => handleToggleReconcile(sub, e.target.checked)} 
+                              className="w-5 h-5 text-[#8BA39E] rounded cursor-pointer" 
+                            />
+                            <span className={`ml-2 font-medium ${isReconciled ? 'text-green-600' : 'text-gray-400'}`}>
+                              {isReconciled ? '已對帳' : '待處理'}
+                            </span>
                           </label>
                         </td>
                         <td className="p-4">
@@ -475,7 +547,7 @@
                         </td>
                         <td className="p-4">
                           <div>{sub.匯款日期}</div>
-                          <div className="text-xs text-gray-500 font-mono">帳號: *{sub.帳號後五碼 || '無資料'}</div>
+                          <div className="text-xs text-gray-500 font-mono">帳號: {sub.帳號後五碼 || '無資料'}</div>
                           <div className="text-xs text-gray-500">戶名: {sub.匯款帳戶戶名 || '未填寫'}</div>
                         </td>
                         <td className="p-4">
@@ -500,14 +572,14 @@
                           </div>
                         </td>
                         <td className="p-4 text-center">
-                          <button onClick={() => handleDeleteRemittance(sub.id)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="刪除此紀錄">
+                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="刪除此紀錄">
                             <Trash2 className="w-4 h-5 mx-auto" />
                           </button>
                         </td>
                       </tr>
                     );
                   })}
-                  {sortedRemittances.length === 0 && (
+                  {combinedRemittances.length === 0 && (
                     <tr><td colSpan="7" className="p-8 text-center text-gray-400">目前尚無匯款回報紀錄</td></tr>
                   )}
                 </tbody>
