@@ -27,7 +27,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useMemo } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { CheckCircle, XCircle, Send, Edit3, Lock, LogIn, LogOut, Building, Database } from 'lucide-react';
+    import { CheckCircle, XCircle, Send, Edit3, Lock, LogIn, LogOut, Building, Database, Trash2 } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
     import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
     import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -118,11 +118,20 @@
                   const u = String(row['編號'] || '').trim().replace(/\.0$/, '');
                   if (f && u && !f.includes('合計')) {
                     const unitKey = `${f}_${u}`;
+                    
+                    // 使照款專屬邏輯：應收(合約) - 已付 = 應收(未付餘額)
+                    const contractAmt = parseFloat(String(row['應付使照'] || row['使照-應收'] || '').replace(/,/g, '')) || 0;
+                    const paidAmt = parseFloat(String(row['使照-已付'] || '').replace(/,/g, '')) || 0;
+                    let unpaidAmt = parseFloat(String(row['使照-未付'] || '').replace(/,/g, ''));
+                    if (isNaN(unpaidAmt)) {
+                      unpaidAmt = contractAmt - paidAmt;
+                    }
+
                     units[unitKey] = {
                       floor: f,
                       unit: u,
                       buyer: row['買方'] || '未填寫',
-                      expectedAmount: parseFloat(String(row['成交總價'] || '').replace(/,/g, '')) || 0
+                      expectedAmount: unpaidAmt
                     };
                   }
                 });
@@ -175,9 +184,17 @@
     }
 
     function ResidentForm({ masterUnits }) {
-      const [formData, setFormData] = useState({ unitKey: '', remitDate: '', accountLast5: '', amount: '', notes: '' });
+      const [formData, setFormData] = useState({ unitKey: '', remitDate: '', accountLast5: '', remitterName: '', amount: '', notes: '' });
       const [submitSuccess, setSubmitSuccess] = useState(false);
       const [isSubmitting, setIsSubmitting] = useState(false);
+
+      // 排序戶別：依據樓層(數字)與編號(字母)順序
+      const sortedUnitKeys = Object.keys(masterUnits).sort((a, b) => {
+        const fA = parseInt(a.split('_')[0], 10) || 0;
+        const fB = parseInt(b.split('_')[0], 10) || 0;
+        if (fA !== fB) return fA - fB;
+        return a.localeCompare(b);
+      });
 
       const handleFormSubmit = async (e) => {
         e.preventDefault();
@@ -190,6 +207,7 @@
           匯款日期: formData.remitDate.replace(/-/g, '/'), 
           匯款金額: Number(formData.amount),
           帳號後五碼: formData.accountLast5,
+          匯款帳戶戶名: formData.remitterName,
           備註: formData.notes,
           _isCustom: true,                         
           submittedAt: new Date().toISOString()
@@ -200,8 +218,8 @@
           await setDoc(docRef, { remittances: arrayUnion(newRemittance) }, { merge: true });
           
           setSubmitSuccess(true);
-          setFormData({ unitKey: '', remitDate: '', accountLast5: '', amount: '', notes: '' });
-          setTimeout(() => setSubmitSuccess(false), 4000);
+          setFormData({ unitKey: '', remitDate: '', accountLast5: '', remitterName: '', amount: '', notes: '' });
+          setTimeout(() => setSubmitSuccess(false), 8000);
         } catch (error) {
           console.error("寫入失敗:", error);
           alert("傳送失敗，請稍後再試。");
@@ -217,7 +235,7 @@
               <div className="w-16 h-16 bg-[#F0EFEA] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Building className="w-8 h-8 text-[#8BA39E]" />
               </div>
-              <h2 className="text-2xl font-bold text-[#4A4A4A] tracking-wide mb-2">匯款資訊回報</h2>
+              <h2 className="text-2xl font-bold text-[#4A4A4A] tracking-wide mb-2">瀞川日禾-匯款資訊回報</h2>
               <p className="text-sm text-gray-500">感謝您的配合，請填寫匯款資料以便我們為您對帳。</p>
             </div>
 
@@ -226,7 +244,7 @@
                 <CheckCircle className="w-5 h-5 mr-3 flex-shrink-0" />
                 <div>
                   <p className="font-bold">資料已成功送出！</p>
-                  <p className="text-sm mt-1">財務單位將盡速為您核對帳務，謝謝您。</p>
+                  <p className="text-sm mt-1">確認收到款項後，公司會再LINE回覆給您，若有其他疑問可於官方LINE提出，或此處提出您的問題，謝謝。</p>
                 </div>
               </div>
             )}
@@ -239,8 +257,11 @@
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] focus:border-transparent outline-none bg-white transition-shadow"
                 >
                   <option value="" disabled>請選擇您的戶別</option>
-                  {Object.keys(masterUnits).sort().map(key => (
-                    <option key={key} value={key}>{masterUnits[key].floor}{masterUnits[key].unit} ({masterUnits[key].buyer})</option>
+                  {sortedUnitKeys.map(key => (
+                    <option key={key} value={key}>
+                      {masterUnits[key].floor}{masterUnits[key].unit}
+                      {masterUnits[key].buyer !== '未填寫' ? ` (${masterUnits[key].buyer})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -251,14 +272,20 @@
                   <input type="date" required value={formData.remitDate} onChange={(e) => setFormData({...formData, remitDate: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">匯款人帳號後五碼</label>
-                  <input type="text" required maxLength="5" pattern="\d{5}" placeholder="例如：12345" value={formData.accountLast5} onChange={(e) => setFormData({...formData, accountLast5: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">匯款金額 (新台幣)</label>
+                  <input type="number" required min="0" placeholder="請輸入純數字，不含逗號" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">匯款金額 (新台幣)</label>
-                <input type="number" required min="0" placeholder="請輸入純數字，不含逗號" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">匯款人 (匯款帳戶戶名)</label>
+                  <input type="text" required placeholder="例如：王小明" value={formData.remitterName} onChange={(e) => setFormData({...formData, remitterName: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">匯款人帳號後五碼</label>
+                  <input type="text" required maxLength="5" pattern="\d{5}" placeholder="例如：12345" value={formData.accountLast5} onChange={(e) => setFormData({...formData, accountLast5: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8BA39E] outline-none" />
+                </div>
               </div>
 
               <div>
@@ -311,6 +338,21 @@
         }
       };
 
+      const handleDeleteRemittance = async (remittanceId) => {
+        if (!window.confirm("確定要刪除這筆回報紀錄嗎？")) return;
+        const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : defaultAppId;
+        const docRef = doc(getFirestore(), 'artifacts', appId, 'public', 'data', 'custom', 'additions');
+        
+        const updatedRemittances = remittances.filter(r => r.id !== remittanceId);
+        
+        try {
+          await setDoc(docRef, { remittances: updatedRemittances }, { merge: true });
+        } catch (error) {
+          console.error("刪除失敗:", error);
+          alert("刪除失敗，請稍後再試。");
+        }
+      };
+
       const sortedRemittances = [...remittances].sort((a, b) => (b.id || 0) - (a.id || 0));
 
       return (
@@ -327,10 +369,11 @@
                   <tr className="bg-[#F0EFEA] text-[#4A4A4A] text-sm">
                     <th className="p-4 font-medium">狀態</th>
                     <th className="p-4 font-medium">戶別 / 買方</th>
-                    <th className="p-4 font-medium">匯款日期 / 後五碼</th>
-                    <th className="p-4 font-medium">金額比對 (總價扣抵)</th>
+                    <th className="p-4 font-medium">匯款日期 / 帳號資訊</th>
+                    <th className="p-4 font-medium">金額比對 (使照款)</th>
                     <th className="p-4 font-medium">發票日期 (自動同步)</th>
                     <th className="p-4 font-medium">發票號碼 (自動同步)</th>
+                    <th className="p-4 font-medium text-center">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
@@ -355,12 +398,19 @@
                         <td className="p-4">
                           <div>{sub.匯款日期}</div>
                           <div className="text-xs text-gray-500 font-mono">帳號: *{sub.帳號後五碼 || '無資料'}</div>
+                          <div className="text-xs text-gray-500">戶名: {sub.匯款帳戶戶名 || '未填寫'}</div>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center">
                             <span className="font-semibold text-[#8BA39E]">${(sub.匯款金額 || 0).toLocaleString()}</span>
+                            {/* 加入比對成功/失敗的視覺提示 */}
+                            {sub.匯款金額 === expectedAmt && expectedAmt > 0 ? (
+                              <CheckCircle className="w-4 h-4 text-green-500 ml-2" title="金額相符" />
+                            ) : expectedAmt > 0 ? (
+                              <XCircle className="w-4 h-4 text-orange-400 ml-2" title="金額不符" />
+                            ) : null}
                           </div>
-                          <div className="text-xs text-gray-500">合約總價: ${expectedAmt.toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">應收使照款: ${expectedAmt.toLocaleString()}</div>
                         </td>
                         <td className="p-4">
                           <input type="date" value={invData['發票日期'] ? invData['發票日期'].replace(/\//g, '-') : ''} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value.replace(/-/g, '/'))} className="px-2 py-1 border rounded text-sm outline-none focus:ring-1 focus:ring-[#8BA39E]" />
@@ -371,11 +421,16 @@
                             <input type="text" placeholder="例如: AB12345678" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-2 py-1 border rounded text-sm outline-none focus:ring-1 focus:ring-[#8BA39E] font-mono" />
                           </div>
                         </td>
+                        <td className="p-4 text-center">
+                          <button onClick={() => handleDeleteRemittance(sub.id)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="刪除此紀錄">
+                            <Trash2 className="w-4 h-5 mx-auto" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
                   {sortedRemittances.length === 0 && (
-                    <tr><td colSpan="6" className="p-8 text-center text-gray-400">目前尚無匯款回報紀錄</td></tr>
+                    <tr><td colSpan="7" className="p-8 text-center text-gray-400">目前尚無匯款回報紀錄</td></tr>
                   )}
                 </tbody>
               </table>
