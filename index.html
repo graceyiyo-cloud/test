@@ -132,12 +132,13 @@
       return { f: normStr(f), u: normStr(u), b: String(b || '').trim() };
     };
 
-    // 所有可選的期款階段
+    // 統一期款階段順序，客變排最前面確保被優先沖銷
     const PAYMENT_STAGES = [
+      { k: '客變', l: '客變費用' },
       { k: '訂金', l: '訂金' }, { k: '簽約', l: '簽約金' }, { k: '2F', l: '2F工程' }, 
       { k: '5F', l: '5F工程' }, { k: '7F', l: '7F工程' }, { k: '10F', l: '10F工程' }, 
       { k: '13F', l: '13F工程' }, { k: '使照', l: '使照' }, { k: '銀貸', l: '銀貸' }, 
-      { k: '交屋', l: '交屋' }, { k: '客變', l: '客變費用' }
+      { k: '交屋', l: '交屋' }
     ];
 
     function App() {
@@ -192,7 +193,6 @@
         return () => { unsubInv(); unsubCustom(); unsubMaster(); };
       }, [user]);
 
-      // 點擊選單外部自動關閉
       useEffect(() => {
         function handleClickOutside(event) {
           if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
@@ -415,7 +415,7 @@
         setIsEditingMode(false);
       };
 
-      // 匯出 Excel 功能
+      // 匯出 Excel 功能，嚴格遵守 PAYMENT_STAGES 中定義的順序 (客變第一)
       const exportSelectedStagesToExcel = () => {
         if (selectedExportStages.length === 0) {
             alert("請至少勾選一個項目！");
@@ -425,13 +425,12 @@
         const salesTabKey = Object.keys(sheetsData).find(k => k.includes('收款總表'));
         if (!salesTabKey) return;
 
-        // 提取所有獨立戶別
         const allUnits = [];
         const seen = new Set();
         combinedData.forEach(row => {
             const uInfo = parseUnitInfo(row);
             const key = `${uInfo.f}_${uInfo.u}`;
-            if (key !== "_" && !seen.has(key)) {
+            if (key !== "_" && !seen.has(key) && !uInfo.f.includes('合計')) {
                 seen.add(key);
                 allUnits.push(uInfo);
             }
@@ -448,17 +447,17 @@
             const charges = (details.客變紀錄 || []).reduce((s,r) => s + (Number(r.客變金額)||0), 0);
             
             let rem = receipts;
-            // 建立一個紀錄各階段付款狀況的物件
             const stageStatus = {};
             
-            // 依序沖銷以計算每個階段的已付與未付
             PAYMENT_STAGES.forEach(st => {
                 let exp = 0;
                 if (st.k === '客變') {
                     exp = charges;
                 } else {
-                    const hA = parseFloat(String(house[Object.keys(house).find(x=>x.includes(st.k))]||0).replace(/,/g,''))||0; 
-                    const lA = parseFloat(String(land[Object.keys(land).find(x=>x.includes(st.k))]||0).replace(/,/g,''))||0; 
+                    const kMatchH = Object.keys(house).find(x=>x.includes(st.k));
+                    const kMatchL = Object.keys(land).find(x=>x.includes(st.k));
+                    const hA = kMatchH ? (parseFloat(String(house[kMatchH]).replace(/,/g,''))||0) : 0; 
+                    const lA = kMatchL ? (parseFloat(String(land[kMatchL]).replace(/,/g,''))||0) : 0; 
                     exp = hA + lA;
                 }
 
@@ -469,18 +468,12 @@
                 stageStatus[st.k] = { exp, paid, unpaid: exp > 0 ? exp - paid : 0 };
             });
 
-            // 為勾選的每一個階段產生一列資料 (或是把勾選的階段並排在一列，這裡選擇並排在一列以符合一戶一列的常理)
-            const rowData = {
-                '樓層': u.f,
-                '編號': u.u,
-                '買方': u.b
-            };
+            const rowData = { '樓層': u.f, '編號': u.u, '買方': u.b };
 
             selectedExportStages.forEach(stKey => {
                 const stageInfo = PAYMENT_STAGES.find(s => s.k === stKey);
                 if (stageInfo) {
                     const status = stageStatus[stKey];
-                    // 加入千分位格式
                     rowData[`${stageInfo.l}-應收`] = formatNum(status.exp);
                     rowData[`${stageInfo.l}-已付`] = formatNum(status.paid);
                     rowData[`${stageInfo.l}-未付`] = formatNum(status.unpaid);
@@ -490,19 +483,11 @@
             exportData.push(rowData);
         });
 
-        // 產生 Excel 檔案
         const ws = window.XLSX.utils.json_to_sheet(exportData);
-        
-        // 設定欄寬
-        const wscols = [
-            {wch: 10}, {wch: 10}, {wch: 15}
-        ];
-        selectedExportStages.forEach(() => {
-            wscols.push({wch: 15}, {wch: 15}, {wch: 15});
-        });
+        const wscols = [{wch: 10}, {wch: 10}, {wch: 15}];
+        selectedExportStages.forEach(() => { wscols.push({wch: 15}, {wch: 15}, {wch: 15}); });
         ws['!cols'] = wscols;
 
-        // 建立活頁簿並匯出
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "期款清單匯出");
         window.XLSX.writeFile(wb, `青森苑_期款清單匯出_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`);
@@ -515,7 +500,6 @@
           );
       };
 
-      // 如果正在檢查登入狀態
       if (isAuthLoading) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
@@ -524,7 +508,6 @@
         );
       }
 
-      // 如果未登入，顯示登入介面
       if (!user) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0] p-4">
@@ -538,7 +521,6 @@
         );
       }
 
-      // 已登入，顯示主介面
       return (
         <div className="min-h-screen bg-[#F5F5F0] text-[#4A4A4A] pb-10 font-sans">
           <header className="bg-white shadow-sm border-b sticky top-0 z-[60] px-4 py-3 flex justify-between items-center">
@@ -554,7 +536,6 @@
               
               {isAdmin && (
                 <>
-                  {/* 新增的匯出選單功能 */}
                   <div className="relative" ref={exportMenuRef}>
                       <button onClick={() => setShowExportMenu(!showExportMenu)} className="bg-white border border-sky-600 text-sky-600 px-3 py-1.5 rounded-full text-[11px] font-bold hover:bg-sky-600 hover:text-white flex items-center gap-1 shadow-sm transition-all"><Download size={12} />匯出期款清單</button>
                       {showExportMenu && (
@@ -663,7 +644,6 @@
                     })}
                     <tr className="h-10"><td colSpan={currentColumns.length + 1} className="border-none bg-transparent"></td></tr>
                   </tbody>
-                  {/* 固定底欄 (Sticky Footer) */}
                   <tfoot className="sticky bottom-0 z-40 bg-[#F1F3F1] font-bold text-[10px] sticky-bottom-shadow">
                     <tr>
                       <td className="px-1 py-3 text-center border-r bg-[#F1F3F1] sticky left-0 z-50">合計</td>
@@ -740,28 +720,36 @@
                   )}
 
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                    <h3 className="text-xs font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><DollarSign size={14}/>財務款項沖銷明細</h3>
+                    <h3 className="text-xs font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><DollarSign size={14}/>財務款項沖銷明細 (合併客變統一試算)</h3>
                     <div className="overflow-x-auto"><table className="w-full text-[10px] border-separate border-spacing-y-1"><thead><tr className="text-gray-400 font-bold"><th className="text-center py-2">階段</th><th className="text-right px-2">房屋款</th><th className="text-right px-2">土地款</th><th className="text-right px-2">應付合計</th><th className="text-right px-2 text-[#8C9B90]">已收實沖</th><th className="text-right px-2 text-red-500">尚欠餘額</th><th className="text-center">狀態</th></tr></thead><tbody>
                       {(() => {
                         const house = selectedUnit.財務款項.house || {}, land = selectedUnit.財務款項.land || {};
                         const receipts = (selectedUnit.匯款紀錄 || []).reduce((s,r) => s + (parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0), 0);
                         const charges = (selectedUnit.客變紀錄 || []).reduce((s,r) => s + (Number(r.客變金額)||0), 0);
                         let rem = receipts;
-                        return PAYMENT_STAGES.map(st => {
+                        
+                        // UI 顯示時加入「成交總價」列於頂部
+                        const displayStages = [{k:'成交',l:'合約總價'}, ...PAYMENT_STAGES];
+                        
+                        return displayStages.map(st => {
                           let exp=0,hA=0,lA=0;
-                          if (st.k === '客變') exp=charges; else { 
-                            hA=parseFloat(String(house[Object.keys(house).find(x=>x.includes(st.k))]).replace(/,/g,''))||0; 
-                            lA=parseFloat(String(land[Object.keys(land).find(x=>x.includes(st.k))]).replace(/,/g,''))||0; 
+                          if (st.k === '客變') {
+                              exp=charges; 
+                          } else { 
+                            const kMatchH = Object.keys(house).find(x=>x.includes(st.k));
+                            const kMatchL = Object.keys(land).find(x=>x.includes(st.k));
+                            hA = kMatchH ? (parseFloat(String(house[kMatchH]).replace(/,/g,''))||0) : 0; 
+                            lA = kMatchL ? (parseFloat(String(land[kMatchL]).replace(/,/g,''))||0) : 0; 
                             exp=hA+lA; 
                           }
-                          if (exp<=0) return null;
-                          let paid=0; if (rem>=exp) { paid=exp; rem-=exp; } else { paid=rem; rem=0; }
+                          if (exp<=0 && st.k!=='成交') return null;
+                          let paid=0; if (st.k!=='成交') { if(rem>=exp) { paid=exp; rem-=exp; } else { paid=rem; rem=0; } }
                           
                           return (
-                            <tr key={st.k} className={`${st.k==='客變'?'bg-purple-50':paid>=exp?'bg-green-50/70':paid>0?'bg-orange-50/70':'hover:bg-gray-50/30'} rounded-lg transition-all`}>
+                            <tr key={st.k} className={`${st.k==='成交'?'bg-gray-50':st.k==='客變'?'bg-purple-50':paid>=exp?'bg-green-50/70':paid>0?'bg-orange-50/70':'hover:bg-gray-50/30'} rounded-lg transition-all`}>
                                 <td className={`py-2 px-2 font-bold text-center ${st.k==='客變'?'text-purple-700':''}`}>{st.l}</td>
                                 <td className="text-right px-2 text-sky-700">
-                                    {isEditingMode && st.k !== '客變' ? (
+                                    {isEditingMode && st.k !== '客變' && st.k !== '成交' ? (
                                         <input className="w-20 border rounded px-1 text-right text-xs" value={house[Object.keys(house).find(x=>x.includes(st.k))] || 0} onChange={e=>{
                                             const kMatch = Object.keys(house).find(x=>x.includes(st.k)) || `應付${st.k}`;
                                             const newHouse = {...selectedUnit.財務款項.house, [kMatch]: e.target.value};
@@ -770,7 +758,7 @@
                                     ) : (hA ? hA.toLocaleString() : (st.k==='客變' ? '-' : ''))}
                                 </td>
                                 <td className="text-right px-2 text-amber-700">
-                                    {isEditingMode && st.k !== '客變' ? (
+                                    {isEditingMode && st.k !== '客變' && st.k !== '成交' ? (
                                         <input className="w-20 border rounded px-1 text-right text-xs" value={land[Object.keys(land).find(x=>x.includes(st.k))] || 0} onChange={e=>{
                                             const kMatch = Object.keys(land).find(x=>x.includes(st.k)) || `應付${st.k}`;
                                             const newLand = {...selectedUnit.財務款項.land, [kMatch]: e.target.value};
@@ -779,9 +767,9 @@
                                     ) : (lA ? lA.toLocaleString() : (st.k==='客變' ? '-' : ''))}
                                 </td>
                                 <td className="text-right px-2 font-bold">{exp?exp.toLocaleString():''}</td>
-                                <td className="text-right px-2 text-green-600 font-bold">{paid.toLocaleString()}</td>
-                                <td className="text-right px-2 text-red-500">{(exp-paid).toLocaleString()}</td>
-                                <td className="text-center px-2">{paid>=exp?<span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${st.k==='客變'?'bg-purple-100 text-purple-700':'bg-green-100 text-green-700'}`}>已清</span>:paid>0?<span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[8px] font-bold">未清</span>:<span className="text-gray-300">待付</span>}</td>
+                                <td className="text-right px-2 text-green-600 font-bold">{st.k==='成交'?'':paid.toLocaleString()}</td>
+                                <td className="text-right px-2 text-red-500">{st.k==='成交'?'':(exp-paid).toLocaleString()}</td>
+                                <td className="text-center px-2">{st.k==='成交'?'':(paid>=exp?<span className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${st.k==='客變'?'bg-purple-100 text-purple-700':'bg-green-100 text-green-700'}`}>已清</span>:paid>0?<span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[8px] font-bold">未清</span>:<span className="text-gray-300">待付</span>)}</td>
                             </tr>
                           );
                         });
@@ -789,7 +777,7 @@
                     </tbody></table></div></div>
 
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                    <h3 className="text-xs font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><FileText size={14}/>匯款紀錄管理</h3>
+                    <h3 className="text-xs font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><FileText size={14}/>匯款紀錄管理 (唯一實收錢源)</h3>
                     <table className="w-full text-[10px] border-separate border-spacing-y-1"><thead><tr className="text-gray-400 font-bold"><th className="text-center py-2">匯款日期</th><th className="text-right px-2">實收金額</th><th className="text-center">發票日期</th><th className="text-center">發票號碼</th>{isAdmin && <th className="text-center">操作</th>}</tr></thead><tbody>
                       {(selectedUnit.匯款紀錄 || []).map((r,i) => {
                         const amt = parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0;
