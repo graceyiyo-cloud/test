@@ -92,13 +92,13 @@
 
     const normStr = (s) => String(s || '').trim().toUpperCase().replace(/\.0$/, '');
 
-    // 西元年轉民國年輔助函數 (針對輸入框 "YYYY-MM-DD")
+    // 支援將 YYYY-MM-DD 或是 YYYY/MM/DD 的西元年轉換為民國年
     const convertToMinguo = (dateStr) => {
       if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      if (parts.length === 3 && parts[0].length === 4) {
-        const year = parseInt(parts[0], 10);
-        if (year > 1911) return `${year - 1911}/${parts[1]}/${parts[2]}`;
+      const gMatch = dateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+      if (gMatch) {
+        const year = parseInt(gMatch[1], 10);
+        if (year > 1911) return `${year - 1911}/${gMatch[2].padStart(2, '0')}/${gMatch[3].padStart(2, '0')}`;
       }
       return dateStr.replace(/-/g, '/');
     };
@@ -486,7 +486,12 @@
 
       const handleInvoiceChange = async (rK, field, val) => {
         if (!isAdmin) return;
-        const updated = { ...firebaseInvoices, [rK]: { ...(firebaseInvoices[rK] || {}), [field]: val } };
+        let finalVal = val;
+        // 自動轉換西元年為民國年
+        if (field === '發票日期') {
+            finalVal = convertToMinguo(val);
+        }
+        const updated = { ...firebaseInvoices, [rK]: { ...(firebaseInvoices[rK] || {}), [field]: finalVal } };
         setFirebaseInvoices(updated);
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices'), updated);
       };
@@ -914,7 +919,7 @@
                               {amt.toLocaleString()}
                             </td>
                             <td className="px-2 bg-orange-50/70">
-                              <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 text-orange-900 placeholder-orange-300" value={cD['發票日期'] || renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/>
+                              <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 text-orange-900 placeholder-orange-300" value={cD['發票日期'] !== undefined ? cD['發票日期'] : renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/>
                             </td>
                             <td className="px-2 bg-orange-50/70 rounded-r-md">
                               <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 font-mono text-orange-900 placeholder-orange-300" value={cD['發票號碼'] || r['發票號碼'] || ''} onChange={e=>handleInvoiceChange(rK,'發票號碼',e.target.value)} placeholder="號碼"/>
