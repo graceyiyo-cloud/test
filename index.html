@@ -92,6 +92,17 @@
 
     const normStr = (s) => String(s || '').trim().toUpperCase().replace(/\.0$/, '');
 
+    // 西元年轉民國年輔助函數 (針對輸入框 "YYYY-MM-DD")
+    const convertToMinguo = (dateStr) => {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        const year = parseInt(parts[0], 10);
+        if (year > 1911) return `${year - 1911}/${parts[1]}/${parts[2]}`;
+      }
+      return dateStr.replace(/-/g, '/');
+    };
+
     const formatNum = (val) => {
       if (val === undefined || val === null || val === '') return '';
       const sVal = String(val).replace(/,/g, '');
@@ -103,11 +114,22 @@
     const renderDateIfApplicable = (key, val) => {
       if (val === undefined || val === null || val === '') return '';
       const sVal = String(val).trim();
-      if ((String(key).includes('日期') || String(key).includes('日') || String(key).includes('時間戳記')) && sVal !== '' && !isNaN(sVal)) {
-        const num = Number(sVal);
-        if (num > 20000 && num < 80000) {
-          const date = new Date(Math.round((num - 25569) * 86400 * 1000));
-          return `${date.getUTCFullYear()}/${String(date.getUTCMonth() + 1).padStart(2, '0')}/${String(date.getUTCDate()).padStart(2, '0')}`;
+      if ((String(key).includes('日期') || String(key).includes('日') || String(key).includes('時間戳記')) && sVal !== '') {
+        if (!isNaN(sVal)) {
+          const num = Number(sVal);
+          if (num > 20000 && num < 80000) {
+            const date = new Date(Math.round((num - 25569) * 86400 * 1000));
+            const mYear = date.getUTCFullYear() - 1911; // 轉民國年
+            return `${mYear}/${String(date.getUTCMonth() + 1).padStart(2, '0')}/${String(date.getUTCDate()).padStart(2, '0')}`;
+          }
+        }
+        // 如果是字串格式的西元年 (如 2026/03/12 或 2026-03-12)，自動轉為民國年顯示
+        const gMatch = sVal.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+        if (gMatch) {
+          const year = parseInt(gMatch[1], 10);
+          if (year > 1911) {
+            return `${year - 1911}/${gMatch[2].padStart(2, '0')}/${gMatch[3].padStart(2, '0')}`;
+          }
         }
       }
       return sVal;
@@ -438,8 +460,8 @@
                     if (st.k === '客變') {
                         exp = charges;
                     } else {
-                        const kMatchH = Object.keys(house).find(x=>x.includes(st.k) && (st.k==='成交'?!x.includes('總價'):true));
-                        const kMatchL = Object.keys(land).find(x=>x.includes(st.k) && (st.k==='成交'?!x.includes('總價'):true));
+                        const kMatchH = Object.keys(house).find(x=>x.includes(st.k));
+                        const kMatchL = Object.keys(land).find(x=>x.includes(st.k));
                         const hA = kMatchH ? (parseFloat(String(house[kMatchH]).replace(/,/g,''))||0) : 0;
                         const lA = kMatchL ? (parseFloat(String(land[kMatchL]).replace(/,/g,''))||0) : 0;
                         exp = hA + lA;
@@ -810,7 +832,7 @@
 
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
                     <h3 className="text-sm font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><DollarSign size={16}/>財務款項沖銷明細</h3>
-                    <div className="overflow-x-auto"><table className="w-full text-xs border-separate border-spacing-y-1.5"><thead><tr className="text-gray-400 font-bold"><th className="text-center py-2">階段</th><th className="text-right px-2">房屋款</th><th className="text-right px-2">土地款</th><th className="text-right px-2">應付合計</th><th className="text-right px-2 text-[#8C9B90]">已收實沖</th><th className="text-right px-2 text-red-500">尚欠餘額</th><th className="text-center">狀態</th></tr></thead><tbody>
+                    <div className="overflow-x-auto"><table className="w-full text-xs border-separate border-spacing-y-1.5"><thead><tr className="text-gray-400 font-bold"><th className="text-center py-2">階段</th><th className="text-center px-2">房屋款</th><th className="text-center px-2">土地款</th><th className="text-center px-2">應付合計</th><th className="text-center px-2 text-[#8C9B90]">已收實沖</th><th className="text-center px-2 text-red-500">尚欠餘額</th><th className="text-center">狀態</th></tr></thead><tbody>
                       {(() => {
                         const house = selectedUnit.財務款項.house || {};
                         const land = selectedUnit.財務款項.land || {};
@@ -918,7 +940,7 @@
                             <td className="p-2"><input type="number" placeholder="金額" className="border border-white/60 rounded text-xs w-full p-1.5 text-right bg-white/60 focus:bg-white" value={remitInput.amt} onChange={e=>setRemitInput({...remitInput, amt: e.target.value})}/></td>
                             <td colSpan={isAdmin ? "3" : "2"} className="p-2 text-right rounded-r-md"><button onClick={async () => {
                                 if(remitInput.amt){
-                                    const rec = { unitKey:`${selectedUnit.基本資料.樓層}_${selectedUnit.基本資料.編號}`, 匯款日期:remitInput.date.replace(/-/g,'/'), 匯款金額:Number(remitInput.amt), _isCustom:true, id:Date.now().toString() };
+                                    const rec = { unitKey:`${selectedUnit.基本資料.樓層}_${selectedUnit.基本資料.編號}`, 匯款日期:convertToMinguo(remitInput.date), 匯款金額:Number(remitInput.amt), _isCustom:true, id:Date.now().toString() };
                                     const newR = [...(customData.remittances || []), rec];
                                     await setDoc(doc(db,'artifacts',appId,'public', 'data','custom','additions'), { remittances:newR }, { merge:true });
                                     setSelectedUnit({...selectedUnit, 匯款紀錄: [...selectedUnit.匯款紀錄, {...rec, _id: rec.id, _isCustom: true}]});
@@ -941,7 +963,7 @@
                             <td className="p-2"><input type="number" placeholder="費用" className="border rounded text-xs w-full p-1.5 text-right" value={cbInput.amt} onChange={e=>setCbInput({...cbInput, amt: e.target.value})}/></td>
                             <td className="p-2 text-right"><button onClick={async () => {
                                 if(cbInput.amt){
-                                    const rec = { unitKey:`${selectedUnit.基本資料.樓層}_${selectedUnit.基本資料.編號}`, 日期:cbInput.date.replace(/-/g,'/'), 備註:cbInput.note, 客變金額:Number(cbInput.amt), id:Date.now().toString() };
+                                    const rec = { unitKey:`${selectedUnit.基本資料.樓層}_${selectedUnit.基本資料.編號}`, 日期:convertToMinguo(cbInput.date), 備註:cbInput.note, 客變金額:Number(cbInput.amt), id:Date.now().toString() };
                                     const newC = [...(customData.customChanges || []), rec];
                                     await setDoc(doc(db,'artifacts',appId,'public', 'data','custom','additions'), { customChanges:newC }, { merge:true });
                                     setSelectedUnit({...selectedUnit, 客變紀錄: [...selectedUnit.客變紀錄, rec]});
