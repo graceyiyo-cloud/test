@@ -258,7 +258,7 @@
               if (!isAllowed) {
                   // 強制登出並顯示錯誤
                   signOut(auth).then(() => {
-                      setAuthError(`帳號 ${user.email} 未獲授權，請聯絡管理員加入授權名單。`);
+                      setAuthError(`帳號 ${user.email} 未獲授權，請聯絡管理員取得授權。`);
                   });
               } else {
                   setAuthError(""); // 若已被授權，清除錯誤訊息
