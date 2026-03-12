@@ -871,8 +871,8 @@
                       <thead>
                         <tr>
                           <th className="text-center py-2 bg-emerald-50 text-emerald-700 rounded-l-md font-bold">匯款日期</th>
-                          <th className="text-right px-2 bg-emerald-50 text-emerald-700 font-bold">實收金額</th>
-                          <th className="text-center py-2 bg-orange-50 text-orange-700 font-bold border-l-4 border-white">發票日期</th>
+                          <th className="text-center px-2 bg-emerald-50 text-emerald-700 font-bold">實收金額</th>
+                          <th className="text-center py-2 bg-orange-50 text-orange-700 font-bold">發票日期</th>
                           <th className="text-center px-2 bg-orange-50 text-orange-700 rounded-r-md font-bold">發票號碼</th>
                           {isAdmin && <th className="text-center text-gray-400 font-bold">操作</th>}
                         </tr>
@@ -891,7 +891,7 @@
                             <td className="text-right px-2 font-bold bg-emerald-50/70 text-emerald-900">
                               {amt.toLocaleString()}
                             </td>
-                            <td className="px-2 bg-orange-50/70 border-l-4 border-white">
+                            <td className="px-2 bg-orange-50/70">
                               <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 text-orange-900 placeholder-orange-300" value={cD['發票日期'] || renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/>
                             </td>
                             <td className="px-2 bg-orange-50/70 rounded-r-md">
