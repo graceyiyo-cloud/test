@@ -2,475 +2,503 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>餐點統計綜合管理系統</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>工程費用計算</title>
     <style>
-        /* --- 全域導覽樣式 --- */
-        .app-nav {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 9999;
+        :root {
+            --bg: #F4F7F6;
+            --card: #FFFFFF;
+            --primary: #4A5D4E; 
+            --accent: #D4A373;
+            --text: #2C3E50;
+            --label-text: #5D6D7E;
+            --border: #D5DBDB;
+            --danger: #C0392B;
+            --success: #27AE60;
         }
-        .nav-btn {
-            padding: 12px 20px;
-            background: #455A64;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            white-space: nowrap;
+
+        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        
+        .page { width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); box-sizing: border-box; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); }
+        
+        h2 { text-align: center; color: var(--primary); font-weight: 700; margin-bottom: 25px; letter-spacing: 2px; }
+        .row { display: flex; gap: 12px; margin-bottom: 18px; align-items: flex-end; }
+        .col { flex: 1; display: flex; flex-direction: column; }
+        
+        label { font-size: 0.85rem; margin-bottom: 8px; color: var(--label-text); font-weight: 600; }
+        .tip { font-weight: normal; font-size: 0.75rem; color: var(--accent); }
+        
+        input { padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; background: #FFF; width: 100%; box-sizing: border-box; transition: all 0.2s; }
+        input:focus { border-color: var(--primary); background: #FDFFFD; }
+        
+        input[readonly] { background: #F8F9F9; border-color: #EBEDEF; color: #7F8C8D; }
+
+        .reason-input { margin-top: 8px; font-size: 0.85rem; padding: 8px 12px; border-style: dashed; }
+
+        #netAmount { 
+            font-size: 1.5rem; 
+            font-weight: 800; 
+            color: var(--primary); 
+            border: 3px solid var(--primary); 
+            background: #FFF; 
             text-align: center;
+            height: 60px;
+            box-shadow: 0 4px 10px rgba(74, 93, 78, 0.1);
         }
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-        }
-        .nav-btn.active {
-            background: #7A918D;
-            color: white;
-            font-weight: bold;
-            border: 2px solid white;
-        }
-        .page-container { display: none; }
-        .page-container.active { display: block; }
+        
+        .config-box { background: #FDFEFE; padding: 18px; border-radius: 15px; margin: 20px 0; border: 1.5px solid #E5E8E8; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        
+        .display-area { background: #F8F9F9; border-radius: 15px; padding: 20px; margin-top: 20px; border: 1px solid #EAEDED; }
+        .section-title { font-size: 0.9rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .section-title::before { content: ''; width: 4px; height: 16px; background: var(--primary); border-radius: 2px; }
+        
+        .formula { font-size: 0.95rem; line-height: 1.8; color: #444; }
+        .formula strong { color: #000; font-weight: 700; }
+        
+        .formula-row { display: grid; grid-template-columns: 1.8em 1fr; margin-bottom: 2px; }
+        .formula-sub { padding-left: 1.8em; color: #666; font-size: 0.9rem; margin-bottom: 4px; }
 
-        /* --- 網頁一：月結統計 CSS (原始保留) --- */
-        #page1 { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif; background: #F2F0EB; padding: 20px; letter-spacing: 0.05em; padding-bottom: 100px; }
-        #page1 .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        #page1 h1 { text-align: center; color: #455A64; font-weight: normal; margin-bottom: 30px; }
-        #page1 .control-panel { display: flex; gap: 20px; background: #E8E6E1; padding: 20px; border-radius: 8px; margin-bottom: 25px; align-items: center; color: #444; }
-        #page1 .main-content { display: grid; grid-template-columns: 1.2fr 2fr; gap: 25px; }
-        #page1 .section { border: 1px solid #EBEBEB; border-radius: 8px; padding: 20px; background: #fff; display: flex; flex-direction: column; margin-bottom: 25px; }
-        #page1 h3 { border-bottom: 2px solid #F0F0F0; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: #444; font-size: 1.1rem; font-weight: 600; }
-        #page1 .scroll-area { overflow-y: auto; border: 1px solid #F5F5F5; border-radius: 4px; max-height: 400px; }
-        #page1 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        #page1 th, #page1 td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #F0F0F0; }
-        #page1 #summaryTable th:nth-child(2), #page1 #summaryTable td:nth-child(2), #page1 #dailyTable th:nth-child(2), #page1 #dailyTable td:nth-child(2) { text-align: right; }
-        #page1 th { background-color: #E0E5DF; color: #333; position: sticky; top: 0; z-index: 10; font-weight: 700; }
-        #page1 .excluded-header-row { background-color: #F7F7F7; color: #777; font-size: 13px; text-align: center; padding: 8px; }
-        #page1 .excluded-row { background-color: #FCFCFC; color: #AAA; }
-        #page1 .name-cell { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        #page1 .btn { border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; color: white; font-size: 13px; display: none; }
-        #page1 #copyBtn { background-color: #7A918D; }
-        #page1 #copyImgBtn { background-color: #6B7C8A; }
-        #page1 .btn-group { display: flex; gap: 10px; }
-        #page1 .price-input { width: 70px; text-align: right; border: 1px solid #DDD; border-radius: 4px; padding: 5px; color: #B05B5B; }
-        #page1.capturing .price-input { display: none !important; }
-        #page1.capturing .price-text { display: inline !important; font-weight: bold; color: #B05B5B; }
-        .diff-warning { color: #d93025; font-size: 12px; margin-right: 4px; vertical-align: middle; cursor: help; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-copy { flex: 2; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-copy:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-reset { flex: 1; padding: 14px; background: #FFF; color: var(--danger); border: 1.5px solid var(--danger); border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-reset:hover { background: #FFF5F5; }
 
-        /* --- 網頁二：每日金額 CSS (原始保留) --- */
-        #page2 { background-color: #fdfbf7; font-family: 'Noto Sans TC', sans-serif; color: #57534e; padding: 20px; padding-bottom: 100px; }
-        #page2 .journal-box { background: #fff; border: 1px solid #e7e5e4; border-radius: 6px; }
+        .check-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); font-size: 0.9rem; transition: 0.2s; }
+        .check-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+
+        .toggle-group { 
+            display: flex; 
+            background: #EBEDEF; 
+            border-radius: 12px; 
+            padding: 4px; 
+            height: 46px;
+            box-sizing: border-box;
+        }
+        .toggle-group label { flex: 1; margin: 0; cursor: pointer; }
+        .toggle-group input { display: none; }
+        .toggle-group span { 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            border-radius: 10px;
+            color: #7F8C8D;
+            font-size: 0.9rem;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        .toggle-group input:checked + span { 
+            background: var(--primary); 
+            color: #FFFFFF; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        #calcBaseGroup input:checked + span {
+            background: var(--accent);
+        }
+
+        /* 新增：反灰不可點選的樣式 */
+        .disabled-state {
+            opacity: 0.4;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="app-nav">
-        <button class="nav-btn active" onclick="switchPage(1)">1. 月結統計</button>
-        <button class="nav-btn" onclick="switchPage(2)">2. 每日金額</button>
-    </nav>
-
-    <!-- 網頁一：月結統計 -->
-    <div id="page1" class="page-container active">
-        <div class="container">
-            <h1>月結餐點費用統計</h1>
-            <div class="control-panel">
-                <div>1. 上傳檔案：<input type="file" id="fileInput" accept=".txt"></div>
-                <div>2. 選擇月份：<select id="monthSelect"></select></div>
-                <div style="margin-left:auto;"><button onclick="clearAllData()" style="font-size: 11px; background: none; border: 1px solid #ccc; color: #999; cursor: pointer; border-radius: 4px; padding: 2px 8px;">手動清除所有緩存</button></div>
+<div id="calcPage" class="page">
+    <div class="card">
+        <h2>工程費用計算</h2>
+        
+        <div class="row">
+            <div class="col">
+                <label>輸入金額</label>
+                <input type="number" id="inputAmount" placeholder="0" oninput="calculate()">
             </div>
-            <div class="main-content">
-                <div class="left-column">
-                    <div class="section">
-                        <h3><span>人員費用總計</span><span id="grandTotalDisplay" style="color: #5D4037;">0</span></h3>
-                        <div class="scroll-area" id="summaryScrollArea">
-                            <table id="summaryTable">
-                                <thead><tr><th style="width:70%">姓名</th><th style="width:30%">金額</th></tr></thead>
-                                <tbody id="includedBody"></tbody>
-                                <tbody><tr class="excluded-header-row"><td colspan="2">▼ 排除不計區域 (不列入總額)</td></tr></tbody>
-                                <tbody id="excludedBody" class="excluded-row"></tbody>
-                            </table>
-                        </div>
-                        <div id="nonMonthlyList" class="non-monthly-box" style="display:none;"></div>
-                    </div>
-                    <div class="section">
-                        <h3><span>每日結算總額</span><span id="dailyGrandTotalDisplay" style="color: #5D4037;">0</span></h3>
-                        <div class="scroll-area"><table id="dailyTable"><thead><tr><th style="width:60%">日期</th><th style="width:40%">當日總額</th></tr></thead><tbody id="dailyBody"></tbody></table></div>
-                    </div>
-                </div>
-                <div class="section" style="min-height: 600px;">
-                    <h3><div>個人明細：<span id="selectedPersonName">-</span></div><div class="btn-group"><button id="copyBtn" class="btn">📋 複製文字</button><button id="copyImgBtn" class="btn">🖼️ 複製圖片</button></div></h3>
-                    <div id="captureArea" style="background: white; padding: 15px; border-radius: 6px;">
-                        <h4 id="imgTitle" style="margin: 0 0 15px 0; display:none; border-bottom: 2px solid #8FA39D; padding-bottom: 8px; font-size: 18px; color: #333;"></h4>
-                        <div id="personalDetail"></div>
-                        <div id="imgFooter" style="display:none; margin-top:25px; padding:15px; background-color:#F4F7F6; border-radius:8px; border:1px solid #E0EAE8;">
-                            <div style="transform: translateY(-5px); font-size:13px; color:#546E7A; line-height:1.6;">
-                                <div id="imgFooterMonthText" style="font-weight:bold; color:#455A64; margin-bottom:4px;">2月的午餐錢~Line pay或是匯款都可以~</div>
-                                <div style="margin-bottom:10px;">(不要ipass money)</div>
-                                <div style="font-size:11px; color:#90A4AE; letter-spacing:0.1em; border-top:1px solid #DCE6E5; padding-top:8px;">↓匯款帳號↓</div>
-                                <div style="font-family:monospace; font-size:14px; color:#37474F;">京城銀行 總行營業部 (054)<br>001280705711</div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col">
+                <label>金額類型</label>
+                <div class="toggle-group">
+                    <label>
+                        <input type="radio" name="taxType" value="exclude" checked onchange="calculate()">
+                        <span>未稅</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="taxType" value="include" onchange="calculate()">
+                        <span>含稅</span>
+                    </label>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 網頁二：每日金額 -->
-    <div id="page2" class="page-container">
-        <div class="max-w-md mx-auto py-10">
-            <header class="mb-8 text-center"><h1 class="text-2xl font-normal tracking-[0.15em] text-stone-700 mb-3">．每日訂餐金額紀錄．</h1><div class="w-8 h-px bg-stone-300 mx-auto"></div></header>
-            <div class="space-y-6">
-                <section>
-                    <label class="text-xs font-medium text-stone-400 mb-2 block">輸入訂單內容</label>
-                    <textarea id="orderInput2" class="w-full h-44 p-4 journal-box outline-none resize-none text-sm text-stone-700 leading-relaxed" placeholder="請在此貼上..."></textarea>
-                    <div class="flex gap-3 mt-3">
-                        <button onclick="handleCalculate2()" class="flex-[2] bg-stone-600 text-white text-sm py-3 rounded shadow-sm">開始統計</button>
-                        <button onclick="handleClear2()" class="flex-1 border border-stone-300 text-stone-500 text-sm py-3 rounded hover:bg-stone-50">清空</button>
-                    </div>
-                </section>
-                <div id="resultArea2" class="hidden space-y-5">
-                    <article class="journal-box p-6 relative bg-[#fffdfa]">
-                        <div id="lunchResults2" class="space-y-2 text-base mb-5"></div>
-                        <div id="drinkResults2" class="space-y-2 text-base"></div>
-                        <div class="mt-6 pt-4 border-t border-dotted border-stone-300 space-y-2">
-                            <div id="floor1Row2" class="hidden flex justify-between items-baseline text-stone-500"><span class="text-xs tracking-widest font-medium">1F 合計</span><div class="text-lg font-light"><span id="floor1TotalDisplay2">0</span> 元</div></div>
-                            <div class="flex justify-between items-baseline text-stone-500"><span class="text-xs tracking-widest font-medium">3F 合計</span><div class="text-lg font-light"><span id="floor3TotalDisplay2">0</span> 元</div></div>
-                            <div class="flex justify-between items-baseline pt-2 border-t border-stone-100"><span class="text-xs text-stone-400">總合計</span><div class="text-2xl font-light text-stone-800"><span id="grandTotal2">0</span> <span class="text-xs font-normal">元</span></div></div>
-                        </div>
-                        <div class="flex gap-2 mt-5">
-                            <button onclick="saveToHistory2()" class="flex-1 py-3 border border-stone-200 text-stone-600 text-xs rounded">記入歷史</button>
-                            <button id="copyBtn2_real" onclick="handleCopy2()" class="flex-1 py-3 border border-stone-300 bg-stone-100 text-stone-600 text-xs rounded flex items-center justify-center gap-1">複製結果</button>
-                        </div>
-                    </article>
-                </div>
-                <section class="pt-6 border-t border-stone-200">
-                    <div class="flex justify-between items-end mb-4 px-1"><h3 class="text-xs font-medium text-stone-500">歷史紀錄</h3><select id="monthFilter2" onchange="renderHistory2()" class="bg-transparent text-xs text-stone-500 outline-none text-right"></select></div>
-                    <div class="bg-stone-100 p-3 rounded mb-4 flex justify-between items-center border border-stone-200"><span class="text-xs text-stone-500">本月累計</span><span class="text-lg font-normal text-stone-700" id="monthTotalDisplay2">0 元</span></div>
-                    <div id="historyList2" class="space-y-2"></div>
-                </section>
+        <div class="row">
+            <div class="col">
+                <label>未稅金額</label>
+                <input type="number" id="rawAmount" readonly>
+            </div>
+            <div class="col">
+                <label>稅額 (5%)</label>
+                <input type="number" id="taxAmount" readonly>
             </div>
         </div>
-        <textarea id="hiddenCopyArea2" class="absolute -top-full opacity-0" readonly></textarea>
+
+        <div class="config-box">
+            <div class="row">
+                <div class="col">
+                    <label>計算基準 <span class="tip">(只影響計算過程，不影響最後金額)</span></label>
+                    <div class="toggle-group" id="calcBaseGroup">
+                        <label>
+                            <input type="radio" name="calcBase" value="raw" checked onchange="calculate()">
+                            <span>未稅額</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="calcBase" value="total" onchange="calculate()">
+                            <span>全額(含稅)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate()"> 清潔保險 (%)</label>
+                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate()">
+                </div>
+                <div class="col">
+                    <label>清潔保險金額</label>
+                    <input type="number" id="cleanAmount" readonly>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate()"> 保留款 (%)</label>
+                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate()">
+                </div>
+                <div class="col">
+                    <label>保留款金額 (可手修)</label>
+                    <input type="number" id="retentionAmount" oninput="calculate(true)">
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 0;">
+                <div class="col">
+                    <!-- 新增：加上 ID 以便 JS 控制反灰樣式 -->
+                    <label class="check-label" id="invoiceIncludeRetentionLabel">
+                        <input type="checkbox" id="invoiceIncludeRetention" onchange="calculate()"> 
+                        發票金額含保留款 <span class="tip">(勾選後將分列應付與發票)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>加款金額 <span class="tip">(請填含稅)</span></label>
+                <input type="number" id="plusAmount" placeholder="0" oninput="calculate()">
+                <input type="text" id="plusReason" class="reason-input" placeholder="加款事由..." oninput="calculate()">
+            </div>
+            <div class="col">
+                <label>扣款金額 <span class="tip">(請填含稅)</span></label>
+                <input type="number" id="minusAmount" placeholder="0" oninput="calculate()">
+                <input type="text" id="minusReason" class="reason-input" placeholder="扣款事由..." oninput="calculate()">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>最終淨額 (可手動修改)</label>
+                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
+            </div>
+        </div>
+
+        <div class="display-area">
+            <div class="section-title">計算明細</div>
+            <div id="processFormula" class="formula">請輸入資料...</div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-copy" onclick="copyResult()">📋 複製計算明細</button>
+            <button class="btn-reset" onclick="location.reload()">↺ 重填</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        // 通用切換邏輯
-        function switchPage(p) {
-            document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('page'+p).classList.add('active');
-            document.querySelectorAll('.nav-btn')[p-1].classList.add('active');
-            if(p === 1) render();
+<script>
+    const fmt = new Intl.NumberFormat('zh-TW');
+    const circles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+    let lastCalcState = {};
+
+    function calculate(isManualRetention = false) {
+        const inputVal = parseFloat(document.getElementById('inputAmount').value) || 0;
+        const taxType = document.querySelector('input[name="taxType"]:checked').value;
+        const calcBase = document.querySelector('input[name="calcBase"]:checked').value;
+        const plus = parseFloat(document.getElementById('plusAmount').value) || 0;
+        const plusReason = document.getElementById('plusReason').value.trim();
+        const minus = parseFloat(document.getElementById('minusAmount').value) || 0;
+        const minusReason = document.getElementById('minusReason').value.trim();
+        
+        // 處理保留款勾選狀態與反灰連動
+        const hasRetention = document.getElementById('retentionCheck').checked;
+        const invoiceRetLabel = document.getElementById('invoiceIncludeRetentionLabel');
+        const invoiceRetCheck = document.getElementById('invoiceIncludeRetention');
+        
+        if (!hasRetention) {
+            invoiceRetCheck.disabled = true;
+            invoiceRetCheck.checked = false; // 取消保留款時，自動取消「發票含保留款」
+            invoiceRetLabel.classList.add('disabled-state');
+        } else {
+            invoiceRetCheck.disabled = false;
+            invoiceRetLabel.classList.remove('disabled-state');
+        }
+        
+        const invoiceIncludeRet = invoiceRetCheck.checked;
+        
+        let raw = 0, tax = 0, total = 0;
+
+        if (taxType === "exclude") {
+            raw = inputVal;
+            tax = Math.round(raw * 0.05);
+            total = raw + tax;
+        } else {
+            total = inputVal;
+            raw = Math.round(total / 1.05);
+            tax = total - raw;
         }
 
-        function buttonFeedback(btn, originalText) {
-            btn.textContent = "✅ 已複製！";
-            setTimeout(() => { btn.textContent = originalText; }, 1500);
+        document.getElementById('rawAmount').value = raw || "";
+        document.getElementById('taxAmount').value = tax || "";
+        
+        const baseAmt = (calcBase === 'total') ? total : raw;
+
+        const hasClean = document.getElementById('cleanCheck').checked;
+        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
+        const cleanFee = hasClean ? Math.round(baseAmt * (cRate / 100)) : 0;
+        document.getElementById('cleanAmount').value = cleanFee || "";
+
+        const subtotal = baseAmt - cleanFee;
+        
+        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
+        const retentionInput = document.getElementById('retentionAmount');
+        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
+        if(!isManualRetention) retentionInput.value = retention || "";
+        
+        let net = 0;
+        if (calcBase === 'total') {
+            net = (subtotal - retention) + plus - minus;
+        } else {
+            const preTaxRemain = subtotal - retention;
+            const recalculatedTax = Math.round(preTaxRemain * 0.05);
+            net = preTaxRemain + recalculatedTax + plus - minus;
         }
 
-        /* --- 網頁一 JS (月結統計) --- */
-        let rawFileText = ""; let forceIncludeDates = new Set(); let excludedUsers = new Set();
-        let personalStats = {}; let dailyStats = {}; let nonMonthlyDates = []; let currentSelectedUser = null;
+        lastCalcState = { 
+            raw, tax, total, cRate, cleanFee, subtotal, rRate, 
+            retention, plus, plusReason, minus, minusReason, 
+            invoiceIncludeRet, calcBase, isManualRetention, taxType,
+            hasClean, hasRetention
+        };
+        document.getElementById('netAmount').value = net;
+        renderFormula(net);
+    }
 
-        window.onload = function() { loadFromLocalStorage(); updateMonthSelector2(); renderHistory2(); lucide.createIcons(); };
+    function updateFormulaOnly() {
+        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
+        renderFormula(manualNet);
+    }
 
-        function saveToLocalStorage() {
-            const data = { rawFileText, forceIncludeDates: Array.from(forceIncludeDates), excludedUsers: Array.from(excludedUsers), lastSelectedMonth: document.getElementById('monthSelect').value };
-            localStorage.setItem('lunchStatsData', JSON.stringify(data));
+    function renderFormula(currentNet) {
+        if (!lastCalcState.raw && lastCalcState.raw !== 0) return;
+        if (lastCalcState.raw === 0 && lastCalcState.plus === 0 && lastCalcState.minus === 0) {
+            document.getElementById('processFormula').innerHTML = "請輸入資料...";
+            return;
         }
 
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('lunchStatsData');
-            if (saved) {
-                const data = JSON.parse(saved);
-                rawFileText = data.rawFileText || "";
-                forceIncludeDates = new Set(data.forceIncludeDates || []);
-                excludedUsers = new Set(data.excludedUsers || []);
-                if (rawFileText) { updateMonthDropdown(data.lastSelectedMonth); render(); }
+        const s = lastCalcState;
+        const isRawBase = s.calcBase === 'raw';
+        let html = "";
+        let stepIdx = 0;
+
+        // ① 基準
+        if (isRawBase) {
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>未稅金額：<strong>${fmt.format(s.raw)}</strong></span></div>`;
+        } else {
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>總金額：${fmt.format(s.raw)} + 稅${fmt.format(s.tax)} = <strong>${fmt.format(s.total)}</strong></span></div>`;
+        }
+
+        // ② 清潔費 (僅在勾選時顯示)
+        const baseAmt = isRawBase ? s.raw : s.total;
+        if (s.hasClean && s.cleanFee !== 0) {
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>清潔費：${fmt.format(baseAmt)} × ${s.cRate}% = <strong>-${fmt.format(s.cleanFee)}</strong></span></div>`;
+            html += `<div class="formula-sub">小計：${fmt.format(baseAmt)} - ${fmt.format(s.cleanFee)} = ${fmt.format(s.subtotal)}</div>`;
+        }
+
+        // ③ 保留款 (僅在勾選時顯示)
+        if (s.hasRetention && s.retention !== 0) {
+            const retCalc = s.isManualRetention ? `(手動調整)` : `× ${s.rRate}%`;
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>保留款：${fmt.format(s.subtotal)} ${retCalc} = <strong>-${fmt.format(s.retention)}</strong></span></div>`;
+            if (isRawBase) {
+                const netRaw = s.subtotal - s.retention;
+                html += `<div class="formula-sub">淨額：${fmt.format(s.subtotal)} - ${fmt.format(s.retention)} = ${fmt.format(netRaw)}</div>`;
             }
         }
 
-        function clearAllData(silent = false) {
-            if(silent || confirm("確定要清除所有紀錄並重設網頁嗎？")) {
-                localStorage.removeItem('lunchStatsData');
-                location.reload();
-            }
+        // 加/扣款項次 (若有)
+        if (s.plus !== 0) {
+            const reason = s.plusReason ? `(${s.plusReason})` : "";
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>加款${reason}：<strong>+${fmt.format(s.plus)}</strong></span></div>`;
+        }
+        if (s.minus !== 0) {
+            const reason = s.minusReason ? `(${s.minusReason})` : "";
+            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>扣款${reason}：<strong>-${fmt.format(s.minus)}</strong></span></div>`;
         }
 
-        function updateMonthDropdown(preSelected) {
-            const matches = rawFileText.match(/\d{4}\.\d{2}\.\d{2}/g);
-            if(matches) {
-                const months = [...new Set(matches.map(d => d.substring(0, 7).replace(/\./g, '-')))].sort().reverse();
-                const select = document.getElementById('monthSelect');
-                select.innerHTML = months.map(m => `<option value="${m}">${m.replace(/-/g, '.')}月</option>`).join('');
-                if (preSelected && months.includes(preSelected)) select.value = preSelected;
-            }
-        }
+        html += `<div style="margin-top:10px; border-top:1.5px solid #EEE; padding-top:10px;">`;
 
-        // 修改後的解析函式：偵測樓層區域，僅抓取 3F
-        function extractDayData(lines) {
-            const dayData = {};
-            let currentFloor = ''; // 用於追蹤當前解析到的樓層區塊
+        if (isRawBase) {
+            // 未稅基準 總結
+            const netRaw = s.subtotal - s.retention;
+            const netTax = Math.round(netRaw * 0.05);
+            const subtotalTax = Math.round(s.subtotal * 0.05);
+
+            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
+                const invAmt = (s.subtotal + subtotalTax) + s.plus - s.minus;
+                let invPath = `${fmt.format(s.subtotal)} + 稅${fmt.format(subtotalTax)}`;
+                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
+                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
+                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
+                html += `<div style="font-size: 1rem; color: var(--text);">● 本次發票金額：<strong>${fmt.format(invAmt)}</strong> <span class="tip">(含保留款)</span></div>`;
+            }
             
-            lines.forEach(line => {
-                let t = line.trim();
-                if (!t || t.includes("$$月結") || t.includes("結單") || t === "---" || t === "午餐" || t.includes("飲料")) return;
-                
-                // 偵測樓層標題
-                if (t.toUpperCase().includes('3F')) {
-                    currentFloor = '3F';
-                    return;
-                } else if (t.toUpperCase().includes('1F')) {
-                    currentFloor = '1F';
-                    return;
-                }
+            let payablePath = `${fmt.format(netRaw)} + 稅${fmt.format(netTax)}`;
+            if (s.plus !== 0) payablePath += ` + 加${fmt.format(s.plus)}`;
+            if (s.minus !== 0) payablePath += ` - 扣${fmt.format(s.minus)}`;
+            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
+            html += `<div style="font-size: 1rem; color: var(--text);">● 本次應付金額：<strong>${fmt.format(currentNet)}</strong></div>`;
 
-                const nameMatch = t.match(/^([^\d\s\-:：]{2,8})\s*[-:：]{1,2}(.*)$/);
-                if (nameMatch) {
-                    // 關鍵邏輯：如果當前不在 3F 區域，則跳過此行（不抓取 1F）
-                    if (currentFloor !== '3F') return;
+        } else {
+            // 含稅基準 總結
+            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
+                const invAmt = s.subtotal + s.plus - s.minus;
+                let invPath = `${fmt.format(s.total)}`;
+                if (s.hasClean && s.cleanFee !== 0) invPath += ` - ${fmt.format(s.cleanFee)}`;
+                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
+                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
+                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
+                html += `<div style="font-size: 1rem; color: var(--text);">● 本次發票金額：<strong>${fmt.format(invAmt)}</strong> <span class="tip">(含保留款)</span></div>`;
+            }
 
-                    let name = nameMatch[1].trim().replace(/^\$/, ''); 
-                    if (name === "小計") return;
-                    let content = nameMatch[2].trim();
-                    if (!dayData[name]) dayData[name] = { total: 0, items: [], hasError: false };
-                    let price = content.includes('=') ? parseInt(content.split('=').pop().match(/\d+/)) : parseInt(content.match(/\d+$/));
-                    if (isNaN(price)) { 
-                        dayData[name].hasError = true; 
-                        dayData[name].items.push({ text: "⚠️ " + content, price: 0 }); 
-                    }
-                    else { 
-                        dayData[name].total += price; 
-                        dayData[name].items.push({ text: content, price: price }); 
-                    }
-                }
-            });
-            return dayData;
+            let payablePathParts = [];
+            payablePathParts.push(fmt.format(s.total));
+            if (s.hasClean && s.cleanFee !== 0) payablePathParts.push(`- ${fmt.format(s.cleanFee)}`);
+            if (s.hasRetention && s.retention !== 0) payablePathParts.push(`- ${fmt.format(s.retention)}`);
+            if (s.plus !== 0) payablePathParts.push(`+ 加${fmt.format(s.plus)}`);
+            if (s.minus !== 0) payablePathParts.push(`- 扣${fmt.format(s.minus)}`);
+            let payablePath = payablePathParts.join(" ");
+
+            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
+            html += `<div style="font-size: 1rem; color: var(--text);">● 本次應付金額：<strong>${fmt.format(currentNet)}</strong></div>`;
         }
 
-        function parseLunchFile(text, targetMonth) {
-            const lines = text.split(/\r?\n/); const result = {};
-            const dateRegex = /^(\d{4}\.\d{2}\.\d{2})/; let datePositions = []; nonMonthlyDates = [];
-            lines.forEach((line, idx) => { const m = line.match(dateRegex); if (m) datePositions.push({ idx, date: m[1].replace(/\./g, '-') }); });
-            datePositions.forEach((pos, i) => {
-                if (!pos.date.startsWith(targetMonth)) return;
-                const nextIdx = datePositions[i+1] ? datePositions[i+1].idx : lines.length;
-                const dayLines = lines.slice(pos.idx, nextIdx);
-                if (dayLines.some(l => l.includes("$$月結")) || forceIncludeDates.has(pos.date.replace(/-/g, '.'))) {
-                    let lunchIdx = dayLines.findLastIndex(l => l.trim() === "午餐");
-                    if (lunchIdx !== -1) result[pos.date] = extractDayData(dayLines.slice(lunchIdx));
-                } else nonMonthlyDates.push(pos.date.replace(/-/g, '.'));
-            });
-            return result;
+        html += `</div>`;
+        document.getElementById('processFormula').innerHTML = html;
+    }
+
+    function copyResult() {
+        const net = parseFloat(document.getElementById('netAmount').value) || 0;
+        if (!net && net !== 0) { alert("請先輸入金額"); return; }
+        
+        const s = lastCalcState;
+        const isRawBase = s.calcBase === 'raw';
+        let text = `【工程費用計算明細】\n`;
+        let stepIdx = 0;
+
+        if (isRawBase) {
+            text += `${circles[stepIdx++]} 未稅金額：${fmt.format(s.raw)}\n`;
+        } else {
+            text += `${circles[stepIdx++]} 總金額：${fmt.format(s.raw)} + 稅${fmt.format(s.tax)} = ${fmt.format(s.total)}\n`;
         }
 
-        document.getElementById('fileInput').addEventListener('change', e => {
-            const reader = new FileReader();
-            reader.onload = () => { rawFileText = reader.result; updateMonthDropdown(); render(); saveToLocalStorage(); };
-            reader.readAsText(e.target.files[0]);
+        const baseAmt = isRawBase ? s.raw : s.total;
+        if (s.hasClean && s.cleanFee !== 0) {
+            text += `${circles[stepIdx++]} 清潔費：${fmt.format(baseAmt)} × ${s.cRate}% = -${fmt.format(s.cleanFee)}\n`;
+            text += `    小計：${fmt.format(baseAmt)} - ${fmt.format(s.cleanFee)} = ${fmt.format(s.subtotal)}\n`;
+        }
+        
+        if (s.hasRetention && s.retention !== 0) {
+            const retCalc = s.isManualRetention ? `(手動調整)` : `× ${s.rRate}%`;
+            text += `${circles[stepIdx++]} 保留款：${fmt.format(s.subtotal)} ${retCalc} = -${fmt.format(s.retention)}\n`;
+            if (isRawBase) {
+                text += `    淨額：${fmt.format(s.subtotal)} - ${fmt.format(s.retention)} = ${fmt.format(s.subtotal - s.retention)}\n`;
+            }
+        }
+
+        if (s.plus !== 0) {
+            text += `${circles[stepIdx++]} 加款${s.plusReason ? '('+s.plusReason+')' : ''}：+${fmt.format(s.plus)}\n`;
+        }
+        if (s.minus !== 0) {
+            text += `${circles[stepIdx++]} 扣款${s.minusReason ? '('+s.minusReason+')' : ''}：-${fmt.format(s.minus)}\n`;
+        }
+
+        text += `------------------\n`;
+
+        if (isRawBase) {
+            const netRaw = s.subtotal - s.retention;
+            const netTax = Math.round(netRaw * 0.05);
+            const subtotalTax = Math.round(s.subtotal * 0.05);
+            
+            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
+                const invAmt = (s.subtotal + subtotalTax) + s.plus - s.minus;
+                let invPath = `${fmt.format(s.subtotal)} + 稅${fmt.format(subtotalTax)}`;
+                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
+                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
+                text += `${invPath} = ${fmt.format(invAmt)}\n`;
+                text += `● 本次發票金額：${fmt.format(invAmt)} (含保留款)\n\n`;
+            }
+            
+            let payablePath = `${fmt.format(netRaw)} + 稅${fmt.format(netTax)}`;
+            if (s.plus !== 0) payablePath += ` + 加${fmt.format(s.plus)}`;
+            if (s.minus !== 0) payablePath += ` - 扣${fmt.format(s.minus)}`;
+            text += `${payablePath} = ${fmt.format(net)}\n`;
+            text += `● 本次應付金額：${fmt.format(net)}`;
+        } else {
+            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
+                const invAmt = s.subtotal + s.plus - s.minus;
+                let invPath = `${fmt.format(s.total)}`;
+                if (s.hasClean && s.cleanFee !== 0) invPath += ` - ${fmt.format(s.cleanFee)}`;
+                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
+                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
+                text += `${invPath} = ${fmt.format(invAmt)}\n`;
+                text += `● 本次發票金額：${fmt.format(invAmt)} (含保留款)\n\n`;
+            }
+
+            let payablePathParts = [];
+            payablePathParts.push(fmt.format(s.total));
+            if (s.hasClean && s.cleanFee !== 0) payablePathParts.push(`- ${fmt.format(s.cleanFee)}`);
+            if (s.hasRetention && s.retention !== 0) payablePathParts.push(`- ${fmt.format(s.retention)}`);
+            if (s.plus !== 0) payablePathParts.push(`+ 加${fmt.format(s.plus)}`);
+            if (s.minus !== 0) payablePathParts.push(`- 扣${fmt.format(s.minus)}`);
+            let payablePath = payablePathParts.join(" ");
+
+            text += `${payablePath} = ${fmt.format(net)}\n`;
+            text += `● 本次應付金額：${fmt.format(net)}`;
+        }
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            const originalText = btn.innerText;
+            btn.innerText = "✅ 已複製明細";
+            btn.style.background = "#27AE60";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "";
+            }, 2000);
         });
+    }
+    
+    // 網頁載入時初始化一次反灰狀態
+    window.onload = () => { calculate(); };
+</script>
 
-        document.getElementById('monthSelect').addEventListener('change', () => { render(); saveToLocalStorage(); });
-
-        function render() {
-            const month = document.getElementById('monthSelect').value; if(!month) return;
-            const data = parseLunchFile(rawFileText, month); personalStats = {}; dailyStats = {};
-            for (let date in data) {
-                if (!dailyStats[date]) dailyStats[date] = 0;
-                for (let name in data[date]) {
-                    if (!personalStats[name]) personalStats[name] = { total: 0, details: [], error: false };
-                    personalStats[name].total += data[date][name].total; dailyStats[date] += data[date][name].total;
-                    if (data[date][name].hasError) personalStats[name].error = true;
-                    personalStats[name].details.push({ date, text: data[date][name].items.map(i=>i.text).join('、'), price: data[date][name].total });
-                }
-            }
-            buildTable(); buildDailyTable(); renderNonMonthly();
-        }
-
-        function buildTable() {
-            const inc = document.getElementById('includedBody'); const exc = document.getElementById('excludedBody');
-            inc.innerHTML = ''; exc.innerHTML = ''; let grand = 0;
-            Object.keys(personalStats).sort().forEach(name => {
-                const isExc = excludedUsers.has(name); const stats = personalStats[name]; if (!isExc) grand += stats.total;
-                const tr = document.createElement('tr'); if (isExc) tr.className = 'excluded-row';
-                tr.innerHTML = `<td><div class="name-cell"><input type="checkbox" ${isExc?'':'checked'} onchange="toggleUser('${name}')"><span onclick="selectUser('${name}')">${name}${stats.error?'*':''}</span></div></td><td onclick="selectUser('${name}')" id="sum-${name}">${stats.total.toLocaleString()}</td>`;
-                if (isExc) exc.appendChild(tr); else inc.appendChild(tr);
-            });
-            document.getElementById('grandTotalDisplay').textContent = grand.toLocaleString();
-            document.getElementById('dailyGrandTotalDisplay').textContent = grand.toLocaleString();
-        }
-
-        function toggleUser(name) { if (excludedUsers.has(name)) excludedUsers.delete(name); else excludedUsers.add(name); buildTable(); saveToLocalStorage(); }
-        function selectUser(name) { currentSelectedUser = name; updateDetail(name); }
-        
-        function buildDailyTable() {
-            const body = document.getElementById('dailyBody'); body.innerHTML = '';
-            const history = JSON.parse(localStorage.getItem('mealTracker_art_v2') || '[]');
-            Object.keys(dailyStats).sort().forEach(d => {
-                const displayDate = d.replace(/-/g,'/');
-                const historyEntry = history.find(h => h.date === displayDate);
-                const hasDiff = historyEntry && historyEntry.amount !== dailyStats[d];
-                const warningTag = hasDiff ? `<span class="diff-warning" title="與每日金額紀錄不符 (紀錄為 ${historyEntry.amount.toLocaleString()})">⚠️</span>` : '';
-                body.innerHTML += `<tr><td>${displayDate}</td><td id="daily-sum-${d}" style="text-align:right;">${warningTag}${dailyStats[d].toLocaleString()}</td></tr>`;
-            });
-        }
-
-        function updateDetail(name) {
-            const stats = personalStats[name]; document.getElementById('selectedPersonName').textContent = name;
-            document.getElementById('copyBtn').style.display = document.getElementById('copyImgBtn').style.display = 'inline-block';
-            const box = document.getElementById('personalDetail');
-            box.innerHTML = stats.details.sort((a,b)=>a.date.localeCompare(b.date)).map((d,i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">
-                    <div style="flex:1; display:flex; align-items:center;">
-                        <span style="font-size:14px; margin-top:-2px;">${d.date.substring(5).replace('-','/')}：${d.text}</span>
-                    </div>
-                    <input type="number" class="price-input" value="${d.price}" oninput="handlePriceChange('${name}', ${i}, this.value, this)">
-                    <span class="price-text" style="display:none;">${d.price}</span>
-                </div>
-            `).join('') + `<div style="text-align:right; font-weight:bold; margin-top:10px;">總計：<span id="detail-total-${name}">${stats.total.toLocaleString()}</span></div>`;
-        }
-
-        function handlePriceChange(name, idx, val, el) {
-            val = parseInt(val) || 0; const old = personalStats[name].details[idx].price; const date = personalStats[name].details[idx].date;
-            personalStats[name].details[idx].price = val; personalStats[name].total += (val - old);
-            dailyStats[date] += (val - old); buildTable(); buildDailyTable(); updateDetail(name);
-        }
-
-        function renderNonMonthly() {
-            const el = document.getElementById('nonMonthlyList'); if (nonMonthlyDates.length > 0) {
-                el.style.display = 'block'; el.innerHTML = `<strong>非月結日期：</strong><br>` + nonMonthlyDates.map(d => `<span onclick="forceIncludeDates.add('${d}');render();saveToLocalStorage();" style="cursor:pointer; text-decoration:underline; margin-right:8px;">${d}</span>`).join('');
-            } else el.style.display = 'none';
-        }
-
-        function getCurrentMonthLabel() {
-            const select = document.getElementById('monthSelect');
-            if (select && select.value) { const parts = select.value.split('-'); return parseInt(parts[1], 10).toString(); }
-            return (new Date().getMonth() + 1).toString();
-        }
-
-        document.getElementById('copyBtn').onclick = function() {
-            const monthStr = getCurrentMonthLabel();
-            let txt = `${monthStr}月的午餐錢~Line pay或是匯款都可喔\n(不要ipass money)\n\n↓匯款帳號↓\n京城銀行 總行營業部\n054\n001280705711`;
-            navigator.clipboard.writeText(txt).then(() => { buttonFeedback(this, "📋 複製文字"); });
-        };
-
-        document.getElementById('copyImgBtn').onclick = function() {
-            const area = document.getElementById('captureArea'); const title = document.getElementById('imgTitle');
-            const footer = document.getElementById('imgFooter'); const footerMonthText = document.getElementById('imgFooterMonthText');
-            const btn = this; const monthStr = getCurrentMonthLabel();
-            footerMonthText.textContent = `${monthStr}月的午餐錢~Line pay或是匯款都可以~`;
-            title.style.display = 'block'; title.textContent = `【${currentSelectedUser} 餐費明細】`;
-            footer.style.display = 'block'; document.getElementById('page1').classList.add('capturing');
-            html2canvas(area, { scale: 2 }).then(canvas => {
-                canvas.toBlob(blob => { navigator.clipboard.write([new ClipboardItem({"image/png": blob})]).then(() => { buttonFeedback(btn, "🖼️ 複製圖片"); }); });
-                title.style.display = 'none'; footer.style.display = 'none'; document.getElementById('page1').classList.remove('capturing');
-            });
-        };
-
-        /* --- 網頁二 JS (每日金額) --- */
-        let currentStats2 = null; let historyData2 = JSON.parse(localStorage.getItem('mealTracker_art_v2') || '[]');
-        function handleCalculate2() {
-            const raw = document.getElementById('orderInput2').value.trim(); if (!raw) return;
-            const stats = { lunch: { '3F': 0, '1F': 0, total: 0 }, drink: { '3F': 0, '1F': 0, total: 0 } };
-            let cat = '', floor = '';
-            raw.split('\n').forEach(line => {
-                const t = line.trim(); if (t.includes('午餐')) cat = 'lunch'; else if (t.includes('飲料')) cat = 'drink';
-                if (t.toUpperCase().includes('3F')) floor = '3F'; else if (t.toUpperCase().includes('1F')) floor = '1F';
-                const match = t.match(/(\d+)\s*元?\s*$/);
-                if (match && cat && floor) { const v = parseInt(match[1]); stats[cat][floor] += v; stats[cat].total += v; }
-            });
-            currentStats2 = stats; renderUI2();
-        }
-        function renderUI2() {
-            document.getElementById('resultArea2').classList.remove('hidden');
-            const gen = (d, t) => {
-                if (d.total === 0) return '';
-                let html = `<div class="text-xs text-stone-400 mb-1 border-b pb-1">${t}</div>`;
-                if (d['3F'] > 0) html += `<div class="flex justify-between"><span>3F</span><span>${d['3F'].toLocaleString()}</span></div>`;
-                if (d['1F'] > 0) html += `<div class="flex justify-between"><span>1F</span><span>${d['1F'].toLocaleString()}</span></div>`;
-                if (d['3F'] > 0 && d['1F'] > 0) {
-                    html += `<div class="flex justify-between border-t border-stone-100 mt-1 pt-1 font-medium text-stone-600"><span class="text-[10px] opacity-70">└ ${t}小計</span><span>${d.total.toLocaleString()}</span></div>`;
-                }
-                return html;
-            };
-            document.getElementById('lunchResults2').innerHTML = gen(currentStats2.lunch, '午餐');
-            document.getElementById('drinkResults2').innerHTML = gen(currentStats2.drink, '飲料');
-            const f1 = currentStats2.lunch['1F'] + currentStats2.drink['1F']; const f3 = currentStats2.lunch['3F'] + currentStats2.drink['3F'];
-            document.getElementById('floor1Row2').classList.toggle('hidden', f1 === 0);
-            document.getElementById('floor1TotalDisplay2').textContent = f1.toLocaleString();
-            document.getElementById('floor3TotalDisplay2').textContent = f3.toLocaleString();
-            document.getElementById('grandTotal2').textContent = (f1 + f3).toLocaleString();
-        }
-        function saveToHistory2() {
-            if (!currentStats2) return; const total = currentStats2.lunch.total + currentStats2.drink.total;
-            const date = new Date().toISOString().split('T')[0].replace(/-/g,'/');
-            historyData2.push({ id: Date.now(), date, month: date.substring(0,7), amount: total });
-            localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2));
-            updateMonthSelector2(); renderHistory2();
-        }
-        function updateMonthSelector2() {
-            const months = [...new Set(historyData2.map(i => i.month))].sort().reverse();
-            document.getElementById('monthFilter2').innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('') || '<option value="">無</option>';
-        }
-        function renderHistory2() {
-            const m = document.getElementById('monthFilter2').value;
-            const filtered = historyData2.filter(i => i.month === m).sort((a, b) => a.date.localeCompare(b.date));
-            document.getElementById('monthTotalDisplay2').textContent = filtered.reduce((s,i)=>s+i.amount, 0).toLocaleString() + " 元";
-            document.getElementById('historyList2').innerHTML = filtered.map(i => `<div class="journal-box p-3 flex justify-between items-center"><span class="text-xs text-stone-400">${i.date}</span><div class="flex items-center gap-2"><span class="text-xs text-stone-400">$</span><input type="text" onchange="editAmount2(${i.id}, this.value)" value="${i.amount.toLocaleString()}" class="bg-transparent outline-none w-24 text-right"><button onclick="deleteRecord2(${i.id})" class="text-stone-300 hover:text-stone-500">✕</button></div></div>`).join('');
-        }
-        function editAmount2(id, val) {
-            const idx = historyData2.findIndex(i => i.id === id);
-            if (idx > -1) { historyData2[idx].amount = parseInt(val.replace(/,/g, '')) || 0; localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2)); renderHistory2(); }
-        }
-        function deleteRecord2(id) { if (confirm("是否移除此紀錄？")) { historyData2 = historyData2.filter(i => i.id !== id); localStorage.setItem('mealTracker_art_v2', JSON.stringify(historyData2)); updateMonthSelector2(); renderHistory2(); } }
-        
-        function handleCopy2() {
-            if (!currentStats2) return;
-            const b = (t, d) => {
-                if (d.total === 0) return '';
-                let res = `${t}\n`;
-                if (d['3F'] > 0) res += `3F：${d['3F']}\n`;
-                if (d['1F'] > 0) res += `1F：${d['1F']}\n`;
-                if (d['3F'] > 0 && d['1F'] > 0) res += `小計：${d.total}\n`;
-                return res.trim();
-            };
-
-            let contentArray = [];
-            const lunch = b("午餐", currentStats2.lunch);
-            if (lunch) contentArray.push(lunch);
-            
-            const drink = b("飲料", currentStats2.drink);
-            if (drink) contentArray.push(drink);
-            
-            const total3F = currentStats2.lunch['3F'] + currentStats2.drink['3F'];
-            
-            let finalTxt = contentArray.join('\n\n---\n\n');
-            if (contentArray.length > 0) {
-                finalTxt += '\n\n---\n\n';
-            }
-            finalTxt += `3F總計：${total3F}\n\n$$月結`;
-
-            document.getElementById('hiddenCopyArea2').value = finalTxt; 
-            document.getElementById('hiddenCopyArea2').select();
-            document.execCommand('copy'); 
-            buttonFeedback(document.getElementById('copyBtn2_real'), "複製結果");
-        }
-        function handleClear2() { document.getElementById('orderInput2').value = ''; document.getElementById('resultArea2').classList.add('hidden'); }
-    </script>
 </body>
 </html>
