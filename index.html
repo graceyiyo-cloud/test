@@ -375,6 +375,18 @@
         return { total: totalSales, received: totalReceived, outstanding: totalSales - totalReceived, unitTotal: totalUnitsCount, unitSold: soldCount, unitUnsold: totalUnitsCount - soldCount };
       }, [sheetsData, customData]);
 
+      // 提取換約紀錄 keys 供搜尋使用
+      const transferUnitKeys = useMemo(() => {
+        const keys = new Set();
+        Object.keys(sheetsData).forEach(sN => {
+          if (sN.match(/換約|讓渡/)) {
+            const rows = sheetsData[sN] || [];
+            rows.forEach(row => { const info = parseUnitInfo(row); if (info.f && info.u) keys.add(`${info.f}_${info.u}`); });
+          }
+        });
+        return keys;
+      }, [sheetsData]);
+
       const combinedData = useMemo(() => {
         let base = sheetsData[activeTab] ? [...sheetsData[activeTab]] : []; 
         if (customData?.units && activeTab.includes('收款總表')) {
@@ -386,15 +398,28 @@
             else if (cu.基本資料?.買方) exists['買方'] = cu.基本資料.買方;
           });
         }
-        // 支援搜尋戶別組合，如 2A3
+        
         return base.filter(row => {
           if (!searchTerm) return true;
           const term = searchTerm.toLowerCase();
-          const combinedUnit = `${normStr(row['樓層'])}${normStr(row['編號'])}`.toLowerCase();
+          const f = normStr(row['樓層']);
+          const u = normStr(row['編號']);
+          const combinedUnit = `${f}${u}`.toLowerCase();
+          const unitKey = `${f}_${u}`;
+
+          // 「換」或「換約」快捷篩選
+          if ((term === '換' || term === '換約') && transferUnitKeys.has(unitKey)) return true;
+
+          // 「客變」快捷篩選
+          if (term === '客變') {
+             const hasCustomChange = (customData?.customChanges || []).some(c => c.unitKey === unitKey);
+             if (hasCustomChange) return true;
+          }
+
           if (combinedUnit.includes(term)) return true;
           return Object.values(row).some(v => String(v).toLowerCase().includes(term));
         });
-      }, [sheetsData, activeTab, searchTerm, customData]);
+      }, [sheetsData, activeTab, searchTerm, customData, transferUnitKeys]);
 
       const currentColumns = useMemo(() => {
         if (combinedData.length === 0) return [];
@@ -408,17 +433,6 @@
           return 0;
         });
       }, [combinedData]);
-
-      const transferUnitKeys = useMemo(() => {
-        const keys = new Set();
-        Object.keys(sheetsData).forEach(sN => {
-          if (sN.match(/換約|讓渡/)) {
-            const rows = sheetsData[sN] || [];
-            rows.forEach(row => { const info = parseUnitInfo(row); if (info.f && info.u) keys.add(`${info.f}_${info.u}`); });
-          }
-        });
-        return keys;
-      }, [sheetsData]);
 
       const rowSpans = useMemo(() => {
           const spans = {};
