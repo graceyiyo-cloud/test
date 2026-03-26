@@ -407,13 +407,14 @@
           const combinedUnit = `${f}${u}`.toLowerCase();
           const unitKey = `${f}_${u}`;
 
-          // 「換」或「換約」快捷篩選
-          if ((term === '換' || term === '換約') && transferUnitKeys.has(unitKey)) return true;
+          // 「換約」快捷篩選
+          if (term === '換約') {
+              return transferUnitKeys.has(unitKey);
+          }
 
           // 「客變」快捷篩選
           if (term === '客變') {
-             const hasCustomChange = (customData?.customChanges || []).some(c => c.unitKey === unitKey);
-             if (hasCustomChange) return true;
+             return (customData?.customChanges || []).some(c => c.unitKey === unitKey);
           }
 
           if (combinedUnit.includes(term)) return true;
@@ -708,7 +709,12 @@
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} /><input type="text" placeholder="搜尋..." className="pl-9 pr-4 py-1.5 bg-[#F5F5F0] border rounded-full text-xs outline-none w-64" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /></div>
+              {/* 篩選按鈕取代搜尋列 */}
+              <div className="flex items-center bg-[#F5F5F0] p-1 rounded-full border border-gray-200 shadow-inner">
+                <button onClick={() => setSearchTerm('')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '' ? 'bg-white text-[#8C9B90] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>全部</button>
+                <button onClick={() => setSearchTerm('客變')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '客變' ? 'bg-purple-100 text-purple-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>客變</button>
+                <button onClick={() => setSearchTerm('換約')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '換約' ? 'bg-orange-100 text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>換約</button>
+              </div>
               
               {isAdmin && (
                 <>
