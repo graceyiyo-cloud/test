@@ -471,7 +471,8 @@
           }
           const matches = sheet.filter(r => normStr(r['樓層']) === tF && normStr(r['編號']) === tU);
           if (matches.length > 0) {
-            if (sN.match(/款項|財務|收款/)) { 
+            // 避免預收款的空財務欄位覆蓋到正常的財務總表
+            if (sN.match(/款項|財務|收款總表/) && !sN.match(/預收款/)) { 
               info.財務款項.house = matches.find(m => Object.values(m).some(v => String(v).includes('房屋'))) || matches[0]; 
               info.財務款項.land = matches.find(m => Object.values(m).some(v => String(v).includes('土地'))) || {}; 
             }
@@ -518,8 +519,8 @@
                     if (st.k === '客變') {
                         exp = charges;
                     } else {
-                        const kMatchH = Object.keys(house).find(x=>x.includes(st.k));
-                        const kMatchL = Object.keys(land).find(x=>x.includes(st.k));
+                        const kMatchH = Object.keys(house).find(x=>x.includes(st.k) && (st.k==='成交'?!x.includes('總價'):true));
+                        const kMatchL = Object.keys(land).find(x=>x.includes(st.k) && (st.k==='成交'?!x.includes('總價'):true));
                         const hA = kMatchH ? (parseFloat(String(house[kMatchH]).replace(/,/g,''))||0) : 0;
                         const lA = kMatchL ? (parseFloat(String(land[kMatchL]).replace(/,/g,''))||0) : 0;
                         exp = hA + lA;
