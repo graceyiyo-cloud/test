@@ -876,6 +876,13 @@
                           ) : (
                               selectedUnit.基本資料.預收款 ? <span className="text-sm font-normal text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">預收代書款: {formatNum(selectedUnit.基本資料.預收款)}</span> : null
                           )}
+                          
+                          {/* 門牌地址已移至此處 */}
+                          {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號) && (
+                              <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-md border border-gray-200 select-all flex items-center gap-1">
+                                  <MapPin size={14}/> {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號)}
+                              </span>
+                          )}
                       </h2>
                       <p className="text-xs text-[#8C9B90] uppercase font-bold tracking-widest mt-1">{isAdmin ? '管理員模式' : '瀏覽模式'}</p>
                     </div>
@@ -893,13 +900,6 @@
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
                     <h3 className="text-sm font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><User size={16}/>聯絡資料</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3">
-                      {/* 加入門牌地址於聯絡資料首列 */}
-                      {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號) && (
-                          <div key="doorplate" className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 md:col-span-2 bg-gray-50/50 px-3 pt-2 rounded-t-lg">
-                              <span className="text-gray-500 font-bold flex items-center gap-1"><MapPin size={14}/> 門牌地址</span>
-                              <span className="font-bold text-gray-700 select-all">{getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號)}</span>
-                          </div>
-                      )}
                       {(() => {
                         const items = { ...selectedUnit.客戶資料 };
                         const zip = items['郵遞區號'] || '', addr = items['通訊地址'] || '';
@@ -944,7 +944,12 @@
                         const charges = (selectedUnit.客變紀錄 || []).reduce((s,r) => s + (Number(r.客變金額)||0), 0);
                         let rem = receipts;
                         
-                        const displayStages = [{k:'成交',l:'合約總價'}, ...PAYMENT_STAGES];
+                        // 將客變費用改到合約總價的正上方一列
+                        const displayStages = [
+                          { k: '客變', l: '客變費用' },
+                          { k: '成交', l: '合約總價' },
+                          ...PAYMENT_STAGES.filter(st => st.k !== '客變')
+                        ];
                         
                         return displayStages.map(st => {
                           let exp=0,hA=0,lA=0;
