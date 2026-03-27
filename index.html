@@ -312,7 +312,7 @@
 
             const copyToClipboard = () => {
                 const isAllTWD = expenses.every(e => e.currency === 'TWD');
-                let text = `【分攤費用結算】\n━━━━\n\n`;
+                let text = `【分攤費用結算】\n\n`;
 
                 const payers = [...new Set(expenses.map(e => e.payer))];
                 payers.forEach(p => {
