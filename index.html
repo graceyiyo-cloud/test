@@ -319,12 +319,12 @@
                     const pExpenses = expenses.filter(e => e.payer === p);
                     const totalTWD = pExpenses.reduce((sum, e) => sum + (e.amount * e.rate), 0);
                     const detail = pExpenses.map(e => {
-                        const amtStr = (isAllTWD || e.currency === 'TWD') 
-                            ? `TWD ${formatNum(e.amount)}` 
-                            : `${e.currency} ${formatNum(e.amount)} (TWD ${formatNum(e.amount * e.rate)})`;
+                        const amtStr = isAllTWD 
+                            ? formatNum(e.amount) 
+                            : (e.currency === 'TWD' ? `TWD ${formatNum(e.amount)}` : `${e.currency} ${formatNum(e.amount)} (TWD ${formatNum(e.amount * e.rate)})`);
                         return `${e.item} ${amtStr}`;
                     }).join(' + ');
-                    text += `${p} 預付：${detail} = 總共預付 TWD ${formatNum(totalTWD)}\n`;
+                    text += `${p} 預付：${detail} = 總共預付 ${isAllTWD ? '' : 'TWD '}${formatNum(totalTWD)}\n`;
                 });
 
                 text += `━━━━\n\n`;
@@ -332,27 +332,28 @@
                 members.forEach(m => {
                     text += `［${m}］\n`;
                     let memberTotalTWD = 0;
+                    const itemDetails = [];
                     expenses.forEach(e => {
                         if (e.splits[m]) {
                             const splitAmt = e.splits[m];
                             const splitTWD = splitAmt * e.rate;
                             memberTotalTWD += splitTWD;
-                            const amtStr = (isAllTWD || e.currency === 'TWD') 
-                                ? `TWD ${formatNum(splitAmt)}` 
-                                : `${e.currency} ${formatNum(splitAmt)} (TWD ${formatNum(splitTWD)})`;
-                            text += ` - ${e.item}：${amtStr}\n`;
+                            const amtStr = isAllTWD 
+                                ? formatNum(splitAmt) 
+                                : (e.currency === 'TWD' ? `TWD ${formatNum(splitAmt)}` : `${e.currency} ${formatNum(splitAmt)} (TWD ${formatNum(splitTWD)})`);
+                            itemDetails.push(`${e.item} ${amtStr}`);
                         }
                     });
-                    text += ` 總計分攤：TWD ${formatNum(memberTotalTWD)}\n\n`;
+                    text += ` ${itemDetails.join(' + ')} = 總計分攤 ${isAllTWD ? '' : 'TWD '}${formatNum(memberTotalTWD)}\n\n`;
                 });
 
                 text += `━━━━\n【最終收付】\n`;
                 settlement.transactions.forEach(t => {
-                    const amtStr = (isAllTWD || settlement.primaryCode === 'TWD') 
-                        ? `TWD ${formatNum(t.amount)}` 
-                        : `${settlement.primaryCode} ${formatNum(t.amount / settlement.primaryRate)} (TWD ${formatNum(t.amount)})`;
+                    const amtStr = isAllTWD 
+                        ? formatNum(t.amount) 
+                        : (settlement.primaryCode === 'TWD' ? `TWD ${formatNum(t.amount)}` : `${settlement.primaryCode} ${formatNum(t.amount / settlement.primaryRate)} (TWD ${formatNum(t.amount)})`);
                     
-                    text += `◆ ${t.from} → ${t.to}：${amtStr}\n`;
+                    text += `◆ ${t.from} → ${t.to}： ${amtStr}\n`;
                     if (paymentInfo[t.to]) text += `    (收款資訊：${paymentInfo[t.to]})\n`;
                 });
 
