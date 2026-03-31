@@ -274,7 +274,7 @@
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-green-50 p-2 rounded-lg text-green-600 shadow-inner"><ShieldCheck size={24}/></div>
-              <div><h1 className="text-lg font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-xs text-gray-400 font-medium">{user.email} ({isSuperAdmin ? '最高管理員' : '獲授權人員'})</p></div>
+              <div><h1 className="text-lg font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-sm text-gray-400 font-medium">{user.email} ({isSuperAdmin ? '最高管理員' : '獲授權人員'})</p></div>
             </div>
             <div className="flex items-center gap-3">
               {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '關閉人員管理' : '授權名單管理'}</button>)}
@@ -288,11 +288,11 @@
 
           {isSuperAdmin && showUserPanel && (
             <div className="bg-white p-6 rounded-2xl shadow-md border-2 border-orange-100 mb-6 animate-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 mb-4 text-orange-600"><Users size={20} /><h2 className="font-bold">授權名單管理</h2></div>
+              <div className="flex items-center gap-2 mb-4 text-orange-600"><Users size={20} /><h2 className="font-bold text-base">授權名單管理</h2></div>
               <div className="flex flex-col md:flex-row gap-3 mb-6">
-                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
-                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
-                <button onClick={handleAddUser} className="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 flex items-center justify-center gap-1"><Plus size={18}/> 加入授權</button>
+                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200 text-sm" />
+                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200 text-sm" />
+                <button onClick={handleAddUser} className="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 flex items-center justify-center gap-1 text-sm"><Plus size={18}/> 加入授權</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div className="p-3 bg-gray-50 rounded-xl border flex justify-between items-center opacity-60"><div className="flex flex-col"><span className="text-xs font-bold text-gray-400 uppercase">管理員</span><span className="text-sm font-medium">{FIXED_ADMIN}</span></div><span className="text-[10px] bg-gray-200 px-1.5 py-0.5 rounded font-bold">系統預設</span></div>
@@ -305,7 +305,7 @@
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
-                  <tr className="bg-[#F8F7F3] text-gray-500 text-[11px] uppercase tracking-wider font-bold">
+                  <tr className="bg-[#F8F7F3] text-gray-500 text-xs uppercase tracking-wider font-bold">
                     <th className="px-5 py-3">對帳</th>
                     <th className="px-5 py-3">戶別 / 買方</th>
                     <th className="px-5 py-3">匯款資訊 (民國年)</th>
@@ -331,25 +331,25 @@
                         <td className="px-5 py-2">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-4 h-4 text-[#8BA39E] rounded-md border-gray-300 focus:ring-0 cursor-pointer" />
-                            <span className={`font-bold text-xs transition-colors ${isRec ? 'text-green-600' : 'text-gray-400'}`}>{isRec ? '已對帳' : '待處理'}</span>
+                            <span className={`font-bold text-sm transition-colors ${isRec ? 'text-green-600' : 'text-gray-400'}`}>{isRec ? '已對帳' : '待處理'}</span>
                           </label>
                         </td>
                         <td className="px-5 py-2">
-                          <div className="font-bold text-gray-800 text-sm">{master ? `${master.floor}${master.unit}` : sub.unitKey}</div>
-                          <div className="text-[11px] text-[#8BA39E] font-medium mt-0.5">{master ? master.buyer : '未識別'}</div>
+                          <div className="font-bold text-gray-800 text-base">{master ? `${master.floor}${master.unit}` : sub.unitKey}</div>
+                          <div className="text-xs text-[#8BA39E] font-medium mt-0.5">{master ? master.buyer : '未識別'}</div>
                         </td>
                         <td className="px-5 py-2">
-                          <div className="font-semibold text-xs">{toROC(sub.匯款日期)}</div>
-                          <div className="text-[10px] text-gray-400 font-mono mt-0.5 leading-none">帳號: {sub.帳號後五碼 || '無'} | {sub.匯款帳戶戶名 || '-'}</div>
+                          <div className="font-semibold text-sm">{toROC(sub.匯款日期)}</div>
+                          <div className="text-xs text-gray-400 font-mono mt-0.5 leading-none">帳號: {sub.帳號後五碼 || '無'} | {sub.匯款帳戶戶名 || '-'}</div>
                         </td>
                         <td className="px-5 py-2">
-                          {sub.備註 ? (<div className="text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 whitespace-normal max-w-[140px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}
+                          {sub.備註 ? (<div className="text-xs text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-normal max-w-[140px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}
                         </td>
                         <td className="px-5 py-2">
-                          <div className="flex items-center gap-2 font-bold text-base">
+                          <div className="flex items-center gap-2 font-bold">
                             {isSuperAdmin ? (
                                 <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200 focus-within:border-[#8BA39E] transition-colors">
-                                    <span className="text-gray-400 text-xs">$</span>
+                                    <span className="text-gray-400 text-sm">$</span>
                                     <input 
                                         type="number"
                                         defaultValue={currentDisplayAmt}
@@ -358,24 +358,28 @@
                                             const valToSave = (sub._isRec && sub._prepayDeducted) ? (newVal - (master?.prepayAmt || 0)) : newVal;
                                             if (valToSave !== sub.匯款金額) { updateRemittanceField(sub, '匯款金額', valToSave); }
                                         }}
-                                        className="w-20 bg-transparent outline-none text-[#4A4A4A] text-sm font-bold"
+                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-lg font-bold"
                                     />
                                 </div>
                             ) : (
-                                <span className="text-[#4A4A4A] text-sm">${currentDisplayAmt?.toLocaleString()}</span>
+                                <span className="text-[#4A4A4A] text-lg">${currentDisplayAmt?.toLocaleString()}</span>
                             )}
-                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={14} className="text-green-500" />) : totalExpected > 0 ? (<XCircle size={14} className="text-orange-400" />) : null}
+                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={18} className="text-green-500" />) : totalExpected > 0 ? (<XCircle size={18} className="text-orange-400" />) : null}
                           </div>
-                          <div className="text-[10px] text-gray-400 font-medium mt-0.5">應收: ${totalExpected.toLocaleString()}</div>
+                          {/* 修改：應收目標顯示格式與字體大小 */}
+                          <div className="text-xs text-gray-500 font-medium mt-1">
+                            應收目標: ${totalExpected.toLocaleString()}
+                            {selectedStage === '使照' && prepayExp > 0 && `(含預收 $${prepayExp.toLocaleString()})`}
+                          </div>
                         </td>
                         <td className="px-5 py-2">
-                          {isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-2 py-1 border border-gray-100 rounded text-[11px] outline-none focus:ring-1 focus:ring-sky-200 bg-white w-24" />) : (<span className="text-gray-600 font-medium text-[11px]">{toROC(invData['發票日期']) || '-'}</span>)}
+                          {isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-2 py-1 border border-gray-100 rounded text-xs outline-none focus:ring-1 focus:ring-sky-200 bg-white w-28" />) : (<span className="text-gray-600 font-medium text-xs">{toROC(invData['發票日期']) || '-'}</span>)}
                         </td>
                         <td className="px-5 py-2">
-                          {isSuperAdmin ? (<div className="flex items-center gap-1"><Edit3 size={12} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-28 px-2 py-1 border border-gray-100 rounded text-[11px] font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono font-medium text-[11px]">{invData['發票號碼'] || '-'}</span>)}
+                          {isSuperAdmin ? (<div className="flex items-center gap-1"><Edit3 size={12} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-2 py-1 border border-gray-100 rounded text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono font-medium text-xs">{invData['發票號碼'] || '-'}</span>)}
                         </td>
                         <td className="px-5 py-2 text-center">
-                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-1.5 hover:bg-red-50 rounded-full"><Trash2 size={16} /></button>
+                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-1.5 hover:bg-red-50 rounded-full"><Trash2 size={18} /></button>
                         </td>
                       </tr>
                     );
