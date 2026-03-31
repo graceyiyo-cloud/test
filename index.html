@@ -390,7 +390,7 @@
                     <th className="py-3 px-5 w-20">對帳</th>
                     <th className="py-3 px-5 w-28">戶別 / 買方</th>
                     <th className="py-3 px-5 w-56">匯款資訊 (民國年)</th>
-                    <th className="py-3 px-5 w-40 text-left">備註</th>
+                    <th className="py-3 px-5 w-32 text-left">備註</th>
                     <th className="py-3 px-5 w-56">金額比對 ({stageLabel})</th>
                     <th className="py-3 px-5 w-32 text-sky-700">發票日期</th>
                     <th className="py-3 px-5 w-44 text-sky-700">發票號碼</th>
@@ -417,7 +417,7 @@
                             <button 
                               onClick={() => {
                                 setSelectedArchiveIds(prev => 
-                                  prev.includes(sub.id) ? prev.filter(id => id !== sub.id) : [...prev, sub.id]
+                                  prev.includes(sub.id) ? prev.filter(id => id !== sub.id) : [...prev, id]
                                 );
                               }}
                               className="text-gray-400 hover:text-blue-500 transition-colors"
@@ -436,8 +436,8 @@
                         </td>
                         <td className="py-3 px-5">
                           <div>{toROC(sub.匯款日期)}</div>
-                          <div className="text-[10px] text-gray-400 font-mono mt-1">
-                            帳號: {sub.帳號後五碼 || '無'} &nbsp;|&nbsp; 戶名: {sub.匯款帳戶戶名 || '-'}
+                          <div className="text-[13px] text-gray-500 font-mono mt-1.5 tracking-wide">
+                            帳號: {sub.帳號後五碼 || '無'} &nbsp;&nbsp;|&nbsp;&nbsp; 戶名: {sub.匯款帳戶戶名 || '-'}
                           </div>
                         </td>
                         <td className="py-3 px-5">{sub.備註 ? (<div className="text-[11px] text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-pre-wrap max-w-[150px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}</td>
