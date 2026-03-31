@@ -437,7 +437,7 @@
                         <td className="py-3 px-5">
                           <div>{toROC(sub.匯款日期)}</div>
                           <div className="text-[11px] text-gray-400 font-mono mt-1">
-                            帳號: {sub.帳號後五碼 || ''}戶名: {sub.匯款帳戶戶名 || ''} | 帳號: {sub.帳號後五碼 ? String(sub.帳號後五碼).slice(-5) : '無'}
+                            戶名: {sub.匯款帳戶戶名 || '-'} | 帳號: {sub.帳號後五碼 ? String(sub.帳號後五碼).slice(-5) : '無'}
                           </div>
                         </td>
                         <td className="py-3 px-5">{sub.備註 ? (<div className="text-[11px] text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-pre-wrap max-w-[150px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}</td>
