@@ -1,524 +1,397 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>工程費用計算</title>
-    <style>
-        :root {
-            --bg: #F4F7F6;
-            --card: #FFFFFF;
-            --primary: #4A5D4E; 
-            --accent: #D4A373;
-            --text: #2C3E50;
-            --label-text: #5D6D7E;
-            --border: #D5DBDB;
-            --danger: #C0392B;
-            --success: #27AE60;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>瀞川日禾對帳管理中心</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-        body { background-color: var(--bg); color: var(--text); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        
-        .page { width: 100%; max-width: 500px; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .card { background: var(--card); width: 100%; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); box-sizing: border-box; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); }
-        
-        h2 { text-align: center; color: var(--primary); font-weight: 700; margin-bottom: 25px; letter-spacing: 2px; }
-        .row { display: flex; gap: 12px; margin-bottom: 18px; align-items: flex-end; }
-        .col { flex: 1; display: flex; flex-direction: column; }
-        
-        label { font-size: 0.85rem; margin-bottom: 8px; color: var(--label-text); font-weight: 600; }
-        .tip { font-weight: normal; font-size: 0.75rem; color: var(--accent); }
-        
-        input { padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; background: #FFF; width: 100%; box-sizing: border-box; transition: all 0.2s; }
-        input:focus { border-color: var(--primary); background: #FDFFFD; }
-        
-        input[readonly] { background: #F8F9F9; border-color: #EBEDEF; color: #7F8C8D; }
-
-        .reason-input { margin-top: 8px; font-size: 0.85rem; padding: 8px 12px; border-style: dashed; }
-
-        #netAmount { 
-            font-size: 1.5rem; 
-            font-weight: 800; 
-            color: var(--primary); 
-            border: 3px solid var(--primary); 
-            background: #FFF; 
-            text-align: center;
-            height: 60px;
-            box-shadow: 0 4px 10px rgba(74, 93, 78, 0.1);
-        }
-        
-        .config-box { background: #FDFEFE; padding: 18px; border-radius: 15px; margin: 20px 0; border: 1.5px solid #E5E8E8; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        
-        .display-area { background: #F8F9F9; border-radius: 15px; padding: 20px; margin-top: 20px; border: 1px solid #EAEDED; }
-        .section-title { font-size: 0.9rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .section-title::before { content: ''; width: 4px; height: 16px; background: var(--primary); border-radius: 2px; }
-        
-        .formula { font-size: 0.95rem; line-height: 1.8; color: #444; }
-        .formula strong { color: #000; font-weight: 700; }
-        
-        .formula-row { display: grid; grid-template-columns: 1.8em 1fr; margin-bottom: 2px; }
-        .formula-sub { padding-left: 1.8em; color: #666; font-size: 0.9rem; margin-bottom: 4px; }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-copy { flex: 2; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-copy:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-reset { flex: 1; padding: 14px; background: #FFF; color: var(--danger); border: 1.5px solid var(--danger); border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-reset:hover { background: #FFF5F5; }
-
-        .check-label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); font-size: 0.9rem; transition: 0.2s; }
-        .check-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
-
-        .toggle-group { 
-            display: flex; 
-            background: #EBEDEF; 
-            border-radius: 12px; 
-            padding: 4px; 
-            height: 46px;
-            box-sizing: border-box;
-        }
-        .toggle-group label { flex: 1; margin: 0; cursor: pointer; }
-        .toggle-group input { display: none; }
-        .toggle-group span { 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            border-radius: 10px;
-            color: #7F8C8D;
-            font-size: 0.9rem;
-            font-weight: 700;
-            transition: all 0.3s;
-        }
-        .toggle-group input:checked + span { 
-            background: var(--primary); 
-            color: #FFFFFF; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        #calcBaseGroup input:checked + span {
-            background: var(--accent);
-        }
-
-        /* 反灰不可點選的樣式 */
-        .disabled-state {
-            opacity: 0.4;
-            pointer-events: none;
-            cursor: not-allowed;
-        }
-
-        /* RWD 微調：針對手機版縮小邊界與內距 */
-        @media (max-width: 480px) {
-            body { padding: 8px; }
-            .card { padding: 18px; border-radius: 16px; margin-bottom: 12px; }
-            h2 { margin-bottom: 20px; font-size: 1.25rem; }
-            .row { gap: 8px; margin-bottom: 14px; }
-            .config-box { padding: 12px; margin: 15px 0; }
-            .display-area { padding: 15px; }
-            input { padding: 10px; }
-            #netAmount { height: 54px; font-size: 1.35rem; }
-        }
-    </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+      }
+    }
+  </script>
 </head>
-<body>
-
-<div id="calcPage" class="page">
-    <div class="card">
-        <h2>工程費用計算</h2>
-        
-        <div class="row">
-            <div class="col">
-                <label>輸入金額</label>
-                <input type="number" id="inputAmount" placeholder="0" oninput="calculate()">
-            </div>
-            <div class="col">
-                <label>金額類型</label>
-                <div class="toggle-group">
-                    <label>
-                        <input type="radio" name="taxType" value="exclude" checked onchange="calculate()">
-                        <span>未稅</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="taxType" value="include" onchange="calculate()">
-                        <span>含稅</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>未稅金額</label>
-                <input type="number" id="rawAmount" readonly>
-            </div>
-            <div class="col">
-                <label>稅額 (5%)</label>
-                <input type="number" id="taxAmount" readonly>
-            </div>
-        </div>
-
-        <div class="config-box">
-            <div class="row">
-                <div class="col">
-                    <label>計算基準 <span class="tip">(只影響計算過程)</span></label>
-                    <div class="toggle-group" id="calcBaseGroup">
-                        <label>
-                            <input type="radio" name="calcBase" value="raw" checked onchange="calculate()">
-                            <span>未稅額</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="calcBase" value="total" onchange="calculate()">
-                            <span>全額(含稅)</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="cleanCheck" checked onchange="calculate()"> 清潔保險 (%)</label>
-                    <input type="number" id="cleanRate" value="0.5" step="0.1" oninput="calculate()">
-                </div>
-                <div class="col">
-                    <label>清潔金額 (可修)</label>
-                    <input type="number" id="cleanAmount" oninput="calculate('clean')">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <label class="check-label"><input type="checkbox" id="retentionCheck" checked onchange="calculate()"> 保留款 (%)</label>
-                    <input type="number" id="retentionRate" value="10" step="1" oninput="calculate()">
-                </div>
-                <div class="col">
-                    <label>保留金額 (可修)</label>
-                    <input type="number" id="retentionAmount" oninput="calculate('retention')">
-                </div>
-            </div>
-            <div class="row" style="margin-bottom: 0;">
-                <div class="col">
-                    <label class="check-label" id="invoiceIncludeRetentionLabel">
-                        <input type="checkbox" id="invoiceIncludeRetention" onchange="calculate()"> 
-                        發票金額含保留款 <span class="tip">(分列應付與發票)</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>加款金額 <span class="tip">(含稅)</span></label>
-                <input type="number" id="plusAmount" placeholder="0" oninput="calculate()">
-                <input type="text" id="plusReason" class="reason-input" placeholder="加款事由..." oninput="calculate()">
-            </div>
-            <div class="col">
-                <label>扣款金額 <span class="tip">(含稅)</span></label>
-                <input type="number" id="minusAmount" placeholder="0" oninput="calculate()">
-                <input type="text" id="minusReason" class="reason-input" placeholder="扣款事由..." oninput="calculate()">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>最終淨額 (可手動修改)</label>
-                <input type="number" id="netAmount" oninput="updateFormulaOnly()">
-            </div>
-        </div>
-
-        <div class="display-area">
-            <div class="section-title">計算明細</div>
-            <div id="processFormula" class="formula">請輸入資料...</div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn-copy" onclick="copyResult()">📋 複製計算明細</button>
-            <button class="btn-reset" onclick="location.reload()">↺ 重填</button>
-        </div>
+<body class="bg-[#F9F8F6]">
+  <div id="root">
+    <!-- 靜態載入提示 -->
+    <div id="initial-loading" class="min-h-screen flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8BA39E]"></div>
+        <p class="mt-4 text-gray-400 font-medium">系統安全環境初始化中...</p>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-    const fmt = new Intl.NumberFormat('zh-TW');
-    const circles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
-    let lastCalcState = {};
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useMemo } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { CheckCircle, XCircle, Edit3, Lock, LogIn, LogOut, Trash2, AlertCircle, ShieldCheck, Loader2, Database, Users, Plus, X, User, MessageSquare } from 'lucide-react';
+    import { initializeApp, getApps } from 'firebase/app';
+    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+    import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 
-    function calculate(source = null) {
-        // 判斷手動觸發的來源
-        const isManualRetention = (source === 'retention' || source === true);
-        const isManualClean = (source === 'clean');
+    // ==========================================
+    // 1. 設定固定管理員 (預設最高權限)
+    // ==========================================
+    const FIXED_ADMIN = "jingchuantw@gmail.com";
 
-        const inputVal = parseFloat(document.getElementById('inputAmount').value) || 0;
-        const taxType = document.querySelector('input[name="taxType"]:checked').value;
-        const calcBase = document.querySelector('input[name="calcBase"]:checked').value;
-        const plus = parseFloat(document.getElementById('plusAmount').value) || 0;
-        const plusReason = document.getElementById('plusReason').value.trim();
-        const minus = parseFloat(document.getElementById('minusAmount').value) || 0;
-        const minusReason = document.getElementById('minusReason').value.trim();
-        
-        // 處理保留款勾選狀態與反灰連動
-        const hasRetention = document.getElementById('retentionCheck').checked;
-        const invoiceRetLabel = document.getElementById('invoiceIncludeRetentionLabel');
-        const invoiceRetCheck = document.getElementById('invoiceIncludeRetention');
-        
-        if (!hasRetention) {
-            invoiceRetCheck.disabled = true;
-            invoiceRetCheck.checked = false; 
-            invoiceRetLabel.classList.add('disabled-state');
-        } else {
-            invoiceRetCheck.disabled = false;
-            invoiceRetLabel.classList.remove('disabled-state');
-        }
-        
-        const invoiceIncludeRet = invoiceRetCheck.checked;
-        
-        let raw = 0, tax = 0, total = 0;
+    const firebaseConfig = {
+      apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
+      authDomain: "gen-lang-client-0168131217.firebaseapp.com",
+      projectId: "gen-lang-client-0168131217",
+      storageBucket: "gen-lang-client-0168131217.firebasestorage.app",
+      messagingSenderId: "620488371764",
+      appId: "1:620488371764:web:d5eb9d1dff62d66bab2461"
+    };
 
-        if (taxType === "exclude") {
-            raw = inputVal;
-            tax = Math.round(raw * 0.05);
-            total = raw + tax;
-        } else {
-            total = inputVal;
-            raw = Math.round(total / 1.05);
-            tax = total - raw;
-        }
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+    const appId = 'qingsenyuan-admin'; 
 
-        document.getElementById('rawAmount').value = raw || "";
-        document.getElementById('taxAmount').value = tax || "";
-        
-        const baseAmt = (calcBase === 'total') ? total : raw;
+    const PAYMENT_STAGES = [
+      { k: '訂金', l: '訂金' }, { k: '簽約', l: '簽約金' }, { k: '2F', l: '2F工程' },
+      { k: '5F', l: '5F工程' }, { k: '7F', l: '7F工程' }, { k: '10F', l: '10F工程' },
+      { k: '13F', l: '13F工程' }, { k: '使照', l: '使照款' }, { k: '銀貸', l: '銀貸' },
+      { k: '交屋', l: '交屋款' }
+    ];
 
-        // 清潔保險費計算 (支援手修)
-        const hasClean = document.getElementById('cleanCheck').checked;
-        const cRate = parseFloat(document.getElementById('cleanRate').value) || 0;
-        const cleanInput = document.getElementById('cleanAmount');
-        let cleanFee = hasClean ? (isManualClean ? (parseFloat(cleanInput.value) || 0) : Math.round(baseAmt * (cRate / 100))) : 0;
-        if(!isManualClean) cleanInput.value = cleanFee || "";
+    // 民國年轉換工具
+    const toROC = (dateStr) => {
+      if (!dateStr) return '';
+      const parts = dateStr.replace(/-/g, '/').split('/');
+      if (parts.length < 3) return dateStr;
+      let y = parseInt(parts[0]);
+      if (isNaN(y)) return dateStr;
+      if (y > 1911) y -= 1911; 
+      return `${y}/${parts[1]}/${parts[2]}`;
+    };
 
-        const subtotal = baseAmt - cleanFee;
-        
-        // 保留款計算 (支援手修)
-        const rRate = parseFloat(document.getElementById('retentionRate').value) || 0;
-        const retentionInput = document.getElementById('retentionAmount');
-        let retention = hasRetention ? (isManualRetention ? (parseFloat(retentionInput.value) || 0) : Math.round(subtotal * (rRate / 100))) : 0;
-        if(!isManualRetention) retentionInput.value = retention || "";
-        
-        let net = 0;
-        if (calcBase === 'total') {
-            net = (subtotal - retention) + plus - minus;
-        } else {
-            const preTaxRemain = subtotal - retention;
-            const recalculatedTax = Math.round(preTaxRemain * 0.05);
-            net = preTaxRemain + recalculatedTax + plus - minus;
-        }
+    function App() {
+      const [user, setUser] = useState(null);
+      const [isAuthLoading, setIsAuthLoading] = useState(true);
+      const [isReady, setIsReady] = useState(false);
+      const [dbError, setDbError] = useState('');
+      const [cloudAuthorizedUsers, setCloudAuthorizedUsers] = useState([]); 
 
-        lastCalcState = { 
-            raw, tax, total, cRate, cleanFee, subtotal, rRate, 
-            retention, plus, plusReason, minus, minusReason, 
-            invoiceIncludeRet, calcBase, isManualRetention, isManualClean, taxType,
-            hasClean, hasRetention
-        };
-        document.getElementById('netAmount').value = net;
-        renderFormula(net);
-    }
+      const isAdmin = useMemo(() => {
+        if (!user) return false;
+        const email = user.email.toLowerCase();
+        return email === FIXED_ADMIN.toLowerCase() || cloudAuthorizedUsers.some(u => u.email.toLowerCase() === email);
+      }, [user, cloudAuthorizedUsers]);
 
-    function updateFormulaOnly() {
-        const manualNet = parseFloat(document.getElementById('netAmount').value) || 0;
-        renderFormula(manualNet);
-    }
+      useEffect(() => {
+        const timer = setTimeout(() => { if (isAuthLoading) setIsAuthLoading(false); }, 8000);
+        return () => clearTimeout(timer);
+      }, [isAuthLoading]);
 
-    function renderFormula(currentNet) {
-        if (!lastCalcState.raw && lastCalcState.raw !== 0) return;
-        if (lastCalcState.raw === 0 && lastCalcState.plus === 0 && lastCalcState.minus === 0) {
-            document.getElementById('processFormula').innerHTML = "請輸入資料...";
-            return;
-        }
-
-        const s = lastCalcState;
-        const isRawBase = s.calcBase === 'raw';
-        let html = "";
-        let stepIdx = 0;
-
-        // ① 基準
-        if (isRawBase) {
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>未稅金額：<strong>${fmt.format(s.raw)}</strong></span></div>`;
-        } else {
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>總金額：${fmt.format(s.raw)} + 稅${fmt.format(s.tax)} = <strong>${fmt.format(s.total)}</strong></span></div>`;
-        }
-
-        // ② 清潔費 (僅在勾選時顯示)
-        const baseAmt = isRawBase ? s.raw : s.total;
-        if (s.hasClean && s.cleanFee !== 0) {
-            const cleanCalc = s.isManualClean ? `(手動調整)` : `× ${s.cRate}%`;
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>清潔費：${fmt.format(baseAmt)} ${cleanCalc} = <strong>-${fmt.format(s.cleanFee)}</strong></span></div>`;
-            html += `<div class="formula-sub">小計：${fmt.format(baseAmt)} - ${fmt.format(s.cleanFee)} = ${fmt.format(s.subtotal)}</div>`;
-        }
-
-        // ③ 保留款 (僅在勾選時顯示)
-        if (s.hasRetention && s.retention !== 0) {
-            const retCalc = s.isManualRetention ? `(手動調整)` : `× ${s.rRate}%`;
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>保留款：${fmt.format(s.subtotal)} ${retCalc} = <strong>-${fmt.format(s.retention)}</strong></span></div>`;
-            if (isRawBase) {
-                const netRaw = s.subtotal - s.retention;
-                html += `<div class="formula-sub">淨額：${fmt.format(s.subtotal)} - ${fmt.format(s.retention)} = ${fmt.format(netRaw)}</div>`;
-            }
-        }
-
-        // 加/扣款項次 (若有)
-        if (s.plus !== 0) {
-            const reason = s.plusReason ? `(${s.plusReason})` : "";
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>加款${reason}：<strong>+${fmt.format(s.plus)}</strong></span></div>`;
-        }
-        if (s.minus !== 0) {
-            const reason = s.minusReason ? `(${s.minusReason})` : "";
-            html += `<div class="formula-row"><span>${circles[stepIdx++]}</span><span>扣款${reason}：<strong>-${fmt.format(s.minus)}</strong></span></div>`;
-        }
-
-        html += `<div style="margin-top:10px; border-top:1.5px solid #EEE; padding-top:10px;">`;
-
-        if (isRawBase) {
-            // 未稅基準 總結
-            const netRaw = s.subtotal - s.retention;
-            const netTax = Math.round(netRaw * 0.05);
-            const subtotalTax = Math.round(s.subtotal * 0.05);
-
-            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
-                const invAmt = (s.subtotal + subtotalTax) + s.plus - s.minus;
-                let invPath = `${fmt.format(s.subtotal)} + 稅${fmt.format(subtotalTax)}`;
-                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
-                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
-                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
-                html += `<div style="font-size: 1rem; color: var(--text);">● 本次發票金額：<strong>${fmt.format(invAmt)}</strong> <span class="tip">(含保留款)</span></div>`;
-            }
-            
-            let payablePath = `${fmt.format(netRaw)} + 稅${fmt.format(netTax)}`;
-            if (s.plus !== 0) payablePath += ` + 加${fmt.format(s.plus)}`;
-            if (s.minus !== 0) payablePath += ` - 扣${fmt.format(s.minus)}`;
-            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
-            html += `<div style="font-size: 1rem; color: var(--text);">● 本次應付金額：<strong>${fmt.format(currentNet)}</strong></div>`;
-
-        } else {
-            // 含稅基準 總結
-            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
-                const invAmt = s.subtotal + s.plus - s.minus;
-                let invPath = `${fmt.format(s.total)}`;
-                if (s.hasClean && s.cleanFee !== 0) invPath += ` - ${fmt.format(s.cleanFee)}`;
-                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
-                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
-                html += `<div style="font-size: 0.85rem; color: #666; margin-bottom: 2px;">${invPath} = ${fmt.format(invAmt)}</div>`;
-                html += `<div style="font-size: 1rem; color: var(--text);">● 本次發票金額：<strong>${fmt.format(invAmt)}</strong> <span class="tip">(含保留款)</span></div>`;
-            }
-
-            let payablePathParts = [];
-            payablePathParts.push(fmt.format(s.total));
-            if (s.hasClean && s.cleanFee !== 0) payablePathParts.push(`- ${fmt.format(s.cleanFee)}`);
-            if (s.hasRetention && s.retention !== 0) payablePathParts.push(`- ${fmt.format(s.retention)}`);
-            if (s.plus !== 0) payablePathParts.push(`+ 加${fmt.format(s.plus)}`);
-            if (s.minus !== 0) payablePathParts.push(`- 扣${fmt.format(s.minus)}`);
-            let payablePath = payablePathParts.join(" ");
-
-            html += `<div style="font-size: 0.85rem; color: #666; margin-top: 8px; margin-bottom: 2px;">${payablePath} = ${fmt.format(currentNet)}</div>`;
-            html += `<div style="font-size: 1rem; color: var(--text);">● 本次應付金額：<strong>${fmt.format(currentNet)}</strong></div>`;
-        }
-
-        html += `</div>`;
-        document.getElementById('processFormula').innerHTML = html;
-    }
-
-    function copyResult() {
-        const net = parseFloat(document.getElementById('netAmount').value) || 0;
-        if (!net && net !== 0) { alert("請先輸入金額"); return; }
-        
-        const s = lastCalcState;
-        const isRawBase = s.calcBase === 'raw';
-        let text = `【工程費用計算明細】\n`;
-        let stepIdx = 0;
-
-        if (isRawBase) {
-            text += `${circles[stepIdx++]} 未稅金額：${fmt.format(s.raw)}\n`;
-        } else {
-            text += `${circles[stepIdx++]} 總金額：${fmt.format(s.raw)} + 稅${fmt.format(s.tax)} = ${fmt.format(s.total)}\n`;
-        }
-
-        const baseAmt = isRawBase ? s.raw : s.total;
-        if (s.hasClean && s.cleanFee !== 0) {
-            const cleanCalc = s.isManualClean ? `(手動調整)` : `× ${s.cRate}%`;
-            text += `${circles[stepIdx++]} 清潔費：${fmt.format(baseAmt)} ${cleanCalc} = -${fmt.format(s.cleanFee)}\n`;
-            text += `    小計：${fmt.format(baseAmt)} - ${fmt.format(s.cleanFee)} = ${fmt.format(s.subtotal)}\n`;
-        }
-        
-        if (s.hasRetention && s.retention !== 0) {
-            const retCalc = s.isManualRetention ? `(手動調整)` : `× ${s.rRate}%`;
-            text += `${circles[stepIdx++]} 保留款：${fmt.format(s.subtotal)} ${retCalc} = -${fmt.format(s.retention)}\n`;
-            if (isRawBase) {
-                text += `    淨額：${fmt.format(s.subtotal)} - ${fmt.format(s.retention)} = ${fmt.format(s.subtotal - s.retention)}\n`;
-            }
-        }
-
-        if (s.plus !== 0) {
-            text += `${circles[stepIdx++]} 加款${s.plusReason ? '('+s.plusReason+')' : ''}：+${fmt.format(s.plus)}\n`;
-        }
-        if (s.minus !== 0) {
-            text += `${circles[stepIdx++]} 扣款${s.minusReason ? '('+s.minusReason+')' : ''}：-${fmt.format(s.minus)}\n`;
-        }
-
-        text += `------------------\n`;
-
-        if (isRawBase) {
-            const netRaw = s.subtotal - s.retention;
-            const netTax = Math.round(netRaw * 0.05);
-            const subtotalTax = Math.round(s.subtotal * 0.05);
-            
-            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
-                const invAmt = (s.subtotal + subtotalTax) + s.plus - s.minus;
-                let invPath = `${fmt.format(s.subtotal)} + 稅${fmt.format(subtotalTax)}`;
-                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
-                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
-                text += `${invPath} = ${fmt.format(invAmt)}\n`;
-                text += `● 本次發票金額：${fmt.format(invAmt)} (含保留款)\n\n`;
-            }
-            
-            let payablePath = `${fmt.format(netRaw)} + 稅${fmt.format(netTax)}`;
-            if (s.plus !== 0) payablePath += ` + 加${fmt.format(s.plus)}`;
-            if (s.minus !== 0) payablePath += ` - 扣${fmt.format(s.minus)}`;
-            text += `${payablePath} = ${fmt.format(net)}\n`;
-            text += `● 本次應付金額：${fmt.format(net)}`;
-        } else {
-            if (s.invoiceIncludeRet && s.hasRetention && s.retention !== 0) {
-                const invAmt = s.subtotal + s.plus - s.minus;
-                let invPath = `${fmt.format(s.total)}`;
-                if (s.hasClean && s.cleanFee !== 0) invPath += ` - ${fmt.format(s.cleanFee)}`;
-                if (s.plus !== 0) invPath += ` + 加${fmt.format(s.plus)}`;
-                if (s.minus !== 0) invPath += ` - 扣${fmt.format(s.minus)}`;
-                text += `${invPath} = ${fmt.format(invAmt)}\n`;
-                text += `● 本次發票金額：${fmt.format(invAmt)} (含保留款)\n\n`;
-            }
-
-            let payablePathParts = [];
-            payablePathParts.push(fmt.format(s.total));
-            if (s.hasClean && s.cleanFee !== 0) payablePathParts.push(`- ${fmt.format(s.cleanFee)}`);
-            if (s.hasRetention && s.retention !== 0) payablePathParts.push(`- ${fmt.format(s.retention)}`);
-            if (s.plus !== 0) payablePathParts.push(`+ 加${fmt.format(s.plus)}`);
-            if (s.minus !== 0) payablePathParts.push(`- 扣${fmt.format(s.minus)}`);
-            let payablePath = payablePathParts.join(" ");
-
-            text += `${payablePath} = ${fmt.format(net)}\n`;
-            text += `● 本次應付金額：${fmt.format(net)}`;
-        }
-
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = document.querySelector('.btn-copy');
-            const originalText = btn.innerText;
-            btn.innerText = "✅ 已複製明細";
-            btn.style.background = "#27AE60";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = "";
-            }, 2000);
+      useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+          setUser(u);
+          if (!u) { setIsAuthLoading(false); setCloudAuthorizedUsers([]); }
         });
-    }
-    
-    // 網頁載入時初始化一次反灰狀態
-    window.onload = () => { calculate(); };
-</script>
+        return () => unsubscribeAuth();
+      }, []);
 
+      useEffect(() => {
+        if (!user) return;
+        const unsubAuthList = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails'), (s) => {
+          if (s.exists()) {
+            const data = s.data();
+            const list = data.users || (data.emails || []).map(e => ({ email: e, name: '未命名同仁' }));
+            setCloudAuthorizedUsers(list);
+          }
+          setIsAuthLoading(false);
+        }, (err) => { setIsAuthLoading(false); });
+        return () => unsubAuthList();
+      }, [user]);
+
+      const [masterUnits, setMasterUnits] = useState({}); 
+      const [reconciledRems, setReconciledRems] = useState([]); 
+      const [pendingRems, setPendingRems] = useState([]);
+      const [invoices, setInvoices] = useState({});       
+
+      useEffect(() => {
+        if (!user || !isAdmin) return;
+        const handleError = (error) => { setDbError(error.message); setIsReady(true); };
+        const unsubAdditions = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), (s) => setReconciledRems(s.data()?.remittances || []), handleError);
+        const unsubPending = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances'), (s) => setPendingRems(s.data()?.remittances || []), handleError);
+        const unsubInv = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices'), (s) => setInvoices(s.data() || {}), handleError);
+        const unsubMaster = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'master_sheets'), (snap) => {
+          const units = {};
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const isMaster = docSnap.id.includes('收款總表');
+            const isPrepay = docSnap.id.includes('預收款及車位');
+            if (!isMaster && !isPrepay) return;
+            data.rows?.forEach(row => {
+              let f = String(row['樓層'] || '').trim().replace(/\.0$/, '');
+              let u = String(row['編號'] || '').trim().replace(/\.0$/, '');
+              if (f && u && !f.includes('合計')) {
+                const key = `${f}_${u}`;
+                if (!units[key]) units[key] = { floor: f, unit: u, buyer: row['買方'] || row['姓名'] || '-', stages: {}, prepayAmt: 0 };
+                if (isMaster) {
+                  PAYMENT_STAGES.forEach(st => {
+                    let contractAmt = 0, paidAmt = 0, unpaidAmt = NaN;
+                    Object.keys(row).forEach(rk => {
+                      const val = parseFloat(String(row[rk] || '').replace(/,/g, ''));
+                      if (rk.includes(st.k)) {
+                         if (rk.includes('應收') || rk.includes('應付')) contractAmt += isNaN(val) ? 0 : val;
+                         if (rk.includes('已付') || rk.includes('實收')) paidAmt += isNaN(val) ? 0 : val;
+                         if (rk.includes('未付') || rk.includes('餘額')) { if (!isNaN(val)) unpaidAmt = val; }
+                      }
+                    });
+                    const finalStageUnpaid = !isNaN(unpaidAmt) ? unpaidAmt : (contractAmt - paidAmt);
+                    units[key].stages[st.k] = (units[key].stages[st.k] || 0) + finalStageUnpaid;
+                  });
+                }
+                if (isPrepay) {
+                  const prepayVal = parseFloat(String(row['預收代書款'] || '0').replace(/,/g, '')) || 0;
+                  units[key].prepayAmt = prepayVal;
+                }
+              }
+            });
+          });
+          setMasterUnits(units); setIsReady(true);
+        }, handleError);
+        return () => { unsubAdditions(); unsubPending(); unsubInv(); unsubMaster(); };
+      }, [user, isAdmin]);
+
+      const handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert("登入失敗: " + e.message); } };
+
+      if (isAuthLoading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><Loader2 className="animate-spin text-[#8BA39E] mb-4" size={40} /><p className="text-gray-500 font-medium">正在建立安全連線...</p></div>;
+      if (!user) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-8 border border-gray-100"><div className="flex justify-center"><div className="bg-[#8BA39E] p-5 rounded-2xl text-white shadow-lg"><Lock size={40} /></div></div><div><h1 className="text-2xl font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-gray-400 text-sm mt-2 font-medium tracking-wide">請登入您的 Google 帳號以存取後台</p></div><button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 border-b-4 border-b-gray-100"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5"/> 使用 Google 帳號登入</button></div></div>;
+      if (!isAdmin) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-6 border border-red-100"><AlertCircle className="w-16 h-16 text-red-400 mx-auto" /><h2 className="text-xl font-bold text-gray-800">權限不足</h2><p className="text-gray-500 text-sm leading-relaxed">您的帳號 ({user.email}) 不在授權名單中。<br/>請聯繫系統負責人開通權限。</p><button onClick={() => signOut(auth)} className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors">登出並切換帳號</button></div></div>;
+      if (!isReady) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#8BA39E] mb-4"></div><p className="text-[#8BA39E] font-bold">正在同步雲端資料庫...</p></div>;
+
+      return <AdminDashboard 
+        user={user} pendingRems={pendingRems} reconciledRems={reconciledRems} 
+        invoices={invoices} masterUnits={masterUnits} cloudAuthorizedUsers={cloudAuthorizedUsers}
+        handleLogout={() => signOut(auth)} 
+      />;
+    }
+
+    function AdminDashboard({ user, pendingRems, reconciledRems, invoices, masterUnits, cloudAuthorizedUsers, handleLogout }) {
+      const [selectedStage, setSelectedStage] = useState('使照');
+      const [showUserPanel, setShowUserPanel] = useState(false);
+      const [newNameInput, setNewNameInput] = useState('');
+      const [newEmailInput, setNewEmailInput] = useState('');
+
+      const combinedRemittances = useMemo(() => {
+        const p = pendingRems.map(r => ({ ...r, _isRec: false }));
+        const r = reconciledRems.map(r => ({ ...r, _isRec: true }));
+        return [...p, ...r].sort((a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0));
+      }, [pendingRems, reconciledRems]);
+
+      const updateInvoiceData = async (remittanceId, field, value) => {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices');
+        try { await setDoc(docRef, { [remittanceId]: { [field]: value } }, { merge: true }); } catch (e) {}
+      };
+
+      const updateRemittanceField = async (rem, field, value) => {
+        const path = rem._isRec ? 'additions' : 'pending_remittances';
+        const list = rem._isRec ? reconciledRems : pendingRems;
+        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'custom', path);
+        const updatedList = list.map(r => r.id === rem.id ? { ...r, [field]: value } : r);
+        try {
+          await setDoc(ref, { remittances: updatedList }, { merge: true });
+        } catch (e) { alert("金額更新失敗"); }
+      };
+
+      const handleToggleReconcile = async (rem, checked) => {
+        const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
+        const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
+        const master = masterUnits[rem.unitKey];
+        const cleanRem = { ...rem }; 
+        delete cleanRem._isRec;
+        if (checked) {
+          if (selectedStage === '使照' && master?.prepayAmt > 0 && !cleanRem._prepayDeducted) {
+            cleanRem.匯款金額 = Math.max(0, cleanRem.匯款金額 - master.prepayAmt);
+            cleanRem._prepayDeducted = true; 
+          }
+          try {
+            await updateInvoiceData(rem.id, '已對帳', true);
+            const newPending = pendingRems.filter(r => r.id !== rem.id);
+            await setDoc(penRef, { remittances: newPending }, { merge: true });
+            await setDoc(addRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
+          } catch (e) { alert("同步失敗"); }
+        } else {
+          if (selectedStage === '使照' && master?.prepayAmt > 0 && cleanRem._prepayDeducted) {
+            cleanRem.匯款金額 = cleanRem.匯款金額 + master.prepayAmt;
+            cleanRem._prepayDeducted = false; 
+          }
+          try {
+            await updateInvoiceData(rem.id, '已對帳', false);
+            const newReconciled = reconciledRems.filter(r => r.id !== rem.id);
+            await setDoc(addRef, { remittances: newReconciled }, { merge: true });
+            await setDoc(penRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
+          } catch (e) { alert("同步失敗"); }
+        }
+      };
+
+      const handleDeleteRemittance = async (rem) => {
+        if (!window.confirm("確定要刪除這筆紀錄嗎？")) return;
+        const path = rem._isRec ? 'additions' : 'pending_remittances';
+        const list = rem._isRec ? reconciledRems : pendingRems;
+        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'custom', path);
+        await setDoc(ref, { remittances: list.filter(r => r.id !== rem.id) }, { merge: true });
+      };
+
+      const handleAddUser = async () => {
+        const email = newEmailInput.trim().toLowerCase();
+        const name = newNameInput.trim();
+        if (!name || !email.includes('@')) { alert("請輸入完整資料"); return; }
+        try {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails');
+          await setDoc(docRef, { users: arrayUnion({ email, name }), emails: arrayUnion(email) }, { merge: true });
+          setNewNameInput(''); setNewEmailInput('');
+        } catch (e) {}
+      };
+
+      const handleRemoveUser = async (targetUser) => {
+        if (!window.confirm(`確定要移除 ${targetUser.name} 的授權嗎？`)) return;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails');
+        const newList = cloudAuthorizedUsers.filter(u => u.email.toLowerCase() !== targetUser.email.toLowerCase());
+        await setDoc(docRef, { users: newList, emails: newList.map(u => u.email) }, { merge: true });
+      };
+
+      const stageLabel = PAYMENT_STAGES.find(s => s.k === selectedStage)?.l || selectedStage;
+      const isSuperAdmin = user.email.toLowerCase() === FIXED_ADMIN.toLowerCase();
+
+      return (
+        <div className="py-6 px-4 sm:px-6 lg:px-8 font-sans max-w-[1500px] mx-auto animate-in fade-in duration-500">
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-green-50 p-2 rounded-lg text-green-600 shadow-inner"><ShieldCheck size={24}/></div>
+              <div><h1 className="text-lg font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-xs text-gray-400 font-medium">{user.email} ({isSuperAdmin ? '最高管理員' : '獲授權人員'})</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '關閉人員管理' : '授權名單管理'}</button>)}
+              <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
+                <span className="text-sm font-bold text-gray-500">期款比對：</span>
+                <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer">{PAYMENT_STAGES.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}</select>
+              </div>
+              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-all hover:bg-red-50 rounded-full"><LogOut size={20}/></button>
+            </div>
+          </div>
+
+          {isSuperAdmin && showUserPanel && (
+            <div className="bg-white p-6 rounded-2xl shadow-md border-2 border-orange-100 mb-6 animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-2 mb-4 text-orange-600"><Users size={20} /><h2 className="font-bold">授權名單管理</h2></div>
+              <div className="flex flex-col md:flex-row gap-3 mb-6">
+                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
+                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
+                <button onClick={handleAddUser} className="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 flex items-center justify-center gap-1"><Plus size={18}/> 加入授權</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="p-3 bg-gray-50 rounded-xl border flex justify-between items-center opacity-60"><div className="flex flex-col"><span className="text-xs font-bold text-gray-400 uppercase">管理員</span><span className="text-sm font-medium">{FIXED_ADMIN}</span></div><span className="text-[10px] bg-gray-200 px-1.5 py-0.5 rounded font-bold">系統預設</span></div>
+                {cloudAuthorizedUsers.map(u => (<div key={u.email} className="p-3 bg-orange-50/30 rounded-xl border border-orange-100 flex justify-between items-center group"><div className="flex flex-col overflow-hidden"><span className="text-xs font-bold text-orange-400">{u.name}</span><span className="text-sm font-medium text-gray-700 truncate">{u.email}</span></div><button onClick={() => handleRemoveUser(u)} className="text-red-300 hover:text-red-500 transition-colors ml-2"><X size={18} /></button></div>))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="bg-[#F8F7F3] text-gray-500 text-[11px] uppercase tracking-wider font-bold">
+                    <th className="px-5 py-3">對帳</th>
+                    <th className="px-5 py-3">戶別 / 買方</th>
+                    <th className="px-5 py-3">匯款資訊 (民國年)</th>
+                    <th className="px-5 py-3">備註</th>
+                    <th className="px-5 py-3">金額比對 ({stageLabel})</th>
+                    <th className="px-5 py-3 text-sky-700">發票日期</th>
+                    <th className="px-5 py-3 text-sky-700">發票號碼</th>
+                    <th className="px-5 py-3 text-center">管理</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-sm text-gray-700">
+                  {combinedRemittances.map((sub) => {
+                    const master = masterUnits[sub.unitKey];
+                    const baseExp = master?.stages?.[selectedStage] || 0;
+                    const prepayExp = (selectedStage === '使照') ? (master?.prepayAmt || 0) : 0;
+                    const totalExpected = baseExp + prepayExp;
+                    const invData = invoices[sub.id] || {};
+                    const isRec = sub._isRec;
+                    const currentDisplayAmt = (sub._isRec && sub._prepayDeducted) ? (sub.匯款金額 + (master?.prepayAmt || 0)) : sub.匯款金額;
+
+                    return (
+                      <tr key={sub.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-4 h-4 text-[#8BA39E] rounded-md border-gray-300 focus:ring-0 cursor-pointer" />
+                            <span className={`font-bold text-xs transition-colors ${isRec ? 'text-green-600' : 'text-gray-400'}`}>{isRec ? '已對帳' : '待處理'}</span>
+                          </label>
+                        </td>
+                        <td className="px-5 py-2">
+                          <div className="font-bold text-gray-800 text-sm">{master ? `${master.floor}${master.unit}` : sub.unitKey}</div>
+                          <div className="text-[11px] text-[#8BA39E] font-medium mt-0.5">{master ? master.buyer : '未識別'}</div>
+                        </td>
+                        <td className="px-5 py-2">
+                          <div className="font-semibold text-xs">{toROC(sub.匯款日期)}</div>
+                          <div className="text-[10px] text-gray-400 font-mono mt-0.5 leading-none">帳號: {sub.帳號後五碼 || '無'} | {sub.匯款帳戶戶名 || '-'}</div>
+                        </td>
+                        <td className="px-5 py-2">
+                          {sub.備註 ? (<div className="text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 whitespace-normal max-w-[140px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}
+                        </td>
+                        <td className="px-5 py-2">
+                          <div className="flex items-center gap-2 font-bold text-base">
+                            {isSuperAdmin ? (
+                                <div className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200 focus-within:border-[#8BA39E] transition-colors">
+                                    <span className="text-gray-400 text-xs">$</span>
+                                    <input 
+                                        type="number"
+                                        defaultValue={currentDisplayAmt}
+                                        onBlur={(e) => {
+                                            const newVal = Number(e.target.value);
+                                            const valToSave = (sub._isRec && sub._prepayDeducted) ? (newVal - (master?.prepayAmt || 0)) : newVal;
+                                            if (valToSave !== sub.匯款金額) { updateRemittanceField(sub, '匯款金額', valToSave); }
+                                        }}
+                                        className="w-20 bg-transparent outline-none text-[#4A4A4A] text-sm font-bold"
+                                    />
+                                </div>
+                            ) : (
+                                <span className="text-[#4A4A4A] text-sm">${currentDisplayAmt?.toLocaleString()}</span>
+                            )}
+                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={14} className="text-green-500" />) : totalExpected > 0 ? (<XCircle size={14} className="text-orange-400" />) : null}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-medium mt-0.5">應收: ${totalExpected.toLocaleString()}</div>
+                        </td>
+                        <td className="px-5 py-2">
+                          {isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-2 py-1 border border-gray-100 rounded text-[11px] outline-none focus:ring-1 focus:ring-sky-200 bg-white w-24" />) : (<span className="text-gray-600 font-medium text-[11px]">{toROC(invData['發票日期']) || '-'}</span>)}
+                        </td>
+                        <td className="px-5 py-2">
+                          {isSuperAdmin ? (<div className="flex items-center gap-1"><Edit3 size={12} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-28 px-2 py-1 border border-gray-100 rounded text-[11px] font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono font-medium text-[11px]">{invData['發票號碼'] || '-'}</span>)}
+                        </td>
+                        <td className="px-5 py-2 text-center">
+                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-1.5 hover:bg-red-50 rounded-full"><Trash2 size={16} /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {combinedRemittances.length === 0 && <div className="p-20 text-center text-gray-300 font-bold">目前無回報紀錄</div>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const container = document.getElementById('root');
+    const root = createRoot(container);
+    root.render(<App />);
+  </script>
 </body>
 </html>
