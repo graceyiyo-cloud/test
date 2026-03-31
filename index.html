@@ -204,6 +204,19 @@
         return counts;
       }, [combinedRemittances]);
 
+      // 【全選邏輯】
+      const isAllSelected = useMemo(() => {
+        return combinedRemittances.length > 0 && selectedArchiveIds.length === combinedRemittances.length;
+      }, [combinedRemittances, selectedArchiveIds]);
+
+      const handleToggleAll = () => {
+        if (isAllSelected) {
+          setSelectedArchiveIds([]);
+        } else {
+          setSelectedArchiveIds(combinedRemittances.map(r => r.id));
+        }
+      };
+
       const updateInvoiceData = async (remittanceId, field, value) => {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices');
         try { await setDoc(docRef, { [remittanceId]: { [field]: value } }, { merge: true }); } catch (e) {}
@@ -367,11 +380,17 @@
               <table className="w-full text-left border-collapse whitespace-nowrap table-fixed">
                 <thead>
                   <tr className="bg-[#F8F7F3] text-gray-500 text-xs uppercase tracking-wider font-bold">
-                    {isSuperAdmin && <th className="py-3 px-5 w-12 text-center">選取</th>}
-                    <th className="py-3 px-5 w-28">對帳</th>
-                    <th className="py-3 px-5 w-40">戶別 / 買方</th>
-                    <th className="py-3 px-5 w-48">匯款資訊 (民國年)</th>
-                    <th className="py-3 px-5 w-48">備註</th>
+                    {isSuperAdmin && (
+                      <th className="py-3 px-5 w-10 text-center">
+                        <button onClick={handleToggleAll} className="text-gray-400 hover:text-blue-500 transition-colors" title="全選/取消全選">
+                          {isAllSelected ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} />}
+                        </button>
+                      </th>
+                    )}
+                    <th className="py-3 px-5 w-24">對帳</th>
+                    <th className="py-3 px-5 w-32">戶別 / 買方</th>
+                    <th className="py-3 px-5 w-64">匯款資訊 (民國年)</th>
+                    <th className="py-3 px-5 w-40">備註</th>
                     <th className="py-3 px-5 w-56">金額比對 ({stageLabel})</th>
                     <th className="py-3 px-5 w-32 text-sky-700">發票日期</th>
                     <th className="py-3 px-5 w-44 text-sky-700">發票號碼</th>
@@ -415,7 +434,12 @@
                           </div>
                           <div className="text-xs text-[#8BA39E] font-medium">{master ? master.buyer : '未識別'}</div>
                         </td>
-                        <td className="py-3 px-5"><div className="font-semibold">{toROC(sub.匯款日期)}</div><div className="text-[10px] text-gray-400 font-mono mt-1">帳號: {sub.帳號後五碼 || '無'}</div><div className="text-[10px] text-gray-400">戶名: {sub.匯款帳戶戶名 || '-'}</div></td>
+                        <td className="py-3 px-5">
+                          <div className="font-semibold">{toROC(sub.匯款日期)}</div>
+                          <div className="text-[10px] text-gray-400 font-mono mt-1">
+                            帳號: {sub.帳號後五碼 || '無'} &nbsp;|&nbsp; 戶名: {sub.匯款帳戶戶名 || '-'}
+                          </div>
+                        </td>
                         <td className="py-3 px-5">{sub.備註 ? (<div className="text-[11px] text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-pre-wrap max-w-[150px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}</td>
                         <td className="py-3 px-5">
                           <div className="flex items-center gap-2 font-bold text-lg">
