@@ -379,25 +379,25 @@
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse whitespace-nowrap table-fixed">
                 <thead>
-                  <tr className="bg-[#F8F7F3] text-gray-500 text-xs uppercase tracking-wider font-bold">
+                  <tr className="bg-[#F8F7F3] text-gray-500 text-xs uppercase tracking-wider font-medium">
                     {isSuperAdmin && (
-                      <th className="py-3 px-5 w-10 text-center">
+                      <th className="py-3 px-5 w-8 text-center">
                         <button onClick={handleToggleAll} className="text-gray-400 hover:text-blue-500 transition-colors" title="全選/取消全選">
                           {isAllSelected ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} />}
                         </button>
                       </th>
                     )}
-                    <th className="py-3 px-5 w-24">對帳</th>
-                    <th className="py-3 px-5 w-32">戶別 / 買方</th>
-                    <th className="py-3 px-5 w-64">匯款資訊 (民國年)</th>
-                    <th className="py-3 px-5 w-40">備註</th>
+                    <th className="py-3 px-5 w-20">對帳</th>
+                    <th className="py-3 px-5 w-28">戶別 / 買方</th>
+                    <th className="py-3 px-5 w-56">匯款資訊 (民國年)</th>
+                    <th className="py-3 px-5 w-40 text-left">備註</th>
                     <th className="py-3 px-5 w-56">金額比對 ({stageLabel})</th>
                     <th className="py-3 px-5 w-32 text-sky-700">發票日期</th>
                     <th className="py-3 px-5 w-44 text-sky-700">發票號碼</th>
                     <th className="py-3 px-5 w-20 text-center">管理</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-[15px] text-gray-700">
+                <tbody className="divide-y divide-gray-50 text-[15px] text-gray-700 font-normal">
                   {combinedRemittances.map((sub) => {
                     const master = masterUnits[sub.unitKey];
                     const baseExp = master?.stages?.[selectedStage] || 0;
@@ -426,23 +426,23 @@
                             </button>
                           </td>
                         )}
-                        <td className="py-3 px-5"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-5 h-5 text-[#8BA39E] rounded-md border-gray-300 focus:ring-0 cursor-pointer" /><span className={`font-bold transition-colors ${isRec ? 'text-green-600' : 'text-gray-400'}`}>{isRec ? '已對帳' : '待處理'}</span></label></td>
+                        <td className="py-3 px-5"><label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-5 h-5 text-[#8BA39E] rounded-md border-gray-300 focus:ring-0 cursor-pointer" /><span className={`transition-colors ${isRec ? 'text-green-600 font-medium' : 'text-gray-400'}`}>{isRec ? '已對帳' : '待處理'}</span></label></td>
                         <td className="py-3 px-5">
-                          <div className="font-bold text-gray-800 text-base flex items-center gap-2">
+                          <div className="text-gray-800 text-base flex items-center gap-2">
                             {master ? `${master.floor}${master.unit}` : sub.unitKey}
-                            {isDuplicate && <span className="bg-yellow-200 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded-full">重複</span>}
+                            {isDuplicate && <span className="bg-yellow-200 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded-full font-medium">重複</span>}
                           </div>
-                          <div className="text-xs text-[#8BA39E] font-medium">{master ? master.buyer : '未識別'}</div>
+                          <div className="text-xs text-[#8BA39E]">{master ? master.buyer : '未識別'}</div>
                         </td>
                         <td className="py-3 px-5">
-                          <div className="font-semibold">{toROC(sub.匯款日期)}</div>
+                          <div>{toROC(sub.匯款日期)}</div>
                           <div className="text-[10px] text-gray-400 font-mono mt-1">
                             帳號: {sub.帳號後五碼 || '無'} &nbsp;|&nbsp; 戶名: {sub.匯款帳戶戶名 || '-'}
                           </div>
                         </td>
                         <td className="py-3 px-5">{sub.備註 ? (<div className="text-[11px] text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-pre-wrap max-w-[150px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}</td>
                         <td className="py-3 px-5">
-                          <div className="flex items-center gap-2 font-bold text-lg">
+                          <div className="flex items-center gap-2 text-lg">
                             {isSuperAdmin ? (
                                 <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded border border-gray-200 focus-within:border-[#8BA39E] transition-colors">
                                     <span className="text-gray-400 text-sm">$</span>
@@ -457,7 +457,7 @@
                                                 updateRemittanceField(sub, '匯款金額', valToSave);
                                             }
                                         }}
-                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-lg font-bold"
+                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-lg"
                                     />
                                 </div>
                             ) : (
@@ -470,13 +470,13 @@
                               <XCircle size={18} className="text-orange-400" />
                             ) : null}
                           </div>
-                          <div className="text-[10px] text-gray-400 font-medium mt-1">
+                          <div className="text-[10px] text-gray-400 mt-1">
                             應收目標: ${totalExpected.toLocaleString()}
                             {selectedStage === '使照' && prepayExp > 0 && (<span className="text-blue-500 ml-1">(含預收 ${prepayExp.toLocaleString()})</span>)}
                           </div>
                         </td>
-                        <td className="py-3 px-5">{isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-1.5 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 bg-white w-28" />) : (<span className="text-gray-600 font-medium">{toROC(invData['發票日期']) || '-'}</span>)}</td>
-                        <td className="py-3 px-5">{isSuperAdmin ? (<div className="flex items-center gap-1"><Edit3 size={14} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-3 py-1.5 border border-gray-100 rounded-lg text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono font-medium">{invData['發票號碼'] || '-'}</span>)}</td>
+                        <td className="py-3 px-5">{isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-1.5 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 bg-white w-28" />) : (<span className="text-gray-600">{toROC(invData['發票日期']) || '-'}</span>)}</td>
+                        <td className="py-3 px-5">{isSuperAdmin ? (<div className="flex items-center gap-1"><Edit3 size={14} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-3 py-1.5 border border-gray-100 rounded-lg text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono">{invData['發票號碼'] || '-'}</span>)}</td>
                         <td className="py-3 px-5 text-center"><button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full"><Trash2 size={18} /></button></td>
                       </tr>
                     );
