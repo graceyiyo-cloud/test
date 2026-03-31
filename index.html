@@ -35,7 +35,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useMemo } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { CheckCircle, XCircle, Edit3, Lock, LogIn, LogOut, Trash2, AlertCircle, ShieldCheck, Loader2, Database, Users, Plus, X, User, MessageSquare } from 'lucide-react';
+    import { CheckCircle, XCircle, Edit3, Lock, LogIn, LogOut, Trash2, AlertCircle, ShieldCheck, Loader2, Database, Users, Plus, X, User, MessageSquare, Info, ListFilter } from 'lucide-react';
     import { initializeApp, getApps } from 'firebase/app';
     import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
     import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
@@ -187,12 +187,44 @@
       const [showUserPanel, setShowUserPanel] = useState(false);
       const [newNameInput, setNewNameInput] = useState('');
       const [newEmailInput, setNewEmailInput] = useState('');
+      const [showUnpaidModal, setShowUnpaidModal] = useState(false);
 
       const combinedRemittances = useMemo(() => {
         const p = pendingRems.map(r => ({ ...r, _isRec: false }));
         const r = reconciledRems.map(r => ({ ...r, _isRec: true }));
         return [...p, ...r].sort((a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0));
       }, [pendingRems, reconciledRems]);
+
+      // ==========================================
+      // 【核心修改】：繳款進度統計邏輯
+      // ==========================================
+      const stats = useMemo(() => {
+        // 1. 該期款應繳總戶數 (應收金額 > 0 的戶別)
+        const unitsToPay = Object.entries(masterUnits).filter(([key, data]) => (data.stages[selectedStage] || 0) > 0);
+        const totalToPayCount = unitsToPay.length;
+
+        // 2. 已繳戶別 Set (在 reconciledRems 中有紀錄的 unitKey)
+        const paidUnitKeys = new Set(reconciledRems.map(r => r.unitKey));
+        
+        // 3. 過濾出真正已完成繳費的戶數 (需在應繳清單中)
+        const paidUnits = unitsToPay.filter(([key]) => paidUnitKeys.has(key));
+        const paidCount = paidUnits.length;
+
+        // 4. 未繳清清單
+        const unpaidUnits = unitsToPay.filter(([key]) => !paidUnitKeys.has(key))
+                                    .map(([key, data]) => ({ key, ...data }))
+                                    .sort((a, b) => {
+                                      const parseF = (k) => parseInt(k.split('_')[0]) || 0;
+                                      return parseF(a.key) - parseF(b.key) || a.key.localeCompare(b.key);
+                                    });
+
+        return {
+          total: totalToPayCount,
+          paid: paidCount,
+          unpaid: totalToPayCount - paidCount,
+          unpaidList: unpaidUnits
+        };
+      }, [masterUnits, selectedStage, reconciledRems]);
 
       const updateInvoiceData = async (remittanceId, field, value) => {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices');
@@ -271,15 +303,69 @@
 
       return (
         <div className="py-6 px-4 sm:px-6 lg:px-8 font-sans max-w-[1500px] mx-auto animate-in fade-in duration-500">
+          
+          {/* 未繳款清單彈窗 */}
+          {showUnpaidModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="bg-[#8BA39E] p-6 text-white flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <ListFilter size={24} /> 未繳款名單
+                    </h3>
+                    <p className="text-xs opacity-80 mt-1">期款階段：{stageLabel}</p>
+                  </div>
+                  <button onClick={() => setShowUnpaidModal(false)} className="hover:bg-white/20 p-2 rounded-full transition-colors"><X size={24}/></button>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto p-2 bg-gray-50">
+                  <div className="grid grid-cols-1 gap-2">
+                    {stats.unpaidList.map(u => (
+                      <div key={u.key} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+                        <div className="font-bold text-gray-700 text-lg">{u.floor}{u.unit}</div>
+                        <div className="text-sm font-medium text-gray-500">{u.buyer}</div>
+                      </div>
+                    ))}
+                    {stats.unpaidList.length === 0 && <div className="p-10 text-center text-gray-400 font-bold">🎉 太棒了！本期款已全部繳清</div>}
+                  </div>
+                </div>
+                <div className="p-4 bg-white border-t text-center text-xs text-gray-400 font-medium">共計 {stats.unpaid} 戶未繳款</div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-green-50 p-2 rounded-lg text-green-600 shadow-inner"><ShieldCheck size={24}/></div>
               <div><h1 className="text-lg font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-sm text-gray-400 font-medium">{user.email} ({isSuperAdmin ? '最高管理員' : '獲授權人員'})</p></div>
             </div>
+            
+            {/* 統計面板 */}
+            <div className="flex items-center gap-2">
+              <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 shadow-inner">
+                <div className="px-4 py-2 text-center border-r border-gray-200">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">應繳</p>
+                  <p className="text-lg font-black text-gray-700">{stats.total}</p>
+                </div>
+                <div className="px-4 py-2 text-center border-r border-gray-200">
+                  <p className="text-[10px] text-green-400 font-bold uppercase tracking-wider">已對帳</p>
+                  <p className="text-lg font-black text-green-600">{stats.paid}</p>
+                </div>
+                <button 
+                  onClick={() => setShowUnpaidModal(true)}
+                  className="px-4 py-2 text-center hover:bg-orange-50 transition-colors rounded-r-xl group"
+                >
+                  <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider group-hover:underline">未繳款</p>
+                  <p className="text-lg font-black text-orange-500 flex items-center justify-center gap-1">
+                    {stats.unpaid} <Info size={14} className="opacity-40" />
+                  </p>
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-3">
-              {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '關閉人員管理' : '授權名單管理'}</button>)}
+              {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '人員管理' : '人員管理'}</button>)}
               <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-500">期款比對：</span>
+                <span className="text-sm font-bold text-gray-500">期款：</span>
                 <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer">{PAYMENT_STAGES.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}</select>
               </div>
               <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-all hover:bg-red-50 rounded-full"><LogOut size={20}/></button>
@@ -366,7 +452,6 @@
                             )}
                             {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={18} className="text-green-500" />) : totalExpected > 0 ? (<XCircle size={18} className="text-orange-400" />) : null}
                           </div>
-                          {/* 修改：應收目標顯示格式與字體大小 */}
                           <div className="text-xs text-gray-500 font-medium mt-1">
                             應收目標: ${totalExpected.toLocaleString()}
                             {selectedStage === '使照' && prepayExp > 0 && `(含預收 $${prepayExp.toLocaleString()})`}
