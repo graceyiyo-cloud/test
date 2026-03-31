@@ -26,8 +26,8 @@
     <!-- 靜態載入提示 -->
     <div id="initial-loading" class="min-h-screen flex items-center justify-center">
       <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#8BA39E]"></div>
-        <p class="mt-4 text-gray-400 font-bold text-lg">系統安全環境初始化中...</p>
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#8BA39E]"></div>
+        <p class="mt-4 text-gray-500 font-bold text-xl">系統安全環境初始化中...</p>
       </div>
     </div>
   </div>
@@ -41,7 +41,7 @@
     import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 
     // ==========================================
-    // 1. 設定固定管理員 (預設最高權限)
+    // 1. Firebase 配置 (與主系統共用)
     // ==========================================
     const FIXED_ADMIN = "jingchuantw@gmail.com";
 
@@ -60,6 +60,7 @@
     const provider = new GoogleAuthProvider();
     const appId = 'qingsenyuan-admin'; 
 
+    // 期款順序定義 (用於計算累積沖銷)
     const PAYMENT_STAGES = [
       { k: '訂金', l: '訂金' }, { k: '簽約', l: '簽約金' }, { k: '2F', l: '2F工程' },
       { k: '5F', l: '5F工程' }, { k: '7F', l: '7F工程' }, { k: '10F', l: '10F工程' },
@@ -144,9 +145,7 @@
                 if (isMaster) {
                   PAYMENT_STAGES.forEach(st => {
                     let contractAmt = 0, paidAmt = 0, unpaidAmt = NaN;
-                    // 使用正則表達式精確匹配，避免 2F 匹配到 12F
                     const stageRegex = new RegExp('(^|[^0-9])' + st.k + '($|[^0-9])');
-                    
                     Object.keys(row).forEach(rk => {
                       if (stageRegex.test(rk)) {
                         const val = parseFloat(String(row[rk] || '').replace(/,/g, ''));
@@ -156,7 +155,6 @@
                       }
                     });
                     const finalStageUnpaid = !isNaN(unpaidAmt) ? unpaidAmt : (contractAmt - paidAmt);
-                    
                     if (!units[key].stages[st.k]) units[key].stages[st.k] = { target: 0, balance: 0 };
                     units[key].stages[st.k].target += contractAmt;
                     units[key].stages[st.k].balance += finalStageUnpaid;
@@ -176,10 +174,10 @@
 
       const handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert("登入失敗: " + e.message); } };
 
-      if (isAuthLoading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><Loader2 className="animate-spin text-[#8BA39E] mb-4" size={48} /><p className="text-gray-500 font-bold text-lg">正在建立安全連線...</p></div>;
-      if (!user) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-8 border border-gray-100"><div className="flex justify-center"><div className="bg-[#8BA39E] p-5 rounded-2xl text-white shadow-lg"><Lock size={48} /></div></div><div><h1 className="text-3xl font-black text-gray-800 tracking-tight">瀞川日禾對帳管理中心</h1><p className="text-gray-400 text-base mt-2 font-medium tracking-wide">請登入您的 Google 帳號以存取後台</p></div><button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 border-b-4 border-b-gray-100 text-lg"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6"/> 使用 Google 帳號登入</button></div></div>;
-      if (!isAdmin) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-6 border border-red-100"><AlertCircle className="w-16 h-16 text-red-400 mx-auto" /><h2 className="text-2xl font-bold text-gray-800">權限不足</h2><p className="text-gray-500 text-base leading-relaxed">您的帳號 ({user.email}) 不在授權名單中。<br/>請聯繫系統負責人開通權限。</p><button onClick={() => signOut(auth)} className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors text-lg">登出並切換帳號</button></div></div>;
-      if (!isReady) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#8BA39E] mb-4"></div><p className="text-[#8BA39E] font-black text-xl">正在同步雲端資料庫...</p></div>;
+      if (isAuthLoading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><Loader2 className="animate-spin text-[#8BA39E] mb-4" size={56} /><p className="text-gray-500 font-bold text-xl">正在建立安全連線...</p></div>;
+      if (!user) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-12 rounded-[2.5rem] shadow-xl w-full max-w-md text-center space-y-8 border border-gray-100"><div className="flex justify-center"><div className="bg-[#8BA39E] p-6 rounded-3xl text-white shadow-lg"><Lock size={56} /></div></div><div><h1 className="text-3xl font-black text-gray-800 tracking-tight">瀞川日禾對帳管理中心</h1><p className="text-gray-400 text-lg mt-2 font-medium tracking-wide">請登入您的 Google 帳號以存取後台</p></div><button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 py-4 rounded-2xl font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 text-lg"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6"/> 使用 Google 帳號登入</button></div></div>;
+      if (!isAdmin) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-6 border border-red-100"><AlertCircle className="w-20 h-20 text-red-400 mx-auto" /><h2 className="text-2xl font-black text-gray-800">權限不足</h2><p className="text-gray-500 text-lg leading-relaxed">您的帳號 ({user.email}) 不在授權名單中。<br/>請聯繫系統負責人開通權限。</p><button onClick={() => signOut(auth)} className="w-full py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-colors text-lg">登出並切換帳號</button></div></div>;
+      if (!isReady) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#8BA39E] mb-4"></div><p className="text-[#8BA39E] font-black text-2xl">正在同步雲端資料庫...</p></div>;
 
       return <AdminDashboard 
         user={user} pendingRems={pendingRems} reconciledRems={reconciledRems} 
@@ -202,28 +200,37 @@
       }, [pendingRems, reconciledRems]);
 
       // ==========================================
-      // 【修復關鍵】：精確計算主系統繳款狀態
+      // 【核心邏輯】：計算款項沖銷狀態 (對齊主系統)
       // ==========================================
       const stats = useMemo(() => {
-        // 該期款應繳總戶數 (應收目標 > 0)
+        const stageIndex = PAYMENT_STAGES.findIndex(s => s.k === selectedStage);
+        const stagesToSum = PAYMENT_STAGES.slice(0, stageIndex + 1);
+
         const unitsToPay = Object.values(masterUnits).filter(u => (u.stages[selectedStage]?.target || 0) > 0);
         
-        // 整理目前本系統「已對帳」的戶別清單 (去掉底線與空白以便精確比對)
-        const localPaidKeys = new Set(reconciledRems.map(r => r.unitKey.replace(/[_ ]/g, '').toUpperCase()));
-        
-        // 已繳戶數判斷邏輯：母檔餘額為 0 OR 本系統已確認對帳
+        // 整理目前本系統「已對帳」紀錄中的實收總額 (按 unitKey 歸戶)
+        const localReceiptsMap = {};
+        reconciledRems.forEach(r => {
+          const normKey = r.unitKey.replace(/[_ ]/g, '').toUpperCase();
+          localReceiptsMap[normKey] = (localReceiptsMap[normKey] || 0) + (r.匯款金額 || 0);
+          // 如果是扣過款的，要把扣除的預收款加回來算入實收總額
+          if (r._prepayDeducted) {
+            localReceiptsMap[normKey] += (masterUnits[r.unitKey]?.prepayAmt || 0);
+          }
+        });
+
+        // 判斷是否繳清：計算累積應收目標
         const paidCount = unitsToPay.filter(u => {
           const normKey = `${u.floor}${u.unit}`.replace(/[_ ]/g, '').toUpperCase();
           const isExcelPaid = (u.stages[selectedStage]?.balance || 0) <= 0;
-          const isLocalConfirmed = localPaidKeys.has(normKey);
+          const isLocalConfirmed = localReceiptsMap[normKey] > 0; // 只要本系統有入帳紀錄也算已對帳
           return isExcelPaid || isLocalConfirmed;
         }).length;
         
-        // 未繳清名單
         const unpaidUnits = unitsToPay.filter(u => {
           const normKey = `${u.floor}${u.unit}`.replace(/[_ ]/g, '').toUpperCase();
           const isExcelPaid = (u.stages[selectedStage]?.balance || 0) <= 0;
-          const isLocalConfirmed = localPaidKeys.has(normKey);
+          const isLocalConfirmed = localReceiptsMap[normKey] > 0;
           return !isExcelPaid && !isLocalConfirmed;
         }).sort((a, b) => {
           const parseF = (u) => parseInt(u.floor) || 0;
@@ -248,9 +255,7 @@
         const list = rem._isRec ? reconciledRems : pendingRems;
         const ref = doc(db, 'artifacts', appId, 'public', 'data', 'custom', path);
         const updatedList = list.map(r => r.id === rem.id ? { ...r, [field]: value } : r);
-        try {
-          await setDoc(ref, { remittances: updatedList }, { merge: true });
-        } catch (e) { alert("金額更新失敗"); }
+        try { await setDoc(ref, { remittances: updatedList }, { merge: true }); } catch (e) { alert("金額更新失敗"); }
       };
 
       const handleToggleReconcile = async (rem, checked) => {
@@ -263,7 +268,6 @@
           if (selectedStage === '使照' && master?.prepayAmt > 0 && !cleanRem._prepayDeducted) {
             cleanRem.匯款金額 = Math.max(0, cleanRem.匯款金額 - master.prepayAmt);
             cleanRem._prepayDeducted = true; 
-            // 系統記錄原始金額於備註
             cleanRem.備註 = (cleanRem.備註 ? cleanRem.備註 + ' | ' : '') + `原始匯款: $${rem.匯款金額.toLocaleString()} (扣預收 $${master.prepayAmt.toLocaleString()})`;
           }
           try {
@@ -276,11 +280,8 @@
           if (selectedStage === '使照' && master?.prepayAmt > 0 && cleanRem._prepayDeducted) {
             cleanRem.匯款金額 = cleanRem.匯款金額 + master.prepayAmt;
             cleanRem._prepayDeducted = false; 
-            // 嘗試還原備註
             if (cleanRem.備註 && cleanRem.備註.includes(' | 原始匯款:')) {
                 cleanRem.備註 = cleanRem.備註.split(' | 原始匯款:')[0];
-            } else if (cleanRem.備註 && cleanRem.備註.includes('原始匯款:')) {
-                cleanRem.備註 = '';
             }
           }
           try {
@@ -322,115 +323,108 @@
       const isSuperAdmin = user.email.toLowerCase() === FIXED_ADMIN.toLowerCase();
 
       return (
-        <div className="py-6 px-4 sm:px-6 lg:px-8 font-sans max-w-[1500px] mx-auto animate-in fade-in duration-500">
+        <div className="py-6 px-4 sm:px-6 lg:px-8 font-sans max-w-[1600px] mx-auto animate-in fade-in duration-500">
           
-          {/* 未繳款清單彈窗 */}
+          {/* 未繳款名單彈窗 */}
           {showUnpaidModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="bg-[#8BA39E] p-6 text-white flex justify-between items-center">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+              <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="bg-[#8BA39E] p-8 text-white flex justify-between items-center">
                   <div>
-                    <h3 className="text-2xl font-black flex items-center gap-2">
-                      <ListFilter size={24} /> 未繳款名單
-                    </h3>
-                    <p className="text-base opacity-80 mt-1">期款目標：{stageLabel}</p>
+                    <h3 className="text-3xl font-black flex items-center gap-3"><ListFilter size={32} /> 未繳款名單</h3>
+                    <p className="text-lg opacity-80 mt-2">期款目標：{stageLabel} (與主系統同步)</p>
                   </div>
-                  <button onClick={() => setShowUnpaidModal(false)} className="hover:bg-white/20 p-2 rounded-full transition-colors"><X size={28}/></button>
+                  <button onClick={() => setShowUnpaidModal(false)} className="hover:bg-white/20 p-3 rounded-full transition-colors"><X size={36}/></button>
                 </div>
-                <div className="max-h-[60vh] overflow-y-auto p-4 bg-gray-50">
-                  <div className="grid grid-cols-1 gap-2">
+                <div className="max-h-[65vh] overflow-y-auto p-6 bg-gray-50">
+                  <div className="grid grid-cols-1 gap-3">
                     {stats.unpaidList.map(u => (
-                      <div key={`${u.floor}_${u.unit}`} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
-                        <div className="font-black text-gray-700 text-xl">{u.floor}{u.unit}</div>
-                        <div className="text-base font-bold text-gray-500">{u.buyer}</div>
+                      <div key={`${u.floor}_${u.unit}`} className="bg-white p-5 rounded-2xl border-2 border-transparent hover:border-[#8BA39E]/30 flex justify-between items-center shadow-sm transition-all">
+                        <div className="font-black text-gray-800 text-2xl tracking-tighter">{u.floor}{u.unit}</div>
+                        <div className="text-xl font-bold text-gray-500">{u.buyer}</div>
                       </div>
                     ))}
-                    {stats.unpaidList.length === 0 && <div className="p-12 text-center text-gray-400 font-bold text-lg">🎉 本階段已全部繳清！</div>}
+                    {stats.unpaidList.length === 0 && <div className="p-16 text-center text-gray-400 font-black text-2xl italic">🎉 全部繳清囉！</div>}
                   </div>
                 </div>
-                <div className="p-4 bg-white border-t text-center text-sm text-gray-400 font-black tracking-widest uppercase">
+                <div className="p-6 bg-white border-t text-center text-gray-400 font-black tracking-widest text-lg">
                   主系統顯示共計 {stats.unpaid} 戶未繳清
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row justify-between items-center mb-6 gap-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-50 p-3 rounded-2xl text-green-600 shadow-inner"><ShieldCheck size={32}/></div>
+          <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col xl:flex-row justify-between items-center mb-8 gap-8">
+            <div className="flex items-center gap-5">
+              <div className="bg-green-50 p-4 rounded-3xl text-green-600 shadow-inner"><ShieldCheck size={40}/></div>
               <div>
-                <h1 className="text-2xl font-black text-gray-800 tracking-tight">瀞川日禾對帳管理中心</h1>
-                <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">{isSuperAdmin ? '最高管理員' : '獲授權人員'} · {user.email}</p>
+                <h1 className="text-3xl font-black text-gray-800 tracking-tighter">瀞川日禾對帳管理中心</h1>
+                <p className="text-base text-gray-400 font-bold uppercase tracking-widest">{isSuperAdmin ? '系統管理員' : '財務授權同仁'} · {user.email}</p>
               </div>
             </div>
             
-            {/* 統計面板 */}
-            <div className="flex items-center gap-2">
-              <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
-                <div className="px-6 py-2 text-center border-r border-gray-200">
-                  <p className="text-xs text-gray-400 font-black uppercase tracking-widest mb-0.5">應繳戶數</p>
-                  <p className="text-2xl font-black text-gray-700 leading-none">{stats.total}</p>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-gray-100/50 p-2 rounded-3xl border-2 border-gray-50 shadow-inner">
+                <div className="px-8 py-2 text-center border-r-2 border-gray-200/50">
+                  <p className="text-xs text-gray-400 font-black uppercase tracking-widest mb-1">應繳戶數</p>
+                  <p className="text-3xl font-black text-gray-700 leading-none">{stats.total}</p>
                 </div>
-                <div className="px-6 py-2 text-center border-r border-gray-200">
-                  <p className="text-xs text-green-400 font-black uppercase tracking-widest mb-0.5">已對帳</p>
-                  <p className="text-2xl font-black text-green-600 leading-none">{stats.paid}</p>
+                <div className="px-8 py-2 text-center border-r-2 border-gray-200/50">
+                  <p className="text-xs text-green-500 font-black uppercase tracking-widest mb-1">主系統已收</p>
+                  <p className="text-3xl font-black text-green-600 leading-none">{stats.paid}</p>
                 </div>
-                <button 
-                  onClick={() => setShowUnpaidModal(true)}
-                  className="px-6 py-2 text-center hover:bg-orange-50 transition-colors rounded-r-xl group"
-                >
-                  <p className="text-xs text-orange-400 font-black uppercase tracking-widest mb-0.5 group-hover:underline">未繳款</p>
-                  <p className="text-2xl font-black text-orange-500 flex items-center justify-center gap-1 leading-none">
-                    {stats.unpaid} <Info size={18} className="opacity-40" />
+                <button onClick={() => setShowUnpaidModal(true)} className="px-8 py-2 text-center hover:bg-orange-50 transition-colors rounded-2xl group">
+                  <p className="text-xs text-orange-500 font-black uppercase tracking-widest mb-1 group-hover:underline">主系統未收</p>
+                  <p className="text-3xl font-black text-orange-600 flex items-center justify-center gap-2 leading-none">
+                    {stats.unpaid} <Info size={24} className="opacity-30" />
                   </p>
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-5 py-2.5 rounded-xl text-base font-bold transition-all shadow-sm ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={20} /> 人員管理</button>)}
-              <div className="bg-gray-50 px-5 py-2.5 rounded-xl border border-gray-100 flex items-center gap-2 shadow-sm">
-                <span className="text-base font-bold text-gray-500 whitespace-nowrap">期款目標：</span>
-                <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="bg-transparent text-lg font-black text-gray-800 outline-none cursor-pointer">{PAYMENT_STAGES.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}</select>
+            <div className="flex items-center gap-4">
+              {isSuperAdmin && (<button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-lg font-black transition-all shadow-md ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={24} /> 人員管理</button>)}
+              <div className="bg-gray-100/50 px-6 py-3 rounded-2xl border-2 border-gray-50 flex items-center gap-3 shadow-sm">
+                <span className="text-lg font-black text-gray-500 whitespace-nowrap">期別：</span>
+                <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="bg-transparent text-xl font-black text-gray-800 outline-none cursor-pointer">{PAYMENT_STAGES.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}</select>
               </div>
-              <button onClick={handleLogout} className="p-3 text-gray-400 hover:text-red-500 transition-all hover:bg-red-50 rounded-full"><LogOut size={28}/></button>
+              <button onClick={handleLogout} className="p-4 text-gray-400 hover:text-red-500 transition-all hover:bg-red-50 rounded-full"><LogOut size={36}/></button>
             </div>
           </div>
 
           {isSuperAdmin && showUserPanel && (
-            <div className="bg-white p-8 rounded-3xl shadow-md border-2 border-orange-100 mb-6 animate-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 mb-6 text-orange-600"><Users size={28} /><h2 className="font-black text-xl text-orange-600">授權名單管理</h2></div>
-              <div className="flex flex-col md:flex-row gap-4 mb-8">
-                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-5 py-3.5 border-2 border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-orange-200 text-lg font-bold" />
-                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-5 py-3.5 border-2 border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-orange-200 text-lg font-bold" />
-                <button onClick={handleAddUser} className="bg-orange-500 text-white px-10 py-3.5 rounded-2xl font-black hover:bg-orange-600 flex items-center justify-center gap-2 text-lg shadow-md transition-transform active:scale-95"><Plus size={24}/> 加入授權</button>
+            <div className="bg-white p-10 rounded-[3rem] shadow-md border-2 border-orange-100 mb-8 animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3 mb-8 text-orange-600"><Users size={32} /><h2 className="font-black text-2xl">授權名單管理</h2></div>
+              <div className="flex flex-col md:flex-row gap-5 mb-10">
+                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-6 py-4 border-2 border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-orange-100 text-xl font-bold" />
+                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-6 py-4 border-2 border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-orange-100 text-xl font-bold" />
+                <button onClick={handleAddUser} className="bg-orange-500 text-white px-12 py-4 rounded-2xl font-black hover:bg-orange-600 flex items-center justify-center gap-2 text-xl shadow-lg transition-transform active:scale-95"><Plus size={28}/> 加入授權</button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div className="p-5 bg-gray-50 rounded-2xl border-2 border-transparent flex justify-between items-center opacity-60"><div className="flex flex-col"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">系統管理員</span><span className="text-base font-black text-gray-600 leading-none">{FIXED_ADMIN}</span></div><span className="text-xs bg-gray-200 px-2 py-1 rounded-lg font-black">預設</span></div>
-                {cloudAuthorizedUsers.map(u => (<div key={u.email} className="p-5 bg-orange-50/30 rounded-2xl border-2 border-orange-100 flex justify-between items-center group"><div className="flex flex-col overflow-hidden"><span className="text-xs font-black text-orange-400 uppercase tracking-widest mb-1 leading-none">{u.name}</span><span className="text-base font-black text-gray-700 truncate leading-none">{u.email}</span></div><button onClick={() => handleRemoveUser(u)} className="text-red-300 hover:text-red-500 transition-colors ml-2 bg-white p-1.5 rounded-full shadow-sm"><X size={20} /></button></div>))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="p-6 bg-gray-50 rounded-3xl border-2 border-transparent flex justify-between items-center opacity-60"><div className="flex flex-col"><span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">最高權限</span><span className="text-lg font-black text-gray-600">{FIXED_ADMIN}</span></div><span className="text-sm bg-gray-200 px-3 py-1 rounded-xl font-black">預設</span></div>
+                {cloudAuthorizedUsers.map(u => (<div key={u.email} className="p-6 bg-orange-50/30 rounded-3xl border-2 border-orange-100 flex justify-between items-center group"><div className="flex flex-col overflow-hidden"><span className="text-xs font-black text-orange-400 uppercase tracking-widest mb-1">{u.name}</span><span className="text-lg font-black text-gray-700 truncate">{u.email}</span></div><button onClick={() => handleRemoveUser(u)} className="text-red-300 hover:text-red-500 transition-colors ml-3 bg-white p-2 rounded-full shadow-sm"><X size={24} /></button></div>))}
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-[3rem] shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
-                  <tr className="bg-[#F8F7F3] text-gray-400 text-xs uppercase tracking-widest font-black">
-                    <th className="px-6 py-5">對帳</th>
-                    <th className="px-6 py-5">戶別 / 買方</th>
-                    <th className="px-6 py-5">匯款資訊 (民國年)</th>
-                    <th className="px-6 py-5">備註</th>
-                    <th className="px-6 py-5">金額比對 ({stageLabel})</th>
-                    <th className="px-6 py-5 text-sky-700">發票日期</th>
-                    <th className="px-6 py-5 text-sky-700">發票號碼</th>
-                    <th className="px-6 py-5 text-center">管理</th>
+                  <tr className="bg-[#F8F7F3] text-gray-400 text-sm uppercase tracking-widest font-black">
+                    <th className="px-8 py-6 text-center">對帳</th>
+                    <th className="px-8 py-6">戶別 / 買方</th>
+                    <th className="px-8 py-6">匯款資訊 (民國年)</th>
+                    <th className="px-8 py-6">備註</th>
+                    <th className="px-8 py-6">金額比對 ({stageLabel})</th>
+                    <th className="px-8 py-6 text-sky-700">發票日期</th>
+                    <th className="px-8 py-6 text-sky-700">發票號碼</th>
+                    <th className="px-8 py-6 text-center">管理</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 text-base text-gray-700 font-bold">
+                <tbody className="divide-y divide-gray-50 text-xl text-gray-700 font-bold">
                   {combinedRemittances.map((sub) => {
                     const master = masterUnits[sub.unitKey];
-                    // 改為抓取精確餘額
                     const baseExp = master?.stages?.[selectedStage]?.balance || 0;
                     const prepayExp = (selectedStage === '使照') ? (master?.prepayAmt || 0) : 0;
                     const totalExpected = baseExp + prepayExp;
@@ -441,28 +435,28 @@
 
                     return (
                       <tr key={sub.id} className="hover:bg-gray-50/50 transition-colors group">
-                        <td className="px-6 py-3">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-6 h-6 text-[#8BA39E] rounded-lg border-gray-300 focus:ring-0 cursor-pointer shadow-sm" />
-                            <span className={`font-black text-base transition-colors ${isRec ? 'text-green-600' : 'text-gray-300'}`}>{isRec ? '已完成' : '待處理'}</span>
+                        <td className="px-8 py-4 text-center">
+                          <label className="flex items-center justify-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked={isRec} onChange={(e) => handleToggleReconcile(sub, e.target.checked)} className="w-8 h-8 text-[#8BA39E] rounded-xl border-gray-300 focus:ring-0 cursor-pointer shadow-sm transition-transform active:scale-90" />
+                            <span className={`font-black text-lg transition-colors ${isRec ? 'text-green-600' : 'text-gray-300'}`}>{isRec ? '已對帳' : '待對帳'}</span>
                           </label>
                         </td>
-                        <td className="px-6 py-3">
-                          <div className="font-black text-gray-800 text-lg leading-tight">{master ? `${master.floor}${master.unit}` : sub.unitKey}</div>
-                          <div className="text-sm text-[#8BA39E] font-black mt-1 uppercase tracking-widest">{master ? master.buyer : '未識別'}</div>
+                        <td className="px-8 py-4">
+                          <div className="font-black text-gray-800 text-2xl leading-none tracking-tighter">{master ? `${master.floor}${master.unit}` : sub.unitKey}</div>
+                          <div className="text-lg text-[#8BA39E] font-black mt-2 uppercase tracking-tighter">{master ? master.buyer : '未識別'}</div>
                         </td>
-                        <td className="px-6 py-3">
-                          <div className="font-black text-base leading-none">{toROC(sub.匯款日期)}</div>
-                          <div className="text-xs text-gray-400 font-mono mt-2 leading-none font-bold">帳號: {sub.帳號後五碼 || '無'} | {sub.匯款帳戶戶名 || '-'}</div>
+                        <td className="px-8 py-4">
+                          <div className="font-black text-xl leading-none">{toROC(sub.匯款日期)}</div>
+                          <div className="text-sm text-gray-400 font-mono mt-2 leading-none font-bold">帳號: {sub.帳號後五碼 || '無'} | {sub.匯款帳戶戶名 || '-'}</div>
                         </td>
-                        <td className="px-6 py-3">
-                          {sub.備註 ? (<div className="text-xs text-blue-600 bg-blue-50/50 px-3 py-2 rounded-xl border border-blue-100 whitespace-normal max-w-[200px] leading-relaxed font-black shadow-sm">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}
+                        <td className="px-8 py-4">
+                          {sub.備註 ? (<div className="text-sm text-blue-600 bg-blue-50/50 px-4 py-3 rounded-2xl border border-blue-100 whitespace-normal max-w-[220px] leading-relaxed font-black shadow-inner">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}
                         </td>
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-2 font-black">
+                        <td className="px-8 py-4">
+                          <div className="flex items-center gap-3 font-black">
                             {isSuperAdmin ? (
-                                <div className="flex items-center gap-1.5 bg-gray-100/50 px-3 py-1.5 rounded-2xl border-2 border-transparent focus-within:border-[#8BA39E] focus-within:bg-white transition-all shadow-inner">
-                                    <span className="text-gray-400 text-sm font-black">$</span>
+                                <div className="flex items-center gap-2 bg-gray-100/50 px-4 py-2 rounded-2xl border-2 border-transparent focus-within:border-[#8BA39E] focus-within:bg-white transition-all shadow-inner">
+                                    <span className="text-gray-400 text-lg font-black">$</span>
                                     <input 
                                         type="number"
                                         defaultValue={currentDisplayAmt}
@@ -471,34 +465,33 @@
                                             const valToSave = (sub._isRec && sub._prepayDeducted) ? (newVal - (master?.prepayAmt || 0)) : newVal;
                                             if (valToSave !== sub.匯款金額) { updateRemittanceField(sub, '匯款金額', valToSave); }
                                         }}
-                                        className="w-32 bg-transparent outline-none text-[#4A4A4A] text-lg font-black"
+                                        className="w-36 bg-transparent outline-none text-[#4A4A4A] text-xl font-black"
                                     />
                                 </div>
                             ) : (
-                                <span className="text-[#4A4A4A] text-xl font-black">${currentDisplayAmt?.toLocaleString()}</span>
+                                <span className="text-[#4A4A4A] text-2xl font-black">${currentDisplayAmt?.toLocaleString()}</span>
                             )}
-                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={24} className="text-green-500 drop-shadow-sm" />) : totalExpected > 0 ? (<XCircle size={24} className="text-orange-400 drop-shadow-sm" />) : null}
+                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (<CheckCircle size={32} className="text-green-500 drop-shadow-sm" />) : totalExpected > 0 ? (<XCircle size={32} className="text-orange-400 drop-shadow-sm" />) : null}
                           </div>
-                          {/* 修改：應收目標精確顯示 */}
-                          <div className="text-xs text-gray-500 font-black mt-2 tracking-tight uppercase">
-                            應收目標: ${totalExpected.toLocaleString()}{selectedStage === '使照' && prepayExp > 0 && `(含預收 $${prepayExp.toLocaleString()})`}
+                          <div className="text-base text-gray-500 font-black mt-2 tracking-tighter uppercase">
+                            應收目標: ${totalExpected.toLocaleString()}{selectedStage === '使照' && prepayExp > 0 && `(含預收$${prepayExp.toLocaleString()})`}
                           </div>
                         </td>
-                        <td className="px-6 py-3">
-                          {isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-2 border-2 border-gray-100 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-sky-200 focus:bg-sky-50 transition-all bg-white w-32" />) : (<span className="text-gray-600 font-black text-base">{toROC(invData['發票日期']) || '-'}</span>)}
+                        <td className="px-8 py-4">
+                          {isSuperAdmin ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-4 py-2 border-2 border-gray-100 rounded-2xl text-lg font-black outline-none focus:ring-2 focus:ring-sky-200 focus:bg-sky-50 transition-all bg-white w-36" />) : (<span className="text-gray-600 font-black text-xl">{toROC(invData['發票日期']) || '-'}</span>)}
                         </td>
-                        <td className="px-6 py-3">
-                          {isSuperAdmin ? (<div className="flex items-center gap-2"><Edit3 size={18} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-40 px-3 py-2 border-2 border-gray-100 rounded-xl text-sm font-mono font-black outline-none uppercase bg-white focus:ring-2 focus:ring-sky-200 focus:bg-sky-50 transition-all" /></div>) : (<span className="text-gray-600 font-mono font-black text-base tracking-wider">{invData['發票號碼'] || '-'}</span>)}
+                        <td className="px-8 py-4">
+                          {isSuperAdmin ? (<div className="flex items-center gap-2"><Edit3 size={24} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-48 px-4 py-2 border-2 border-gray-100 rounded-2xl text-lg font-mono font-black outline-none uppercase bg-white focus:ring-2 focus:ring-sky-200 focus:bg-sky-50 transition-all" /></div>) : (<span className="text-gray-600 font-mono font-black text-xl tracking-wider">{invData['發票號碼'] || '-'}</span>)}
                         </td>
-                        <td className="px-6 py-3 text-center">
-                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-2.5 hover:bg-red-50 rounded-full group-hover:scale-110 active:scale-95"><Trash2 size={24} /></button>
+                        <td className="px-8 py-4 text-center">
+                          <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-3 hover:bg-red-50 rounded-full group-hover:scale-110 active:scale-95"><Trash2 size={32} /></button>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              {combinedRemittances.length === 0 && <div className="p-40 text-center flex flex-col items-center gap-4"><Database size={64} className="text-gray-100" /><p className="text-gray-300 font-black text-2xl tracking-widest uppercase">目前無匯款回報紀錄</p></div>}
+              {combinedRemittances.length === 0 && <div className="p-48 text-center flex flex-col items-center gap-6"><Database size={80} className="text-gray-100" /><p className="text-gray-300 font-black text-3xl tracking-widest uppercase">目前無匯款回報紀錄</p></div>}
             </div>
           </div>
         </div>
