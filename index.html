@@ -56,7 +56,7 @@
   <script type="text/babel" data-type="module">
     import React, { useState, useEffect, useMemo, useRef } from 'react';
     import { createRoot } from 'react-dom/client';
-    import { Upload, Search, X, Home, User, Phone, MapPin, FileText, DollarSign, Layers, Cloud, RefreshCw, Plus, LogIn, LogOut, AlertCircle, Trash2, Database, ShieldAlert, ChevronUp, ChevronDown, TrendingUp, CreditCard, Clock, Hammer, PieChart, Save, Lock, Download, CheckSquare, Info } from 'lucide-react';
+    import { Upload, Search, X, Home, User, Phone, MapPin, FileText, DollarSign, Layers, Cloud, RefreshCw, Plus, LogIn, LogOut, AlertCircle, Trash2, Database, ShieldAlert, ChevronUp, ChevronDown, TrendingUp, CreditCard, Clock, Hammer, PieChart, Save, Lock, Download, CheckSquare, Info, Users } from 'lucide-react';
     import { initializeApp } from 'firebase/app';
     import { getAuth, onAuthStateChanged, signInWithCustomToken, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
     import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -199,6 +199,7 @@
       const [showAddUnitModal, setShowAddUnitModal] = useState(false);
       const [showAuthModal, setShowAuthModal] = useState(false); // 權限管理視窗
       const [showUnpaidDetails, setShowUnpaidDetails] = useState(false); // 催收細節視窗
+      const [expandedStage, setExpandedStage] = useState(null); // 目前展開明細的階段
       
       const [user, setUser] = useState(null);
       const [cloudStatus, setCloudStatus] = useState("idle"); 
@@ -478,7 +479,7 @@
                     if (rem >= exp) { paid = exp; rem -= exp; }
                     else { paid = rem; rem = 0; }
 
-                    stageStatus[st.k] = { exp, paid, unpaid: exp > 0 ? exp - paid : 0 };
+                    stageStatus[st.k] = { exp, paid, unpaid: exp > 0 ? exp - paid : 0, buyer: uInfo.b };
                 });
 
                 statusMap[key] = stageStatus;
@@ -787,7 +788,7 @@
                   <div className="flex flex-col">
                     <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
                       未收餘額
-                      <button onClick={() => setShowUnpaidDetails(!showUnpaidDetails)} className="text-orange-500 hover:text-orange-700 transition-all active:scale-90" title="查看催收概況">
+                      <button onClick={() => {setShowUnpaidDetails(!showUnpaidDetails); setExpandedStage(null);}} className="text-orange-500 hover:text-orange-700 transition-all active:scale-90" title="查看催收概況">
                         <AlertCircle size={10} />
                       </button>
                     </span>
@@ -796,23 +797,54 @@
                   
                   {/* 催收概況卡片 (點開才出現) */}
                   {showUnpaidDetails && (
-                    <div className="absolute top-full left-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-orange-100 z-[70] p-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="absolute top-full left-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-orange-100 z-[70] p-4 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
                       <div className="flex justify-between items-center border-b border-orange-50 pb-2">
-                        <h4 className="text-[11px] font-bold text-orange-600 flex items-center gap-1"><Search size={12}/>催收清單 (戶數)</h4>
+                        <h4 className="text-[11px] font-bold text-orange-600 flex items-center gap-1"><Search size={12}/>催收清單 (點擊查戶別)</h4>
                         <button onClick={() => setShowUnpaidDetails(false)} className="text-gray-300 hover:text-gray-500"><X size={12}/></button>
                       </div>
-                      <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
+                      <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
                         {PAYMENT_STAGES.map(st => {
                           const count = stageUnpaidCounts[st.k] || 0;
+                          const isExp = expandedStage === st.k;
+                          
+                          // 找出該階段未繳的戶別列表
+                          const unpaidUnits = isExp ? Object.entries(allUnitsPaymentStatus)
+                            .filter(([_, status]) => status[st.k]?.unpaid > 0)
+                            .map(([uKey, status]) => {
+                                const [f, u] = uKey.split('_');
+                                return { label: `${f}F-${u}`, buyer: status[st.k].buyer };
+                            }) : [];
+
                           return (
-                            <div key={st.k} className={`flex justify-between items-center text-[10px] px-2 py-1 rounded-md ${count > 0 ? 'bg-orange-50' : 'bg-gray-50'}`}>
-                              <span className={count > 0 ? 'text-orange-700 font-medium' : 'text-gray-400'}>{st.l}</span>
-                              <span className={`font-bold ${count > 0 ? 'text-orange-600' : 'text-gray-300'}`}>{count}</span>
+                            <div key={st.k} className="flex flex-col gap-1">
+                              <button 
+                                onClick={() => setExpandedStage(isExp ? null : st.k)}
+                                className={`w-full flex justify-between items-center text-[10px] px-2 py-1.5 rounded-md transition-all ${count > 0 ? (isExp ? 'bg-orange-100 text-orange-800' : 'bg-orange-50 hover:bg-orange-100 text-orange-700') : 'bg-gray-50 text-gray-400 cursor-default'}`}>
+                                <span className="font-medium flex items-center gap-1">
+                                    {st.l}
+                                    {count > 0 && (isExp ? <ChevronUp size={10}/> : <ChevronDown size={10}/>)}
+                                </span>
+                                <span className={`font-bold ${count > 0 ? 'text-orange-600' : 'text-gray-300'}`}>{count}</span>
+                              </button>
+                              
+                              {isExp && count > 0 && (
+                                <div className="mx-1 p-2 bg-white border border-orange-100 rounded-lg shadow-inner animate-in slide-in-from-top-1">
+                                    <div className="text-[9px] font-bold text-orange-400 mb-1 border-b border-orange-50 pb-1 flex items-center gap-1"><Users size={10}/>未繳戶名單：</div>
+                                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto scrollbar-hide select-text">
+                                        {unpaidUnits.map((u, idx) => (
+                                            <div key={idx} className="bg-gray-50 text-[9px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-600 whitespace-nowrap">
+                                                {u.label}<span className="text-gray-400 ml-1">({u.buyer || '無'})</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-2 text-[8px] text-gray-400 italic text-right">可直接選取文字複製</div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
                       </div>
-                      <div className="text-[9px] text-gray-400 text-center pt-1 italic">※僅計應付大於0且未付清之戶數</div>
+                      <div className="text-[9px] text-gray-400 text-center pt-1 italic border-t border-orange-50">※僅計應付大於0且未付清之戶數</div>
                     </div>
                   )}
                 </div>
@@ -1007,7 +1039,7 @@
                     <div className="overflow-x-auto"><table className="w-full text-xs border-separate border-spacing-y-1.5"><thead><tr className="text-gray-400 font-bold"><th className="text-center py-2">階段</th><th className="text-center px-2">房屋款</th><th className="text-center px-2">土地款</th><th className="text-center px-2">應付合計</th><th className="text-center px-2 text-[#8C9B90]">已收實沖</th><th className="text-center px-2 text-red-500">尚欠餘額</th><th className="text-center">狀態</th></tr></thead><tbody>
                       {(() => {
                         const house = selectedUnit.財務款項.house || {};
-                        const land = details.財務款項.land || {}; // 注意：修正 detail 變數引用
+                        const land = selectedUnit.財務款項.land || {};
                         const receipts = (selectedUnit.匯款紀錄 || []).reduce((s,r) => s + (parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0), 0);
                         const charges = (selectedUnit.客變紀錄 || []).reduce((s,r) => s + (Number(r.客變金額)||0), 0);
                         let rem = receipts;
