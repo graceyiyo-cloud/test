@@ -203,6 +203,17 @@
                         <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><p class="text-lg font-bold text-rose-400" id="yExp">$0</p></div>
                         <div><p class="text-[10px] text-emerald-600 font-bold mb-1">年度淨利</p><p class="text-lg font-bold text-emerald-700" id="yNet">$0</p></div>
                     </div>
+
+                    <!-- 年度 PASS 案件分類統計 -->
+                    <div id="passYearSummarySection" class="mt-3 pt-3 border-t border-indigo-100 bg-indigo-50/20 -mx-5 px-5 hidden">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (年度)
+                            </h3>
+                            <span class="text-[10px] text-indigo-400 font-bold" id="passYearTotal">總額 $0</span>
+                        </div>
+                        <div id="passYearSummaryList" class="grid grid-cols-2 gap-2 pb-2"></div>
+                    </div>
                 </div>
 
                 <div class="border-t border-slate-100 pt-4">
@@ -215,17 +226,17 @@
                         <div><p class="text-[10px] text-slate-400 mb-1">本月支出</p><p class="text-lg font-bold text-rose-400" id="mExp">$0</p></div>
                         <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-lg font-bold text-emerald-700" id="mNet">$0</p></div>
                     </div>
-                </div>
-
-                <!-- PASS 案件分類統計 -->
-                <div id="passSummarySection" class="border-t border-indigo-100 pt-4 bg-indigo-50/20 -mx-5 px-5 hidden">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                            <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (月度)
-                        </h3>
-                        <span class="text-[10px] text-indigo-400 font-bold" id="passMonthTotal">總額 $0</span>
+                    
+                    <!-- 月度 PASS 案件分類統計 -->
+                    <div id="passSummarySection" class="mt-3 pt-3 border-t border-indigo-100 bg-indigo-50/20 -mx-5 px-5 hidden">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (月度)
+                            </h3>
+                            <span class="text-[10px] text-indigo-400 font-bold" id="passMonthTotal">總額 $0</span>
+                        </div>
+                        <div id="passSummaryList" class="grid grid-cols-2 gap-2 pb-2"></div>
                     </div>
-                    <div id="passSummaryList" class="grid grid-cols-2 gap-2 pb-2"></div>
                 </div>
 
                 <div id="unpaidSection" class="border-t border-amber-100 pt-4 bg-amber-50/30 -mx-5 px-5 pb-2 hidden">
@@ -553,6 +564,7 @@
             let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
             let mUnpaidDetails = []; 
             let mPassSummary = {}; // 月度 PASS 統計
+            let yPassSummary = {}; // 年度 PASS 統計
             
             const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
             const filterMonthName = mon ? mon.split('-')[1] : (new Date().getMonth() + 1).toString().padStart(2, '0');
@@ -567,28 +579,75 @@
             const baseFiltered = allRecords.filter(i => {
                 const iY = i.bookingTime.split('-')[0];
                 const iM = i.bookingTime.substring(0, 7);
-                if (iY === filterYear) { yRev += i.totalAmount; yExp += i.assistantPay; yAc += (i.acCount || 0); yWm += (i.wmCount || 0); yWt += (i.wtCount || 0); }
+                const iQty = (i.acCount || 0) + (i.wmCount || 0) + (i.wtCount || 0);
+
+                if (iY === filterYear) { 
+                    yRev += i.totalAmount; yExp += i.assistantPay; yAc += (i.acCount || 0); yWm += (i.wmCount || 0); yWt += (i.wtCount || 0); 
+                    if (i.passFrom) {
+                        yPassSummary[i.passFrom] = (yPassSummary[i.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        yPassSummary[i.passFrom].qty += iQty;
+                        yPassSummary[i.passFrom].rev += i.totalAmount;
+                        yPassSummary[i.passFrom].exp += i.assistantPay;
+                    }
+                }
                 if (mon && iM === mon) { 
                     mRev += i.totalAmount; mExp += i.assistantPay; mAc += (i.acCount || 0); mWm += (i.wmCount || 0); mWt += (i.wtCount || 0);
                     if (i.payment === 'unpaid') mUnpaidDetails.push({ id: i.id, name: i.customerName, amount: i.totalAmount });
                     if (i.passFrom) {
-                        mPassSummary[i.passFrom] = (mPassSummary[i.passFrom] || { count: 0, amount: 0 });
-                        mPassSummary[i.passFrom].count++;
-                        mPassSummary[i.passFrom].amount += i.totalAmount;
+                        mPassSummary[i.passFrom] = (mPassSummary[i.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        mPassSummary[i.passFrom].qty += iQty;
+                        mPassSummary[i.passFrom].rev += i.totalAmount;
+                        mPassSummary[i.passFrom].exp += i.assistantPay;
                     }
                 }
                 const searchStr = `${i.customerName} ${i.address} ${i.acBrand} ${i.assistantDetail || ''} ${i.passFrom || ''} ${i.note}`.toLowerCase();
                 return searchStr.includes(kw) && (mon ? iM === mon : true) && (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0)) && (status === 'all' || i.status === status) && (payment === 'all' || i.payment === payment);
             });
 
+            // 渲染年度 PASS 統計
+            const passYearSortedKeys = Object.keys(yPassSummary).sort((a,b) => yPassSummary[b].rev - yPassSummary[a].rev);
+            if (passYearSortedKeys.length > 0) {
+                document.getElementById('passYearSummarySection').classList.remove('hidden');
+                let passYearTotalAmt = 0;
+                document.getElementById('passYearSummaryList').innerHTML = passYearSortedKeys.map(k => {
+                    passYearTotalAmt += yPassSummary[k].rev;
+                    const net = yPassSummary[k].rev - yPassSummary[k].exp;
+                    return `
+                    <div class="flex flex-col bg-white p-2 rounded-lg border border-indigo-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] text-indigo-500 font-bold truncate max-w-[60%]">${k}</span>
+                            <span class="text-[10px] text-slate-400 font-bold">${yPassSummary[k].qty}台</span>
+                        </div>
+                        <div class="text-[9px] space-y-0.5 text-slate-500">
+                            <div class="flex justify-between"><span>收:</span><span>$${yPassSummary[k].rev.toLocaleString()}</span></div>
+                            <div class="flex justify-between"><span>支:</span><span>$${yPassSummary[k].exp.toLocaleString()}</span></div>
+                            <div class="flex justify-between border-t border-indigo-50 pt-0.5 font-bold text-indigo-700"><span>淨:</span><span>$${net.toLocaleString()}</span></div>
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('passYearTotal').innerText = `總額 $${passYearTotalAmt.toLocaleString()}`;
+            } else { document.getElementById('passYearSummarySection').classList.add('hidden'); }
+
             // 渲染月度 PASS 統計
-            const passSortedKeys = Object.keys(mPassSummary).sort((a,b) => mPassSummary[b].amount - mPassSummary[a].amount);
+            const passSortedKeys = Object.keys(mPassSummary).sort((a,b) => mPassSummary[b].rev - mPassSummary[a].rev);
             if (passSortedKeys.length > 0) {
                 document.getElementById('passSummarySection').classList.remove('hidden');
                 let passTotalAmt = 0;
                 document.getElementById('passSummaryList').innerHTML = passSortedKeys.map(k => {
-                    passTotalAmt += mPassSummary[k].amount;
-                    return `<div class="flex flex-col bg-white p-2 rounded-lg border border-indigo-100"><div class="text-[10px] text-indigo-400 font-bold truncate">${k}</div><div class="flex justify-between items-baseline"><span class="text-[9px] text-slate-400">${mPassSummary[k].count}件</span><span class="text-xs font-bold text-indigo-700">$${mPassSummary[k].amount.toLocaleString()}</span></div></div>`;
+                    passTotalAmt += mPassSummary[k].rev;
+                    const net = mPassSummary[k].rev - mPassSummary[k].exp;
+                    return `
+                    <div class="flex flex-col bg-white p-2 rounded-lg border border-indigo-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] text-indigo-500 font-bold truncate max-w-[60%]">${k}</span>
+                            <span class="text-[10px] text-slate-400 font-bold">${mPassSummary[k].qty}台</span>
+                        </div>
+                        <div class="text-[9px] space-y-0.5 text-slate-500">
+                            <div class="flex justify-between"><span>收:</span><span>$${mPassSummary[k].rev.toLocaleString()}</span></div>
+                            <div class="flex justify-between"><span>支:</span><span>$${mPassSummary[k].exp.toLocaleString()}</span></div>
+                            <div class="flex justify-between border-t border-indigo-50 pt-0.5 font-bold text-indigo-700"><span>淨:</span><span>$${net.toLocaleString()}</span></div>
+                        </div>
+                    </div>`;
                 }).join('');
                 document.getElementById('passMonthTotal').innerText = `總額 $${passTotalAmt.toLocaleString()}`;
             } else { document.getElementById('passSummarySection').classList.add('hidden'); }
