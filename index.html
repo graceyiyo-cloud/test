@@ -72,7 +72,7 @@
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-5 h-5">
                 Google 帳號登入
             </button>
-            <p id="authError" class="text-rose-500 text-xs font-bold hidden">⚠️ 您沒有存取權限，請換個帳號試試。</p>
+            <p id="authError" class="text-rose-500 text-xs font-bold hidden whitespace-pre-wrap"></p>
         </div>
     </section>
 
@@ -340,6 +340,7 @@
                     document.getElementById('authError').classList.add('hidden');
                     startDataSubscription();
                 } else {
+                    document.getElementById('authError').innerText = "⚠️ 您沒有存取權限，請換個帳號試試。";
                     document.getElementById('authError').classList.remove('hidden');
                     signOut(auth);
                 }
@@ -355,10 +356,15 @@
         });
 
         window.handleLogin = async () => {
+            const errorEl = document.getElementById('authError');
+            errorEl.classList.add('hidden');
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Login failed", error);
+                // 顯示具體錯誤，幫助使用者在 Firebase Console 診斷
+                errorEl.innerText = `⚠️ 登入失敗！\n錯誤代碼: ${error.code}\n請檢查 Firebase Console 是否啟動 Google 登入並加入授權網域。`;
+                errorEl.classList.remove('hidden');
             }
         };
 
