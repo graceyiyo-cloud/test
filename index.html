@@ -285,12 +285,13 @@
                             <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="search" class="w-4 h-4"></i>
                             </div>
-                            <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址、機型或 PASS 對象..." class="w-full bg-slate-50 border-none rounded-xl p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-slate-100">
+                            <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址、機型、PASS..." class="w-full bg-slate-50 border-none rounded-xl p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-slate-100">
                         </div>
-                        <div class="flex-[2] flex items-center gap-1">
+                        <div class="flex-[3] flex items-center gap-1">
                             <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                             <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
                             <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <button onclick="clearMonthFilter()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none" title="清除年月篩選"><i data-lucide="calendar-x" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-2">
@@ -636,6 +637,11 @@
             });
         };
 
+        window.clearMonthFilter = () => {
+            document.getElementById('monthFilter').value = "";
+            filterRecords();
+        };
+
         window.filterRecords = () => {
             const kw = document.getElementById('searchKeyword').value.toLowerCase();
             const mon = document.getElementById('monthFilter').value;
@@ -643,6 +649,7 @@
             const status = document.getElementById('statusFilter').value;
             const payment = document.getElementById('paymentFilter').value;
 
+            // 統計數據變數 (僅受時間過濾影響，不受關鍵字影響)
             let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
             let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
             let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
@@ -651,41 +658,55 @@
             let yPassSummary = {}; 
             
             const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
-            const filterMonthName = mon ? mon.split('-')[1] : (new Date().getMonth() + 1).toString().padStart(2, '0');
+            const filterMonthName = mon ? mon.split('-')[1] : "全部";
             document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
-            document.getElementById('monthTitle').innerText = `${filterMonthName} 月份統計`;
+            document.getElementById('monthTitle').innerText = mon ? `${filterMonthName} 月份統計` : "全期統計";
 
             allRecords.forEach(r => {
+                // 全部累積計算
                 aAc += (r.acCount || 0); aWm += (r.wmCount || 0); aWt += (r.wtCount || 0);
                 aRev += (r.totalAmount || 0); aExp += (r.assistantPay || 0);
+
+                const iY = r.bookingTime.split('-')[0];
+                const iM = r.bookingTime.substring(0, 7);
+                const iQty = (r.acCount || 0) + (r.wmCount || 0) + (r.wtCount || 0);
+
+                // 年度統計計算 (不受列表篩選影響)
+                if (iY === filterYear) { 
+                    yRev += r.totalAmount; yExp += r.assistantPay; yAc += (r.acCount || 0); yWm += (r.wmCount || 0); yWt += (r.wtCount || 0); 
+                    if (r.passFrom) {
+                        yPassSummary[r.passFrom] = (yPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        yPassSummary[r.passFrom].qty += iQty;
+                        yPassSummary[r.passFrom].rev += r.totalAmount;
+                        yPassSummary[r.passFrom].exp += r.assistantPay;
+                    }
+                }
+
+                // 月度統計計算 (不受列表篩選影響)
+                if (!mon || iM === mon) { 
+                    mRev += r.totalAmount; mExp += r.assistantPay; mAc += (r.acCount || 0); mWm += (r.wmCount || 0); mWt += (r.wtCount || 0);
+                    if (r.payment === 'unpaid') mUnpaidDetails.push({ id: r.id, name: r.customerName, amount: r.totalAmount });
+                    if (r.passFrom) {
+                        mPassSummary[r.passFrom] = (mPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        mPassSummary[r.passFrom].qty += iQty;
+                        mPassSummary[r.passFrom].rev += r.totalAmount;
+                        mPassSummary[r.passFrom].exp += r.assistantPay;
+                    }
+                }
             });
 
+            // 列表資料過濾 (受所有篩選器影響)
             const baseFiltered = allRecords.filter(i => {
-                const iY = i.bookingTime.split('-')[0];
                 const iM = i.bookingTime.substring(0, 7);
-                const iQty = (i.acCount || 0) + (i.wmCount || 0) + (i.wtCount || 0);
-
-                if (iY === filterYear) { 
-                    yRev += i.totalAmount; yExp += i.assistantPay; yAc += (i.acCount || 0); yWm += (i.wmCount || 0); yWt += (i.wtCount || 0); 
-                    if (i.passFrom) {
-                        yPassSummary[i.passFrom] = (yPassSummary[i.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        yPassSummary[i.passFrom].qty += iQty;
-                        yPassSummary[i.passFrom].rev += i.totalAmount;
-                        yPassSummary[i.passFrom].exp += i.assistantPay;
-                    }
-                }
-                if (mon && iM === mon) { 
-                    mRev += i.totalAmount; mExp += i.assistantPay; mAc += (i.acCount || 0); mWm += (i.wmCount || 0); mWt += (i.wtCount || 0);
-                    if (i.payment === 'unpaid') mUnpaidDetails.push({ id: i.id, name: i.customerName, amount: i.totalAmount });
-                    if (i.passFrom) {
-                        mPassSummary[i.passFrom] = (mPassSummary[i.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        mPassSummary[i.passFrom].qty += iQty;
-                        mPassSummary[i.passFrom].rev += i.totalAmount;
-                        mPassSummary[i.passFrom].exp += i.assistantPay;
-                    }
-                }
                 const searchStr = `${i.customerName} ${i.address} ${i.acBrand} ${i.assistantDetail || ''} ${i.passFrom || ''} ${i.note}`.toLowerCase();
-                return searchStr.includes(kw) && (mon ? iM === mon : true) && (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0)) && (status === 'all' || i.status === status) && (payment === 'all' || i.payment === payment);
+                
+                const matchSearch = searchStr.includes(kw);
+                const matchMonth = (!mon || iM === mon);
+                const matchType = (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0));
+                const matchStatus = (status === 'all' || i.status === status);
+                const matchPayment = (payment === 'all' || i.payment === payment);
+
+                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
             });
 
             // 渲染年度 PASS 統計
@@ -749,6 +770,7 @@
             document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
 
             renderRecords(baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime)));
+            lucide.createIcons();
         };
 
         function renderRecords(data) {
@@ -862,7 +884,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        window.changeMonth = (o) => { const i = document.getElementById('monthFilter'); let [y, m] = i.value.split('-').map(Number); let d = new Date(y, m - 1); d.setMonth(d.getMonth() + o); i.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; filterRecords(); };
+        window.changeMonth = (o) => { const i = document.getElementById('monthFilter'); if (!i.value) i.value = new Date().toISOString().substring(0, 7); let [y, m] = i.value.split('-').map(Number); let d = new Date(y, m - 1); d.setMonth(d.getMonth() + o); i.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; filterRecords(); };
         window.quickFilterUnpaid = () => { document.getElementById('paymentFilter').value = 'unpaid'; filterRecords(); };
         window.deleteRec = async (id) => { if(confirm('確定要刪除嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
     </script>
