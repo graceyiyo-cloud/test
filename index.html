@@ -735,10 +735,10 @@
                             <span class="text-[10px] text-indigo-500 font-bold truncate max-w-[60%]">${k}</span>
                             <span class="text-[10px] text-slate-400 font-bold">${yPassSummary[k].qty}台</span>
                         </div>
-                        <div class="text-[9px] space-y-0.5 text-slate-500">
-                            <div class="flex justify-between"><span>收:</span><span>$${yPassSummary[k].rev.toLocaleString()}</span></div>
-                            <div class="flex justify-between"><span>支:</span><span>$${yPassSummary[k].exp.toLocaleString()}</span></div>
-                            <div class="flex justify-between border-t border-indigo-50 pt-0.5 font-bold text-indigo-700"><span>淨:</span><span>$${net.toLocaleString()}</span></div>
+                        <div class="text-[8px] flex flex-wrap gap-x-2 border-t border-indigo-50/50 pt-1 mt-1 text-slate-500">
+                            <span class="whitespace-nowrap">收:$${yPassSummary[k].rev.toLocaleString()}</span>
+                            <span class="whitespace-nowrap">支:$${yPassSummary[k].exp.toLocaleString()}</span>
+                            <span class="whitespace-nowrap font-bold text-indigo-700">淨:$${net.toLocaleString()}</span>
                         </div>
                     </div>`;
                 }).join('');
@@ -759,10 +759,10 @@
                             <span class="text-[10px] text-emerald-600 font-bold truncate max-w-[60%]">${k}</span>
                             <span class="text-[10px] text-emerald-400 font-bold">${mPassSummary[k].qty}台</span>
                         </div>
-                        <div class="text-[9px] space-y-0.5 text-emerald-800/70">
-                            <div class="flex justify-between"><span>收:</span><span>$${mPassSummary[k].rev.toLocaleString()}</span></div>
-                            <div class="flex justify-between"><span>支:</span><span>$${mPassSummary[k].exp.toLocaleString()}</span></div>
-                            <div class="flex justify-between border-t border-emerald-50 pt-0.5 font-bold text-emerald-700"><span>淨:</span><span>$${net.toLocaleString()}</span></div>
+                        <div class="text-[8px] flex flex-wrap gap-x-2 border-t border-emerald-50/50 pt-1 mt-1 text-emerald-800/70">
+                            <span class="whitespace-nowrap">收:$${mPassSummary[k].rev.toLocaleString()}</span>
+                            <span class="whitespace-nowrap">支:$${mPassSummary[k].exp.toLocaleString()}</span>
+                            <span class="whitespace-nowrap font-bold text-emerald-700">淨:$${net.toLocaleString()}</span>
                         </div>
                     </div>`;
                 }).join('');
