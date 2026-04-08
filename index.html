@@ -167,9 +167,10 @@
                     <datalist id="assistantNamesList"></datalist>
                     <datalist id="passNamesList"></datalist>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required onfocus="this.select()" class="w-full border-slate-200 rounded-xl p-3 border font-bold"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required onfocus="this.select()" oninput="calcFormNet()" class="w-full border-slate-200 rounded-xl p-3 border font-bold"></div>
                         <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手總支出</label><input type="number" id="assistantPay" value="0" readonly class="w-full bg-slate-50 border-slate-200 rounded-xl p-3 border font-bold text-rose-500"></div>
+                        <div><label class="block text-xs font-bold text-emerald-600 uppercase mb-1">預估淨利</label><input type="text" id="formNetProfit" value="$0" readonly class="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 border font-bold text-emerald-700"></div>
                     </div>
                     <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
@@ -371,7 +372,6 @@
                 await signInWithPopup(auth, provider);
             } catch (error) {
                 console.error("Login failed", error);
-                // 顯示具體錯誤，幫助使用者在 Firebase Console 診斷
                 errorEl.innerText = `⚠️ 登入失敗！\n錯誤代碼: ${error.code}\n請檢查 Firebase Console 是否啟動 Google 登入並加入授權網域。`;
                 errorEl.classList.remove('hidden');
             }
@@ -406,6 +406,7 @@
             document.getElementById('acDetailsContainer').innerHTML = '';
             document.getElementById('assistantDetailsContainer').innerHTML = '';
             document.getElementById('passFrom').value = '';
+            document.getElementById('formNetProfit').value = '$0';
             toggleAcBrand();
             updateQuickAssistantTags();
             updateQuickPassTags();
@@ -450,7 +451,10 @@
                 const price = parseInt(row.querySelector('.ac-price-input').value) || 0;
                 total += (qty * price);
             });
-            if (total > 0) document.getElementById('totalAmount').value = total;
+            if (total > 0) {
+                document.getElementById('totalAmount').value = total;
+                calcFormNet();
+            }
         };
 
         window.addAssistantRow = (name = "", amount = "") => {
@@ -464,12 +468,20 @@
             `;
             container.appendChild(div);
             updateQuickAssistantTags();
+            calcAssistantTotal();
         };
 
         window.calcAssistantTotal = () => {
             let total = 0;
             document.querySelectorAll('.as-amount-input').forEach(input => total += (parseInt(input.value) || 0));
             document.getElementById('assistantPay').value = total;
+            calcFormNet();
+        };
+
+        window.calcFormNet = () => {
+            const rev = parseInt(document.getElementById('totalAmount').value) || 0;
+            const exp = parseInt(document.getElementById('assistantPay').value) || 0;
+            document.getElementById('formNetProfit').value = `$${(rev - exp).toLocaleString()}`;
         };
 
         window.updateQuickAssistantTags = () => {
@@ -867,7 +879,7 @@
                     if (m) {
                         const div = document.createElement('div');
                         div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
-                        div.innerHTML = `<div class="col-span-5"><input type="text" value="${m[1]}" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-3"><input type="number" value="${m[2]}" onfocus="this.select()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div><div class="col-span-3"><input type="number" value="${m[3]||''}" onfocus="this.select()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove()" class="text-rose-400 font-bold text-lg">&times;</button></div>`;
+                        div.innerHTML = `<div class="col-span-5"><input type="text" value="${m[1]}" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-3"><input type="number" value="${m[2]}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div><div class="col-span-3"><input type="number" value="${m[3]||''}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>`;
                         acContainer.appendChild(div);
                     }
                 });
@@ -880,6 +892,7 @@
             toggleAcBrand();
             updateQuickAssistantTags();
             updateQuickPassTags();
+            calcFormNet();
             showPage('formPage');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
