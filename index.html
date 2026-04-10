@@ -60,6 +60,13 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 拖放區高亮 */
+        .drop-zone-active {
+            border-color: var(--primary) !important;
+            background-color: #f0f4e8 !important;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
@@ -80,7 +87,6 @@
                 <p class="text-[10px] text-gray-400">僅限公司授權人員登入</p>
             </div>
             
-            <!-- 錯誤提示區塊 -->
             <div id="error-container" class="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
                 <div class="flex gap-2 text-red-600 mb-2">
                     <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
@@ -96,7 +102,6 @@
 
     <!-- 主頁面介面 -->
     <div id="app-screen" class="hidden min-h-screen">
-        <!-- 導航 -->
         <nav class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-[#E9EDC9] flex items-center justify-between px-6 z-50">
             <div class="flex items-center gap-2">
                 <i data-lucide="layout-dashboard" class="text-[#A3B18A] w-5 h-5"></i>
@@ -110,9 +115,7 @@
             </div>
         </nav>
 
-        <!-- 內容 -->
         <main class="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
-            <!-- 管理切換標籤 -->
             <div id="admin-nav" class="hidden flex gap-3 mb-8">
                 <button onclick="showPage('dashboard')" id="tab-dashboard" class="px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium">個人獎金</button>
                 <button onclick="showPage('admin')" id="tab-admin" class="px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm">管理中心</button>
@@ -125,7 +128,6 @@
                     <p class="text-xs text-[#6D6875] mt-1">即時統計您的各案場獎金明細</p>
                 </header>
 
-                <!-- 統計卡片 -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="morandi-card p-6">
                         <div class="text-[10px] text-[#6D6875] mb-1 font-bold">應領獎金總額</div>
@@ -141,13 +143,11 @@
                     </div>
                 </div>
 
-                <!-- 案場分類 -->
                 <section>
                     <h3 class="text-lg font-serif mb-4 flex items-center gap-2">
                         <i data-lucide="folder-kanban" class="w-4 h-4 text-[#A3B18A]"></i> 案場獎金摘要
                     </h3>
                     <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 動態生成內容 -->
                         <div class="col-span-full py-12 text-center text-gray-300 italic text-sm">暫無獎金數據</div>
                     </div>
                 </section>
@@ -166,11 +166,13 @@
                         <h3 class="text-sm font-bold mb-6 flex items-center gap-2">
                             <i data-lucide="file-up" class="w-4 h-4"></i> 1. 上傳獎金 CSV 檔案
                         </h3>
-                        <div class="border-2 border-dashed border-[#E9EDC9] rounded-2xl p-10 text-center hover:border-[#A3B18A] transition-all relative bg-[#F9F7F2]/50">
+                        <div id="drop-zone" class="border-2 border-dashed border-[#E9EDC9] rounded-2xl p-10 text-center hover:border-[#A3B18A] transition-all relative bg-[#F9F7F2]/50">
                             <input type="file" id="csv-file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                            <i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i>
-                            <p class="text-xs text-[#6D6875]">點擊或拖放檔案</p>
-                            <p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>
+                            <div id="upload-status" class="flex flex-col items-center">
+                                <i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i>
+                                <p class="text-xs text-[#6D6875]">點擊或拖放檔案</p>
+                                <p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>
+                            </div>
                         </div>
                     </div>
 
@@ -186,13 +188,10 @@
                             </div>
                             <button type="submit" class="w-full py-3 btn-primary rounded-xl text-xs font-medium">新增授權</button>
                         </form>
-                        <div id="auth-list" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
-                            <!-- 對應列表 -->
-                        </div>
+                        <div id="auth-list" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
                     </div>
                 </div>
                 
-                <!-- 清空數據 -->
                 <div class="pt-8 flex justify-end">
                     <button id="btn-clear-data" class="text-xs text-red-300 hover:text-red-500 underline">清空資料庫所有獎金紀錄</button>
                 </div>
@@ -204,9 +203,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // --- 您提供的專屬配置 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
             authDomain: "gen-lang-client-0168131217.firebaseapp.com",
@@ -217,7 +215,6 @@
             measurementId: "G-QE22YQV6S1"
         };
 
-        // 初始化
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -228,18 +225,13 @@
         let mappingData = {};
         let bonusData = [];
 
-        // --- 登入監聽 ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('user-email').innerText = user.email;
-                
-                if (user.email === ADMIN_EMAIL) {
-                    document.getElementById('admin-nav').classList.remove('hidden');
-                }
-                
+                if (user.email === ADMIN_EMAIL) document.getElementById('admin-nav').classList.remove('hidden');
                 startSync();
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
@@ -248,19 +240,13 @@
             }
         });
 
-        // --- 登入邏輯 ---
         document.getElementById('btn-login').onclick = async () => {
             const btn = document.getElementById('btn-login');
-            const icon = document.getElementById('login-icon');
-            const spinner = document.getElementById('login-spinner');
-            const text = document.getElementById('login-text');
             const errorBox = document.getElementById('error-container');
             const errorMsg = document.getElementById('error-message');
-
             btn.disabled = true;
-            icon.classList.add('hidden');
-            spinner.classList.remove('hidden');
-            text.innerText = "驗證中...";
+            document.getElementById('login-icon').classList.add('hidden');
+            document.getElementById('login-spinner').classList.remove('hidden');
             errorBox.classList.add('hidden');
 
             const provider = new GoogleAuthProvider();
@@ -271,18 +257,11 @@
                 resetLoginBtn();
                 errorBox.classList.remove('hidden');
                 errorMsg.innerText = `[${err.code}] ${err.message}`;
-                
-                if (err.code === 'auth/popup-blocked') {
-                    errorMsg.innerText = "瀏覽器攔截了彈出視窗！請在網址列右側點擊「允許彈出視窗」後再試一次。";
-                } else if (err.code === 'auth/unauthorized-domain') {
-                    errorMsg.innerText = "此網域尚未被授權。請至 Firebase Console 的 Authorized Domains 加入目前的預覽網域。";
-                }
             }
         };
 
         function resetLoginBtn() {
-            const btn = document.getElementById('btn-login');
-            btn.disabled = false;
+            document.getElementById('btn-login').disabled = false;
             document.getElementById('login-icon').classList.remove('hidden');
             document.getElementById('login-spinner').classList.add('hidden');
             document.getElementById('login-text').innerText = "使用 Google 帳號登入";
@@ -290,9 +269,7 @@
 
         document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-        // --- 資料同步 ---
         function startSync() {
-            // 1. 同步人員映射 (Email -> 姓名)
             const mapRef = collection(db, 'artifacts', appId, 'public', 'data', 'mappings');
             onSnapshot(mapRef, (snap) => {
                 mappingData = {};
@@ -301,7 +278,6 @@
                 snap.forEach(doc => {
                     const d = doc.data();
                     mappingData[d.email.toLowerCase()] = d.name;
-                    
                     const div = document.createElement('div');
                     div.className = "flex justify-between items-center p-3 bg-[#F9F7F2] rounded-xl text-[10px]";
                     div.innerHTML = `<span><b>${d.name}</b> (${d.email})</span>`;
@@ -310,7 +286,6 @@
                 renderUI();
             });
 
-            // 2. 同步獎金資料
             const bonusRef = collection(db, 'artifacts', appId, 'public', 'data', 'bonuses');
             onSnapshot(bonusRef, (snap) => {
                 bonusData = [];
@@ -321,21 +296,16 @@
 
         function renderUI() {
             if (!currentUser) return;
-            
             const myName = (currentUser.email === ADMIN_EMAIL) ? "管理員" : (mappingData[currentUser.email.toLowerCase()] || null);
             document.getElementById('display-name').innerText = myName || "尚未授權";
-
-            // 過濾資料
             const filtered = (currentUser.email === ADMIN_EMAIL) ? bonusData : bonusData.filter(b => b.name === myName);
             
             let total = 0, received = 0, pending = 0;
             const byProject = {};
-
             filtered.forEach(b => {
-                const amt = parseFloat(String(b.amount).replace(/,/g, '')) || 0;
+                const amt = parseFloat(String(b.amount).replace(/,/g, '').trim()) || 0;
                 total += amt;
                 if (b.status === '已領') received += amt; else pending += amt;
-                
                 if (!byProject[b.project]) byProject[b.project] = 0;
                 byProject[b.project] += amt;
             });
@@ -348,46 +318,34 @@
             list.innerHTML = '';
             Object.entries(byProject).forEach(([name, amt]) => {
                 const card = document.createElement('div');
-                card.className = "morandi-card p-5 flex justify-between items-center";
-                card.innerHTML = `
-                    <div>
-                        <div class="text-[10px] text-gray-400">案場名稱</div>
-                        <div class="font-bold text-sm text-[#344E41]">${name}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-[10px] text-gray-400">小計</div>
-                        <div class="font-serif text-[#A3B18A] text-xl">NT$ ${amt.toLocaleString()}</div>
-                    </div>
-                `;
+                card.className = "morandi-card p-5 flex justify-between items-center shadow-sm";
+                card.innerHTML = `<div><div class="text-[10px] text-gray-400">案場名稱</div><div class="font-bold text-sm">${name}</div></div><div class="text-right"><div class="text-[10px] text-gray-400">小計</div><div class="font-serif text-[#A3B18A] text-xl">NT$ ${amt.toLocaleString()}</div></div>`;
                 list.appendChild(card);
             });
-            
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 italic text-sm">目前沒有您的獎金資料</div>`;
-            }
-
+            if (filtered.length === 0) list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 italic text-sm">目前沒有您的獎金資料</div>`;
             lucide.createIcons();
         }
 
-        // --- 管理員操作 ---
-        document.getElementById('form-auth').onsubmit = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('auth-name').value;
-            const email = document.getElementById('auth-email').value;
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
-            e.target.reset();
-        };
-
-        document.getElementById('csv-file').onchange = (e) => {
-            const file = e.target.files[0];
+        // --- CSV 解析核心邏輯 ---
+        async function processFile(file) {
             if (!file) return;
+            const statusEl = document.getElementById('upload-status');
+            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">解析中...</p>`;
+
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const lines = ev.target.result.split('\n');
+                const csvContent = ev.target.result;
+                const lines = csvContent.split(/\r?\n/);
                 let count = 0;
-                // 從第 4 行開始解析 (index 3)
+                
+                // 正則表達式：正確處理引號內的逗號（例如 " 17,400 "）
+                const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
                 for (let i = 3; i < lines.length; i++) {
-                    const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
                     if (cols.length < 10 || !cols[1]) continue;
                     
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), {
@@ -396,27 +354,64 @@
                         role: cols[2],
                         amount: cols[8],
                         project: cols[9],
-                        status: cols[10]?.includes('已發完') ? '已領' : '未領'
+                        status: cols[10]?.includes('已發完') ? '已領' : '未領',
+                        createdAt: Date.now()
                     });
                     count++;
                 }
-                alert(`成功上傳 ${count} 筆獎金資料`);
+                alert(`成功匯入 ${count} 筆獎金資料`);
+                statusEl.innerHTML = `<i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-xs text-[#6D6875]">點擊或拖放檔案</p><p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>`;
+                lucide.createIcons();
             };
             reader.readAsText(file);
+        }
+
+        // --- 拖放事件處理 ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('csv-file');
+
+        ['dragover', 'dragenter'].forEach(evt => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drop-zone-active');
+            });
+        });
+
+        ['dragleave', 'dragend', 'drop'].forEach(evt => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drop-zone-active');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length) processFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) processFile(e.target.files[0]);
+        });
+
+        document.getElementById('form-auth').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('auth-name').value;
+            const email = document.getElementById('auth-email').value;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
+            e.target.reset();
         };
 
         document.getElementById('btn-clear-data').onclick = async () => {
-            if (!confirm("確定要刪除所有獎金紀錄嗎？此動作無法復原。")) return;
+            if (!confirm("確定要刪除所有獎金紀錄嗎？")) return;
             const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-            snap.forEach(async d => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bonuses', d.id)));
+            const promises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bonuses', d.id)));
+            await Promise.all(promises);
             alert("已清空數據庫");
         };
 
-        // --- 頁面切換 ---
         window.showPage = (page) => {
             document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
             document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
-            
             document.getElementById('tab-dashboard').className = (page === 'dashboard' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm");
             document.getElementById('tab-admin').className = (page === 'admin' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm");
         };
