@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>幸福家代銷部 - 獎金管理系統</title>
+    <title>幸福家房產 - 獎金管理系統</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -28,7 +28,6 @@
         .fade-in { animation: fadeIn 0.6s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 自定義捲軸 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
         .morandi-card {
@@ -48,9 +47,7 @@
             transition: all 0.2s;
         }
         .btn-primary:hover { background-color: #588157; transform: translateY(-1px); }
-        .btn-primary:active { transform: translateY(0); }
-
-        /* 旋轉動畫 */
+        
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -61,11 +58,10 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 拖放區高亮 */
         .drop-zone-active {
             border-color: var(--primary) !important;
             background-color: #f0f4e8 !important;
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
     </style>
 </head>
@@ -83,24 +79,20 @@
                     <div id="login-spinner" class="spinner hidden"></div>
                     <span id="login-text">使用 Google 帳號登入</span>
                 </button>
-                
-                <p class="text-[10px] text-gray-400">僅限公司授權人員登入</p>
+                <p class="text-[10px] text-gray-400">系統僅供內部授權人員使用</p>
             </div>
             
             <div id="error-container" class="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
-                <div class="flex gap-2 text-red-600 mb-2">
+                <div class="flex gap-2 text-red-600 mb-1">
                     <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
                     <span class="text-xs font-bold">登入異常</span>
                 </div>
                 <p id="error-message" class="text-[11px] text-red-500 leading-relaxed"></p>
-                <div class="mt-3 pt-3 border-t border-red-100">
-                    <p class="text-[10px] text-red-400">若登入無反應，請檢查是否已將此網域加入 Firebase 的「授權網域」中。</p>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- 主頁面介面 -->
+    <!-- 主應用程式介面 -->
     <div id="app-screen" class="hidden min-h-screen">
         <nav class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-[#E9EDC9] flex items-center justify-between px-6 z-50">
             <div class="flex items-center gap-2">
@@ -118,14 +110,14 @@
         <main class="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
             <div id="admin-nav" class="hidden flex gap-3 mb-8">
                 <button onclick="showPage('dashboard')" id="tab-dashboard" class="px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium">個人獎金</button>
-                <button onclick="showPage('admin')" id="tab-admin" class="px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm">管理中心</button>
+                <button onclick="showPage('admin')" id="tab-admin" class="px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm hover:border-[#A3B18A] transition-all">管理中心</button>
             </div>
 
-            <!-- 個人儀表板 -->
+            <!-- 分頁：個人儀表板 -->
             <div id="page-dashboard" class="space-y-8 fade-in">
                 <header>
                     <h2 class="text-2xl font-serif">您好，<span id="display-name">...</span></h2>
-                    <p class="text-xs text-[#6D6875] mt-1">即時統計您的各案場獎金明細</p>
+                    <p class="text-xs text-[#6D6875] mt-1">即時同步案場獎金統計數據</p>
                 </header>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -153,37 +145,37 @@
                 </section>
             </div>
 
-            <!-- 管理介面 -->
+            <!-- 分頁：管理介面 -->
             <div id="page-admin" class="hidden space-y-8 fade-in">
                 <header>
                     <h2 class="text-2xl font-serif">系統管理中心</h2>
-                    <p class="text-xs text-[#6D6875] mt-1">上傳最新獎金檔並授權人員 Email</p>
+                    <p class="text-xs text-[#6D6875] mt-1">更新獎金明細總表與授權人員</p>
                 </header>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- 上傳 CSV -->
+                    <!-- 上傳區 -->
                     <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9] shadow-sm">
                         <h3 class="text-sm font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="file-up" class="w-4 h-4"></i> 1. 上傳獎金 CSV 檔案
+                            <i data-lucide="file-up" class="w-4 h-4"></i> 1. 匯入獎金 CSV 檔案
                         </h3>
                         <div id="drop-zone" class="border-2 border-dashed border-[#E9EDC9] rounded-2xl p-10 text-center hover:border-[#A3B18A] transition-all relative bg-[#F9F7F2]/50">
                             <input type="file" id="csv-file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                             <div id="upload-status" class="flex flex-col items-center">
                                 <i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i>
                                 <p class="text-xs text-[#6D6875]">點擊或拖放檔案</p>
-                                <p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>
+                                <p class="text-[10px] text-gray-400 mt-2">支援格式：代銷獎金檔-全部new.csv</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 授權管理 -->
+                    <!-- 授權區 -->
                     <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9] shadow-sm">
                         <h3 class="text-sm font-bold mb-6 flex items-center gap-2">
                             <i data-lucide="user-plus" class="w-4 h-4"></i> 2. 人員姓名對應授權
                         </h3>
                         <form id="form-auth" class="space-y-3 mb-6">
                             <div class="flex gap-2">
-                                <input id="auth-name" placeholder="人員姓名" required class="flex-1 px-4 py-3 bg-[#F9F7F2] rounded-xl text-xs outline-none focus:ring-1 focus:ring-[#A3B18A]" />
+                                <input id="auth-name" placeholder="姓名" required class="flex-1 px-4 py-3 bg-[#F9F7F2] rounded-xl text-xs outline-none focus:ring-1 focus:ring-[#A3B18A]" />
                                 <input id="auth-email" type="email" placeholder="Gmail 地址" required class="flex-1 px-4 py-3 bg-[#F9F7F2] rounded-xl text-xs outline-none focus:ring-1 focus:ring-[#A3B18A]" />
                             </div>
                             <button type="submit" class="w-full py-3 btn-primary rounded-xl text-xs font-medium">新增授權</button>
@@ -193,7 +185,7 @@
                 </div>
                 
                 <div class="pt-8 flex justify-end">
-                    <button id="btn-clear-data" class="text-xs text-red-300 hover:text-red-500 underline">清空資料庫所有獎金紀錄</button>
+                    <button id="btn-clear-data" class="text-xs text-red-300 hover:text-red-500 underline decoration-dotted">清空所有獎金紀錄</button>
                 </div>
             </div>
         </main>
@@ -203,7 +195,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, writeBatch, onSnapshot, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
@@ -277,7 +269,7 @@
                 list.innerHTML = '';
                 snap.forEach(doc => {
                     const d = doc.data();
-                    mappingData[d.email.toLowerCase()] = d.name;
+                    mappingData[d.email.toLowerCase().trim()] = d.name;
                     const div = document.createElement('div');
                     div.className = "flex justify-between items-center p-3 bg-[#F9F7F2] rounded-xl text-[10px]";
                     div.innerHTML = `<span><b>${d.name}</b> (${d.email})</span>`;
@@ -296,14 +288,16 @@
 
         function renderUI() {
             if (!currentUser) return;
-            const myName = (currentUser.email === ADMIN_EMAIL) ? "管理員" : (mappingData[currentUser.email.toLowerCase()] || null);
-            document.getElementById('display-name').innerText = myName || "尚未授權";
+            const myName = (currentUser.email === ADMIN_EMAIL) ? "管理員" : (mappingData[currentUser.email.toLowerCase().trim()] || null);
+            document.getElementById('display-name').innerText = myName || "尚未授權人員";
+            
             const filtered = (currentUser.email === ADMIN_EMAIL) ? bonusData : bonusData.filter(b => b.name === myName);
             
             let total = 0, received = 0, pending = 0;
             const byProject = {};
             filtered.forEach(b => {
-                const amtStr = String(b.amount || "0").replace(/,/g, '').replace(/[^0-9.-]+/g, '').trim();
+                // 處理包含引號與逗號的金額
+                const amtStr = String(b.amount || "0").replace(/[^0-9.-]+/g, '');
                 const amt = parseFloat(amtStr) || 0;
                 total += amt;
                 if (b.status === '已領') received += amt; else pending += amt;
@@ -323,36 +317,41 @@
                 card.innerHTML = `<div><div class="text-[10px] text-gray-400">案場名稱</div><div class="font-bold text-sm">${name}</div></div><div class="text-right"><div class="text-[10px] text-gray-400">小計</div><div class="font-serif text-[#A3B18A] text-xl">NT$ ${amt.toLocaleString()}</div></div>`;
                 list.appendChild(card);
             });
-            if (filtered.length === 0) list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 italic text-sm">目前沒有您的獎金資料</div>`;
+            if (filtered.length === 0) list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 italic text-sm">目前沒有獎金領取資料</div>`;
             lucide.createIcons();
         }
 
-        // --- CSV 解析與分批上傳核心邏輯 ---
+        // --- 核心上傳邏輯：使用 WriteBatch 提升穩定性 ---
         async function processFile(file) {
-            if (!file) return;
+            if (!file || !currentUser) return;
+            if (currentUser.email !== ADMIN_EMAIL) {
+                alert("您沒有管理員權限進行此操作。");
+                return;
+            }
+
             const statusEl = document.getElementById('upload-status');
-            const originalContent = statusEl.innerHTML;
-            
-            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">解析與同步中...</p>`;
+            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider">正在處理中，請勿關閉視窗...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 try {
                     const csvContent = ev.target.result;
                     const lines = csvContent.split(/\r?\n/);
-                    const recordsToUpload = [];
+                    const records = [];
                     
-                    // 正則表達式：正確處理引號內的逗號
+                    // 正則表達式處理 CSV（支援引號內含逗號）
                     const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
                     for (let i = 3; i < lines.length; i++) {
                         const line = lines[i].trim();
+                        // 過濾完全空行
                         if (!line || line.replace(/,/g, '').trim() === '') continue;
                         
                         const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
+                        // 確保至少有姓名(cols[1])與案別(cols[9])
                         if (cols.length < 10 || !cols[1]) continue;
                         
-                        recordsToUpload.push({
+                        records.push({
                             date: cols[0],
                             name: cols[1],
                             role: cols[2],
@@ -363,38 +362,38 @@
                         });
                     }
 
-                    if (recordsToUpload.length === 0) {
-                        alert("未偵測到有效資料行，請檢查檔案格式。");
+                    if (records.length === 0) {
+                        alert("解析不到有效的資料行。請確認檔案格式是否正確。");
                         resetUploadStatus();
                         return;
                     }
 
-                    // 分批處理：每 50 筆一組，避免 Firestore 連線過載
-                    const chunkSize = 50;
-                    let successCount = 0;
+                    // 使用 WriteBatch 分批寫入 (Firestore 限制每批 500 筆)
+                    const batchSize = 400; // 保險起見設定 400
+                    let totalBatches = Math.ceil(records.length / batchSize);
                     
-                    for (let i = 0; i < recordsToUpload.length; i += chunkSize) {
-                        const chunk = recordsToUpload.slice(i, i + chunkSize);
-                        statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">上傳中 (${i}/${recordsToUpload.length})...</p>`;
+                    for (let i = 0; i < records.length; i += batchSize) {
+                        const currentBatch = writeBatch(db);
+                        const chunk = records.slice(i, i + batchSize);
+                        const batchNum = Math.floor(i / batchSize) + 1;
                         
-                        await Promise.all(chunk.map(record => 
-                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), record)
-                        ));
-                        successCount += chunk.length;
+                        statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider text-center">正在寫入資料 (${batchNum}/${totalBatches})<br/>請稍候...</p>`;
+
+                        chunk.forEach(record => {
+                            const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
+                            currentBatch.set(newDocRef, record);
+                        });
+                        
+                        await currentBatch.commit();
                     }
 
-                    alert(`成功匯入 ${successCount} 筆獎金資料`);
+                    alert(`成功匯入 ${records.length} 筆獎金資料！`);
                 } catch (err) {
-                    console.error("Firestore Upload Detail Error:", err);
-                    alert(`上傳失敗：${err.message || '發生未知錯誤'}\n請檢查網路或專案權限設定。`);
+                    console.error("Firestore Batch Upload Error:", err);
+                    alert(`上傳失敗：\n${err.message}\n\n請檢查您的網路連線與 Firebase 專案權限設定。`);
                 } finally {
                     resetUploadStatus();
                 }
-            };
-            
-            reader.onerror = () => {
-                alert("讀取檔案失敗。");
-                resetUploadStatus();
             };
             
             reader.readAsText(file);
@@ -402,33 +401,23 @@
 
         function resetUploadStatus() {
             const statusEl = document.getElementById('upload-status');
-            statusEl.innerHTML = `<i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-xs text-[#6D6875]">點擊或拖放檔案</p><p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>`;
+            statusEl.innerHTML = `<i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-xs text-[#6D6875]">點擊或拖放檔案</p><p class="text-[10px] text-gray-400 mt-2">支援格式：代銷獎金檔-全部new.csv</p>`;
             lucide.createIcons();
         }
 
-        // --- 拖放與事件綁定 ---
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('csv-file');
 
         ['dragover', 'dragenter'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drop-zone-active');
-            });
+            dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('drop-zone-active'); });
         });
-
         ['dragleave', 'dragend', 'drop'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drop-zone-active');
-            });
+            dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove('drop-zone-active'); });
         });
-
         dropZone.addEventListener('drop', (e) => {
             const files = e.dataTransfer.files;
             if (files.length) processFile(files[0]);
         });
-
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length) processFile(e.target.files[0]);
         });
@@ -446,12 +435,20 @@
         };
 
         document.getElementById('btn-clear-data').onclick = async () => {
-            if (!confirm("確定要刪除所有獎金紀錄嗎？")) return;
+            if (!confirm("確定要刪除資料庫中所有的獎金紀錄嗎？此動作無法復原。")) return;
             try {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-                const promises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bonuses', d.id)));
-                await Promise.all(promises);
-                alert("已清空資料庫");
+                if (snap.empty) {
+                    alert("資料庫中本來就沒有紀錄。");
+                    return;
+                }
+                
+                // 刪除也使用 Batch 以提高效率
+                const batch = writeBatch(db);
+                snap.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                
+                alert("已清空獎金資料庫。");
             } catch (err) {
                 alert("清除失敗：" + err.message);
             }
@@ -460,8 +457,8 @@
         window.showPage = (page) => {
             document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
             document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
-            document.getElementById('tab-dashboard').className = (page === 'dashboard' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm");
-            document.getElementById('tab-admin').className = (page === 'admin' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm");
+            document.getElementById('tab-dashboard').className = (page === 'dashboard' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm hover:border-[#A3B18A] transition-all");
+            document.getElementById('tab-admin').className = (page === 'admin' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm hover:border-[#A3B18A] transition-all");
         };
 
         lucide.createIcons();
