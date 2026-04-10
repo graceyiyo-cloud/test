@@ -303,7 +303,8 @@
             let total = 0, received = 0, pending = 0;
             const byProject = {};
             filtered.forEach(b => {
-                const amt = parseFloat(String(b.amount).replace(/,/g, '').trim()) || 0;
+                const amtStr = String(b.amount || "0").replace(/,/g, '').replace(/[^0-9.-]+/g, '').trim();
+                const amt = parseFloat(amtStr) || 0;
                 total += amt;
                 if (b.status === '已領') received += amt; else pending += amt;
                 if (!byProject[b.project]) byProject[b.project] = 0;
@@ -326,60 +327,76 @@
             lucide.createIcons();
         }
 
-        // --- CSV 解析核心邏輯 ---
+        // --- CSV 解析與分批上傳核心邏輯 ---
         async function processFile(file) {
             if (!file) return;
             const statusEl = document.getElementById('upload-status');
+            const originalContent = statusEl.innerHTML;
+            
             statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">解析與同步中...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const csvContent = ev.target.result;
-                const lines = csvContent.split(/\r?\n/);
-                const recordsToUpload = [];
-                
-                // 正則表達式：正確處理引號內的逗號（例如 " 17,400 "）
-                const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-
-                for (let i = 3; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    // 關鍵修正：跳過完全空白或只包含逗號的行（解決檔案尾部空行問題）
-                    if (!line || line.replace(/,/g, '').trim() === '') continue;
-                    
-                    const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
-                    // 確保至少有姓名欄位才處理
-                    if (cols.length < 10 || !cols[1]) continue;
-                    
-                    recordsToUpload.push({
-                        date: cols[0],
-                        name: cols[1],
-                        role: cols[2],
-                        amount: cols[8],
-                        project: cols[9],
-                        status: cols[10]?.includes('已發完') ? '已領' : '未領',
-                        createdAt: Date.now()
-                    });
-                }
-
-                if (recordsToUpload.length === 0) {
-                    alert("未偵測到有效資料行，請檢查檔案格式。");
-                    resetUploadStatus();
-                    return;
-                }
-
                 try {
-                    // 同步執行上傳，大幅提高效率
-                    await Promise.all(recordsToUpload.map(record => 
-                        addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), record)
-                    ));
-                    alert(`成功匯入 ${recordsToUpload.length} 筆獎金資料`);
+                    const csvContent = ev.target.result;
+                    const lines = csvContent.split(/\r?\n/);
+                    const recordsToUpload = [];
+                    
+                    // 正則表達式：正確處理引號內的逗號
+                    const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+                    for (let i = 3; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line || line.replace(/,/g, '').trim() === '') continue;
+                        
+                        const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
+                        if (cols.length < 10 || !cols[1]) continue;
+                        
+                        recordsToUpload.push({
+                            date: cols[0],
+                            name: cols[1],
+                            role: cols[2],
+                            amount: cols[8],
+                            project: cols[9],
+                            status: cols[10]?.includes('已發完') ? '已領' : '未領',
+                            createdAt: Date.now()
+                        });
+                    }
+
+                    if (recordsToUpload.length === 0) {
+                        alert("未偵測到有效資料行，請檢查檔案格式。");
+                        resetUploadStatus();
+                        return;
+                    }
+
+                    // 分批處理：每 50 筆一組，避免 Firestore 連線過載
+                    const chunkSize = 50;
+                    let successCount = 0;
+                    
+                    for (let i = 0; i < recordsToUpload.length; i += chunkSize) {
+                        const chunk = recordsToUpload.slice(i, i + chunkSize);
+                        statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">上傳中 (${i}/${recordsToUpload.length})...</p>`;
+                        
+                        await Promise.all(chunk.map(record => 
+                            addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), record)
+                        ));
+                        successCount += chunk.length;
+                    }
+
+                    alert(`成功匯入 ${successCount} 筆獎金資料`);
                 } catch (err) {
-                    console.error("Upload failed:", err);
-                    alert("上傳過程中發生錯誤，請稍後再試。");
+                    console.error("Firestore Upload Detail Error:", err);
+                    alert(`上傳失敗：${err.message || '發生未知錯誤'}\n請檢查網路或專案權限設定。`);
                 } finally {
                     resetUploadStatus();
                 }
             };
+            
+            reader.onerror = () => {
+                alert("讀取檔案失敗。");
+                resetUploadStatus();
+            };
+            
             reader.readAsText(file);
         }
 
@@ -389,7 +406,7 @@
             lucide.createIcons();
         }
 
-        // --- 拖放事件處理 ---
+        // --- 拖放與事件綁定 ---
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('csv-file');
 
@@ -420,16 +437,24 @@
             e.preventDefault();
             const name = document.getElementById('auth-name').value;
             const email = document.getElementById('auth-email').value;
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
-            e.target.reset();
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
+                e.target.reset();
+            } catch (err) {
+                alert("授權失敗：" + err.message);
+            }
         };
 
         document.getElementById('btn-clear-data').onclick = async () => {
             if (!confirm("確定要刪除所有獎金紀錄嗎？")) return;
-            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-            const promises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bonuses', d.id)));
-            await Promise.all(promises);
-            alert("已清空數據庫");
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
+                const promises = snap.docs.map(d => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bonuses', d.id)));
+                await Promise.all(promises);
+                alert("已清空資料庫");
+            } catch (err) {
+                alert("清除失敗：" + err.message);
+            }
         };
 
         window.showPage = (page) => {
