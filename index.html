@@ -25,10 +25,8 @@
         }
         .font-serif { font-family: 'Noto Serif TC', serif; }
         
-        /* 避免 Chrome 溢出滾動 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 動態進入動畫 */
         .fade-in {
             animation: fadeIn 0.8s ease-out forwards;
         }
@@ -37,7 +35,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 自定義卡片樣式 */
         .morandi-card {
             background: white;
             border: 1px solid #E9EDC9;
@@ -48,6 +45,20 @@
             border-color: var(--primary-color);
             box-shadow: 0 4px 12px rgba(163, 177, 138, 0.1);
         }
+
+        /* 讀取中旋轉動畫 */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid #fff;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -57,11 +68,17 @@
         <div class="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-sm border border-[#E9EDC9] text-center fade-in">
             <h1 class="text-3xl font-serif mb-2">幸福家代銷部</h1>
             <p class="text-[#6D6875] mb-8 text-sm tracking-widest">獎金查詢與管理系統</p>
-            <button id="btn-login" class="w-full py-4 bg-[#A3B18A] text-white rounded-2xl hover:bg-[#588157] transition-all flex items-center justify-center gap-3 font-medium shadow-md">
-                <i data-lucide="log-in" class="w-5 h-5"></i>
-                使用 Google 帳號登入
+            
+            <button id="btn-login" class="w-full py-4 bg-[#A3B18A] text-white rounded-2xl hover:bg-[#588157] transition-all flex items-center justify-center gap-3 font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                <i data-lucide="log-in" class="w-5 h-5" id="login-icon"></i>
+                <div id="login-spinner" class="spinner hidden"></div>
+                <span id="login-text">使用 Google 帳號登入</span>
             </button>
-            <p id="auth-error" class="mt-4 text-xs text-red-500 hidden"></p>
+            
+            <div id="auth-error-container" class="mt-4 p-3 bg-red-50 border border-red-100 rounded-xl hidden">
+                <p id="auth-error-text" class="text-xs text-red-500 text-left"></p>
+            </div>
+            
             <p class="mt-8 text-[10px] text-gray-400 uppercase tracking-tighter">Authorized access only</p>
         </div>
     </div>
@@ -85,10 +102,10 @@
         <!-- 內容區 -->
         <main class="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
             
-            <!-- 管理員專屬標籤切換 (若為管理員才顯示) -->
+            <!-- 管理員專屬標籤切換 -->
             <div id="admin-tabs" class="hidden flex gap-4 mb-8">
-                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-4 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium">獎金儀表板</button>
-                <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium">管理後台</button>
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm">獎金儀表板</button>
+                <button onclick="switchTab('admin')" id="tab-admin" class="px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium hover:border-[#A3B18A] transition-all">管理後台</button>
             </div>
 
             <!-- 分頁 1: 獎金儀表板 -->
@@ -129,15 +146,14 @@
                         <i data-lucide="chevron-right" class="w-4 h-4 text-[#A3B18A]"></i> 案場分類小計
                     </h3>
                     <div id="project-summary-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 動態生成 -->
-                        <div class="col-span-full py-12 text-center text-gray-400 border border-dashed rounded-3xl">暫無資料</div>
+                        <div class="col-span-full py-12 text-center text-gray-400 border border-dashed rounded-3xl">載入中...</div>
                     </div>
                 </section>
 
-                <!-- 明細清單 (手機版為卡片，電腦版為表格) -->
+                <!-- 明細清單 -->
                 <section>
                     <h3 class="text-lg font-serif mb-4">發放明細紀錄</h3>
-                    <div class="hidden md:block bg-white rounded-3xl border border-[#E9EDC9] overflow-hidden">
+                    <div class="hidden md:block bg-white rounded-3xl border border-[#E9EDC9] overflow-hidden shadow-sm">
                         <table class="w-full text-left">
                             <thead class="bg-[#F9F7F2] text-[10px] uppercase tracking-wider text-[#6D6875]">
                                 <tr>
@@ -169,7 +185,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- 上傳 CSV -->
-                    <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9]">
+                    <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9] shadow-sm">
                         <h3 class="text-lg font-medium mb-6 flex items-center gap-2">
                             <i data-lucide="upload" class="w-5 h-5 text-[#A3B18A]"></i> 匯入獎金 CSV 檔案
                         </h3>
@@ -181,18 +197,18 @@
                     </div>
 
                     <!-- 人員映射管理 -->
-                    <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9]">
+                    <div class="bg-white p-8 rounded-[2rem] border border-[#E9EDC9] shadow-sm">
                         <h3 class="text-lg font-medium mb-6 flex items-center gap-2">
                             <i data-lucide="user-check" class="w-5 h-5 text-[#A3B18A]"></i> 人員授權設定
                         </h3>
                         <form id="mapping-form" class="space-y-4 mb-6">
                             <div class="grid grid-cols-2 gap-3">
-                                <input id="map-name" placeholder="人員姓名" required class="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none" />
-                                <input id="map-email" type="email" placeholder="Gmail" required class="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none" />
+                                <input id="map-name" placeholder="人員姓名" required class="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none border border-transparent focus:border-[#A3B18A]" />
+                                <input id="map-email" type="email" placeholder="Gmail" required class="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none border border-transparent focus:border-[#A3B18A]" />
                             </div>
-                            <button type="submit" class="w-full py-3 bg-[#A3B18A] text-white rounded-xl text-sm font-medium">新增授權</button>
+                            <button type="submit" class="w-full py-3 bg-[#A3B18A] text-white rounded-xl text-sm font-medium hover:bg-[#588157] transition-all">新增授權</button>
                         </form>
-                        <div id="mapping-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                        <div id="mapping-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar pr-1">
                             <!-- 動態生成映射列表 -->
                         </div>
                     </div>
@@ -212,8 +228,14 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // Firebase 配置
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Firebase 配置安全性檢查
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        } catch (e) {
+            console.error("Firebase config parsing error", e);
+        }
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -224,12 +246,16 @@
         let userMappings = {};
         let bonusRecords = [];
 
-        // --- 初始化身份驗證 ---
+        // --- 初始化身份驗證 (遵循規則 3) ---
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                // 為了讓使用者能在網頁點擊登入，預設先不執行匿名登入，保持在登入畫面
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    // 預設不執行匿名，等待用戶點擊登入
+                }
+            } catch (error) {
+                console.error("Auth Init Error:", error);
             }
         };
         initAuth();
@@ -245,23 +271,50 @@
                     document.getElementById('admin-tabs').classList.remove('hidden');
                 }
                 
-                // 開始監聽資料
                 fetchData();
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('hidden');
+                resetLoginButton();
             }
         });
 
-        // --- 登入/登出 ---
+        function resetLoginButton() {
+            document.getElementById('btn-login').disabled = false;
+            document.getElementById('login-icon').classList.remove('hidden');
+            document.getElementById('login-spinner').classList.add('hidden');
+            document.getElementById('login-text').innerText = "使用 Google 帳號登入";
+        }
+
+        // --- 登入處理 ---
         document.getElementById('btn-login').onclick = async () => {
+            const btn = document.getElementById('btn-login');
+            const icon = document.getElementById('login-icon');
+            const spinner = document.getElementById('login-spinner');
+            const text = document.getElementById('login-text');
+            const errorContainer = document.getElementById('auth-error-container');
+            const errorText = document.getElementById('auth-error-text');
+
+            btn.disabled = true;
+            icon.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            text.innerText = "驗證中...";
+            errorContainer.classList.add('hidden');
+
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
             } catch (err) {
-                const errBox = document.getElementById('auth-error');
-                errBox.innerText = "登入失敗: " + err.message;
-                errBox.classList.remove('hidden');
+                console.error("Login Error:", err);
+                resetLoginButton();
+                errorContainer.classList.remove('hidden');
+                if (err.code === 'auth/popup-blocked') {
+                    errorText.innerText = "彈出視窗被攔截！請允許瀏覽器的彈出視窗設定後再試一次。";
+                } else if (err.code === 'auth/unauthorized-domain') {
+                    errorText.innerText = "此網域尚未在 Firebase 授權名單中，請聯繫開發者。";
+                } else {
+                    errorText.innerText = "登入失敗：" + err.message;
+                }
             }
         };
 
@@ -269,6 +322,8 @@
 
         // --- 資料獲取與顯示 ---
         function fetchData() {
+            if (!currentUser) return;
+
             // 1. 監聽人員映射
             const mappingRef = collection(db, 'artifacts', appId, 'public', 'data', 'userMappings');
             onSnapshot(mappingRef, (snap) => {
@@ -279,14 +334,18 @@
                     const data = doc.data();
                     userMappings[data.email] = data.name;
                     
-                    // 管理員介面列表
                     const div = document.createElement('div');
-                    div.className = "flex justify-between p-3 bg-[#F9F7F2] rounded-xl text-xs";
-                    div.innerHTML = `<span><b>${data.name}</b> <br/> ${data.email}</span>`;
+                    div.className = "flex justify-between items-center p-3 bg-[#F9F7F2] rounded-xl text-xs border border-[#E9EDC9]/50";
+                    div.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="font-bold">${data.name}</span>
+                            <span class="text-[10px] text-gray-400">${data.email}</span>
+                        </div>
+                    `;
                     listEl.appendChild(div);
                 });
                 renderDashboard();
-            });
+            }, (err) => console.error("Mapping Fetch Error:", err));
 
             // 2. 監聽獎金紀錄
             const bonusRef = collection(db, 'artifacts', appId, 'public', 'data', 'bonusRecords');
@@ -296,7 +355,7 @@
                     bonusRecords.push({ id: doc.id, ...doc.data() });
                 });
                 renderDashboard();
-            });
+            }, (err) => console.error("Bonus Fetch Error:", err));
         }
 
         function renderDashboard() {
@@ -305,12 +364,10 @@
             const currentName = currentUser.email === ADMIN_EMAIL ? "管理員" : (userMappings[currentUser.email] || null);
             document.getElementById('user-display-name').innerText = currentName || "尚未授權人員";
 
-            // 過濾資料
             const myData = (currentUser.email === ADMIN_EMAIL) 
                 ? bonusRecords 
                 : bonusRecords.filter(r => r.name === currentName);
 
-            // 統計
             let total = 0, received = 0, pending = 0;
             const byProject = {};
 
@@ -328,7 +385,6 @@
                 if (!byProject[r.project]) byProject[r.project] = 0;
                 byProject[r.project] += amt;
 
-                // 渲染表格 (Desktop)
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors";
                 tr.innerHTML = `
@@ -341,54 +397,51 @@
                 `;
                 tableBody.appendChild(tr);
 
-                // 渲染卡片 (Mobile)
                 const card = document.createElement('div');
                 card.className = "bg-white p-5 rounded-2xl border border-[#E9EDC9] space-y-2 shadow-sm";
                 card.innerHTML = `
                     <div class="flex justify-between items-center text-[10px] text-gray-400"><span>${r.date}</span><span>${r.status}</span></div>
-                    <div class="font-bold text-sm">${r.project}</div>
+                    <div class="font-bold text-sm text-[#344E41]">${r.project}</div>
                     <div class="flex justify-between items-end">
                         <span class="text-xs text-gray-500">${r.role} (${r.percentage})</span>
-                        <span class="font-serif text-[#A3B18A]">NT$ ${amt.toLocaleString()}</span>
+                        <span class="font-serif text-[#A3B18A] text-lg">NT$ ${amt.toLocaleString()}</span>
                     </div>
                 `;
                 mobileList.appendChild(card);
             });
 
-            // 更新統計字串
             document.getElementById('stat-total').innerText = `NT$ ${total.toLocaleString()}`;
             document.getElementById('stat-received').innerText = `NT$ ${received.toLocaleString()}`;
             document.getElementById('stat-pending').innerText = `NT$ ${pending.toLocaleString()}`;
 
-            // 更新案場摘要
             const projectBox = document.getElementById('project-summary-list');
             projectBox.innerHTML = '';
             Object.entries(byProject).forEach(([name, amt]) => {
                 const div = document.createElement('div');
-                div.className = "bg-white p-5 rounded-2xl border border-[#E9EDC9] flex justify-between items-center shadow-sm";
+                div.className = "bg-white p-5 rounded-2xl border border-[#E9EDC9] flex justify-between items-center shadow-sm hover:border-[#A3B18A] transition-all";
                 div.innerHTML = `
                     <div><div class="text-[10px] text-gray-400">專案</div><div class="font-medium">${name}</div></div>
-                    <div class="text-right"><div class="text-[10px] text-gray-400">累計</div><div class="font-serif text-[#A3B18A]">NT$ ${amt.toLocaleString()}</div></div>
+                    <div class="text-right"><div class="text-[10px] text-gray-400">累計</div><div class="font-serif text-[#A3B18A] text-xl">NT$ ${amt.toLocaleString()}</div></div>
                 `;
                 projectBox.appendChild(div);
             });
-            if (Object.keys(byProject).length === 0) {
+            
+            if (myData.length === 0) {
                 projectBox.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400 border border-dashed rounded-3xl">目前沒有獎金資料</div>`;
             }
 
-            // 重新初始化圖示
             lucide.createIcons();
         }
 
-        // --- CSV 上傳處理 ---
+        // --- CSV 上傳 ---
         document.getElementById('csv-input').onchange = (e) => {
+            if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 const lines = ev.target.result.split('\n');
                 let count = 0;
-                // 從第 4 行開始 (index 3)
                 for (let i = 3; i < lines.length; i++) {
                     const cols = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
                     if (cols.length < 10 || !cols[1]) continue;
@@ -413,13 +466,13 @@
         // --- 新增人員映射 ---
         document.getElementById('mapping-form').onsubmit = async (e) => {
             e.preventDefault();
+            if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
             const name = document.getElementById('map-name').value;
             const email = document.getElementById('map-email').value;
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'userMappings'), { name, email });
             e.target.reset();
         };
 
-        // --- 切換分頁邏輯 ---
         window.switchTab = (tab) => {
             const sDash = document.getElementById('section-dashboard');
             const sAdmin = document.getElementById('section-admin');
@@ -429,17 +482,16 @@
             if (tab === 'dashboard') {
                 sDash.classList.remove('hidden');
                 sAdmin.classList.add('hidden');
-                tDash.className = "px-4 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium";
-                tAdmin.className = "px-4 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium";
+                tDash.className = "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm";
+                tAdmin.className = "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium hover:border-[#A3B18A] transition-all";
             } else {
                 sDash.classList.add('hidden');
                 sAdmin.classList.remove('hidden');
-                tAdmin.className = "px-4 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium";
-                tDash.className = "px-4 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium";
+                tAdmin.className = "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm";
+                tDash.className = "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm font-medium hover:border-[#A3B18A] transition-all";
             }
         };
 
-        // 初始化圖示
         lucide.createIcons();
     </script>
 </body>
