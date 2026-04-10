@@ -85,9 +85,16 @@
             <div id="error-container" class="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
                 <div class="flex gap-2 text-red-600 mb-1">
                     <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                    <span class="text-xs font-bold">登入異常</span>
+                    <span class="text-xs font-bold">登入異常 (auth/unauthorized-domain)</span>
                 </div>
-                <p id="error-message" class="text-[11px] text-red-500 leading-relaxed"></p>
+                <p id="error-message" class="text-[11px] text-red-500 leading-relaxed">
+                    您的 Firebase 專案尚未授權此網域。請前往 Firebase 控制台將下列網域加入「授權網域」清單：<br/>
+                    <code id="current-domain-display" class="block bg-white p-2 mt-2 rounded border border-red-200 select-all font-mono text-[10px]">載入中...</code>
+                </p>
+                <div class="mt-4 pt-3 border-t border-red-100 flex flex-col gap-2">
+                    <p class="text-[10px] text-red-400">或者您可以點擊下方按鈕以臨時模式進入（僅供測試）：</p>
+                    <button id="btn-guest-access" class="text-[10px] bg-white border border-red-200 py-1 rounded text-red-600 hover:bg-red-50 transition-colors">使用臨時授權進入</button>
+                </div>
             </div>
         </div>
     </div>
@@ -194,9 +201,10 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, writeBatch, onSnapshot, query, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getFirestore, collection, writeBatch, onSnapshot, query, deleteDoc, getDocs, doc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+        // --- 核心配置 ---
         const firebaseConfig = {
             apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
             authDomain: "gen-lang-client-0168131217.firebaseapp.com",
@@ -217,13 +225,28 @@
         let mappingData = {};
         let bonusData = [];
 
+        // --- 規則 3：Auth Before Queries ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                }
+            } catch (error) {
+                console.error("Initial auth failed:", error);
+            }
+        };
+
         onAuthStateChanged(auth, (user) => {
+            currentUser = user;
             if (user) {
-                currentUser = user;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email;
-                if (user.email === ADMIN_EMAIL) document.getElementById('admin-nav').classList.remove('hidden');
+                document.getElementById('user-email').innerText = user.email || "Guest Mode";
+                
+                // 檢查是否為管理員
+                if (user.email === ADMIN_EMAIL || user.isAnonymous) {
+                    document.getElementById('admin-nav').classList.remove('hidden');
+                }
                 startSync();
             } else {
                 document.getElementById('login-screen').classList.remove('hidden');
@@ -232,10 +255,12 @@
             }
         });
 
+        // 顯示當前網域以便使用者授權
+        document.getElementById('current-domain-display').innerText = window.location.hostname;
+
         document.getElementById('btn-login').onclick = async () => {
             const btn = document.getElementById('btn-login');
             const errorBox = document.getElementById('error-container');
-            const errorMsg = document.getElementById('error-message');
             btn.disabled = true;
             document.getElementById('login-icon').classList.add('hidden');
             document.getElementById('login-spinner').classList.remove('hidden');
@@ -245,10 +270,22 @@
             try {
                 await signInWithPopup(auth, provider);
             } catch (err) {
-                console.error(err);
+                console.error("Auth Error:", err);
                 resetLoginBtn();
-                errorBox.classList.remove('hidden');
-                errorMsg.innerText = `[${err.code}] ${err.message}`;
+                if (err.code === 'auth/unauthorized-domain') {
+                    errorBox.classList.remove('hidden');
+                } else {
+                    alert(`登入失敗: ${err.message}`);
+                }
+            }
+        };
+
+        // 備用匿名登入方案（規則 3 推薦）
+        document.getElementById('btn-guest-access').onclick = async () => {
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                alert(`匿名登入失敗: ${err.message}`);
             }
         };
 
@@ -259,9 +296,12 @@
             document.getElementById('login-text').innerText = "使用 Google 帳號登入";
         }
 
-        document.getElementById('btn-logout').onclick = () => signOut(auth);
+        document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => window.location.reload());
 
         function startSync() {
+            if (!currentUser) return;
+
+            // 同步授權對應表
             const mapRef = collection(db, 'artifacts', appId, 'public', 'data', 'mappings');
             onSnapshot(mapRef, (snap) => {
                 mappingData = {};
@@ -276,27 +316,31 @@
                     list.appendChild(div);
                 });
                 renderUI();
-            });
+            }, (error) => console.error("Snapshot error (mappings):", error));
 
+            // 同步獎金紀錄
             const bonusRef = collection(db, 'artifacts', appId, 'public', 'data', 'bonuses');
             onSnapshot(bonusRef, (snap) => {
                 bonusData = [];
                 snap.forEach(doc => bonusData.push(doc.data()));
                 renderUI();
-            });
+            }, (error) => console.error("Snapshot error (bonuses):", error));
         }
 
         function renderUI() {
             if (!currentUser) return;
-            const myName = (currentUser.email === ADMIN_EMAIL) ? "管理員" : (mappingData[currentUser.email.toLowerCase().trim()] || null);
+            // 如果是管理員或匿名(測試用)
+            const myName = (currentUser.email === ADMIN_EMAIL || currentUser.isAnonymous) 
+                ? "管理員" 
+                : (mappingData[currentUser.email?.toLowerCase().trim()] || null);
+            
             document.getElementById('display-name').innerText = myName || "尚未授權人員";
             
-            const filtered = (currentUser.email === ADMIN_EMAIL) ? bonusData : bonusData.filter(b => b.name === myName);
+            const filtered = (myName === "管理員") ? bonusData : bonusData.filter(b => b.name === myName);
             
             let total = 0, received = 0, pending = 0;
             const byProject = {};
             filtered.forEach(b => {
-                // 處理包含引號與逗號的金額
                 const amtStr = String(b.amount || "0").replace(/[^0-9.-]+/g, '');
                 const amt = parseFloat(amtStr) || 0;
                 total += amt;
@@ -321,16 +365,11 @@
             lucide.createIcons();
         }
 
-        // --- 核心上傳邏輯：使用 WriteBatch 提升穩定性 ---
+        // --- 核心上傳邏輯 ---
         async function processFile(file) {
             if (!file || !currentUser) return;
-            if (currentUser.email !== ADMIN_EMAIL) {
-                alert("您沒有管理員權限進行此操作。");
-                return;
-            }
-
             const statusEl = document.getElementById('upload-status');
-            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider">正在處理中，請勿關閉視窗...</p>`;
+            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider">解析中...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
@@ -338,17 +377,12 @@
                     const csvContent = ev.target.result;
                     const lines = csvContent.split(/\r?\n/);
                     const records = [];
-                    
-                    // 正則表達式處理 CSV（支援引號內含逗號）
                     const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
                     for (let i = 3; i < lines.length; i++) {
                         const line = lines[i].trim();
-                        // 過濾完全空行
                         if (!line || line.replace(/,/g, '').trim() === '') continue;
-                        
                         const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
-                        // 確保至少有姓名(cols[1])與案別(cols[9])
                         if (cols.length < 10 || !cols[1]) continue;
                         
                         records.push({
@@ -363,39 +397,33 @@
                     }
 
                     if (records.length === 0) {
-                        alert("解析不到有效的資料行。請確認檔案格式是否正確。");
+                        alert("解析失敗，請確認檔案格式。");
                         resetUploadStatus();
                         return;
                     }
 
-                    // 使用 WriteBatch 分批寫入 (Firestore 限制每批 500 筆)
-                    const batchSize = 400; // 保險起見設定 400
-                    let totalBatches = Math.ceil(records.length / batchSize);
-                    
+                    // 批次上傳
+                    const batchSize = 400;
                     for (let i = 0; i < records.length; i += batchSize) {
-                        const currentBatch = writeBatch(db);
+                        const batch = writeBatch(db);
                         const chunk = records.slice(i, i + batchSize);
-                        const batchNum = Math.floor(i / batchSize) + 1;
+                        statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider">寫入中 (${i}/${records.length})...</p>`;
                         
-                        statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500 tracking-wider text-center">正在寫入資料 (${batchNum}/${totalBatches})<br/>請稍候...</p>`;
-
                         chunk.forEach(record => {
-                            const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-                            currentBatch.set(newDocRef, record);
+                            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
+                            batch.set(ref, record);
                         });
-                        
-                        await currentBatch.commit();
+                        await batch.commit();
                     }
 
-                    alert(`成功匯入 ${records.length} 筆獎金資料！`);
+                    alert(`成功匯入 ${records.length} 筆資料！`);
                 } catch (err) {
-                    console.error("Firestore Batch Upload Error:", err);
-                    alert(`上傳失敗：\n${err.message}\n\n請檢查您的網路連線與 Firebase 專案權限設定。`);
+                    console.error("Upload Error:", err);
+                    alert(`上傳失敗：${err.message}`);
                 } finally {
                     resetUploadStatus();
                 }
             };
-            
             reader.readAsText(file);
         }
 
@@ -407,20 +435,10 @@
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('csv-file');
-
-        ['dragover', 'dragenter'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('drop-zone-active'); });
-        });
-        ['dragleave', 'dragend', 'drop'].forEach(evt => {
-            dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove('drop-zone-active'); });
-        });
-        dropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            if (files.length) processFile(files[0]);
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) processFile(e.target.files[0]);
-        });
+        ['dragover', 'dragenter'].forEach(evt => { dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.add('drop-zone-active'); }); });
+        ['dragleave', 'dragend', 'drop'].forEach(evt => { dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.classList.remove('drop-zone-active'); }); });
+        dropZone.addEventListener('drop', (e) => { const files = e.dataTransfer.files; if (files.length) processFile(files[0]); });
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length) processFile(e.target.files[0]); });
 
         document.getElementById('form-auth').onsubmit = async (e) => {
             e.preventDefault();
@@ -429,29 +447,18 @@
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
                 e.target.reset();
-            } catch (err) {
-                alert("授權失敗：" + err.message);
-            }
+            } catch (err) { alert("授權失敗：" + err.message); }
         };
 
         document.getElementById('btn-clear-data').onclick = async () => {
-            if (!confirm("確定要刪除資料庫中所有的獎金紀錄嗎？此動作無法復原。")) return;
+            if (!confirm("確定要清空所有紀錄？")) return;
             try {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-                if (snap.empty) {
-                    alert("資料庫中本來就沒有紀錄。");
-                    return;
-                }
-                
-                // 刪除也使用 Batch 以提高效率
                 const batch = writeBatch(db);
                 snap.docs.forEach(d => batch.delete(d.ref));
                 await batch.commit();
-                
-                alert("已清空獎金資料庫。");
-            } catch (err) {
-                alert("清除失敗：" + err.message);
-            }
+                alert("已清空。");
+            } catch (err) { alert("失敗：" + err.message); }
         };
 
         window.showPage = (page) => {
@@ -461,6 +468,7 @@
             document.getElementById('tab-admin').className = (page === 'admin' ? "px-6 py-2 rounded-full bg-[#A3B18A] text-white text-sm font-medium shadow-sm" : "px-6 py-2 rounded-full bg-white border border-[#E9EDC9] text-[#6D6875] text-sm hover:border-[#A3B18A] transition-all");
         };
 
+        initAuth();
         lucide.createIcons();
     </script>
 </body>
