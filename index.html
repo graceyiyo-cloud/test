@@ -330,25 +330,27 @@
         async function processFile(file) {
             if (!file) return;
             const statusEl = document.getElementById('upload-status');
-            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">解析中...</p>`;
+            statusEl.innerHTML = `<div class="spinner border-gray-300 border-t-gray-600 w-6 h-6 mb-2"></div><p class="text-[10px] text-gray-500">解析與同步中...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 const csvContent = ev.target.result;
                 const lines = csvContent.split(/\r?\n/);
-                let count = 0;
+                const recordsToUpload = [];
                 
                 // 正則表達式：正確處理引號內的逗號（例如 " 17,400 "）
                 const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
                 for (let i = 3; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (!line) continue;
+                    // 關鍵修正：跳過完全空白或只包含逗號的行（解決檔案尾部空行問題）
+                    if (!line || line.replace(/,/g, '').trim() === '') continue;
                     
                     const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
+                    // 確保至少有姓名欄位才處理
                     if (cols.length < 10 || !cols[1]) continue;
                     
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), {
+                    recordsToUpload.push({
                         date: cols[0],
                         name: cols[1],
                         role: cols[2],
@@ -357,13 +359,34 @@
                         status: cols[10]?.includes('已發完') ? '已領' : '未領',
                         createdAt: Date.now()
                     });
-                    count++;
                 }
-                alert(`成功匯入 ${count} 筆獎金資料`);
-                statusEl.innerHTML = `<i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-xs text-[#6D6875]">點擊或拖放檔案</p><p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>`;
-                lucide.createIcons();
+
+                if (recordsToUpload.length === 0) {
+                    alert("未偵測到有效資料行，請檢查檔案格式。");
+                    resetUploadStatus();
+                    return;
+                }
+
+                try {
+                    // 同步執行上傳，大幅提高效率
+                    await Promise.all(recordsToUpload.map(record => 
+                        addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), record)
+                    ));
+                    alert(`成功匯入 ${recordsToUpload.length} 筆獎金資料`);
+                } catch (err) {
+                    console.error("Upload failed:", err);
+                    alert("上傳過程中發生錯誤，請稍後再試。");
+                } finally {
+                    resetUploadStatus();
+                }
             };
             reader.readAsText(file);
+        }
+
+        function resetUploadStatus() {
+            const statusEl = document.getElementById('upload-status');
+            statusEl.innerHTML = `<i data-lucide="cloud-upload" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-xs text-[#6D6875]">點擊或拖放檔案</p><p class="text-[10px] text-gray-400 mt-2">支援格式: 代銷獎金檔-全部new.csv</p>`;
+            lucide.createIcons();
         }
 
         // --- 拖放事件處理 ---
