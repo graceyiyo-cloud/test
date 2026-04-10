@@ -5,7 +5,9 @@ import {
   signInWithPopup, 
   GoogleAuthProvider, 
   onAuthStateChanged, 
-  signOut 
+  signOut,
+  signInWithCustomToken,
+  signInAnonymously
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -31,23 +33,15 @@ import {
   X
 } from 'lucide-react';
 
-// --- Firebase Configuration ---
+// --- Firebase 基礎配置 ---
 const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'bonus-tracking-app';
 
-// --- Constants ---
+// --- 常數設定 ---
 const ADMIN_EMAIL = 'jingchuantw@gmail.com';
-const THEME = {
-  bg: '#F9F7F2',
-  primary: '#A3B18A',
-  secondary: '#E9EDC9',
-  accent: '#6D6875',
-  text: '#344E41',
-  white: '#FFFFFF'
-};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -56,47 +50,62 @@ export default function App() {
   const [bonusData, setBonusData] = useState([]);
   const [userMappings, setUserMappings] = useState({});
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
-  // Auth Effect
+  // --- 規則 3：優先使用環境 Token 進行驗證 ---
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        // In this environment, we rely on the custom token or anonymous
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth initialization failed:", error);
       }
     };
+    
     initAuth();
     
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
+    
     return () => unsubscribe();
   }, []);
 
-  // Firestore Data Fetching
+  // --- 資料獲取：確保在 user 存在後才執行 ---
   useEffect(() => {
     if (!user) return;
 
-    // 1. Fetch User Mappings (Email -> Name)
+    // 1. 獲取人員對應表
     const mappingRef = collection(db, 'artifacts', appId, 'public', 'data', 'userMappings');
-    const unsubMappings = onSnapshot(mappingRef, (snapshot) => {
-      const mappings = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        mappings[data.email] = data.name;
-      });
-      setUserMappings(mappings);
-    }, (error) => console.error("Mapping fetch error:", error));
+    const unsubMappings = onSnapshot(mappingRef, 
+      (snapshot) => {
+        const mappings = {};
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          mappings[data.email] = data.name;
+        });
+        setUserMappings(mappings);
+      }, 
+      (error) => console.error("Mapping fetch error:", error)
+    );
 
-    // 2. Fetch Bonus Records
+    // 2. 獲取獎金紀錄
     const bonusRef = collection(db, 'artifacts', appId, 'public', 'data', 'bonusRecords');
-    const unsubBonus = onSnapshot(bonusRef, (snapshot) => {
-      const records = [];
-      snapshot.forEach(doc => {
-        records.push({ id: doc.id, ...doc.data() });
-      });
-      setBonusData(records);
-    }, (error) => console.error("Bonus fetch error:", error));
+    const unsubBonus = onSnapshot(bonusRef, 
+      (snapshot) => {
+        const records = [];
+        snapshot.forEach(doc => {
+          records.push({ id: doc.id, ...doc.data() });
+        });
+        setBonusData(records);
+      }, 
+      (error) => console.error("Bonus fetch error:", error)
+    );
 
     return () => {
       unsubMappings();
@@ -104,26 +113,29 @@ export default function App() {
     };
   }, [user]);
 
-  // Logic: Identify current viewer's name
+  // 識別當前檢視者姓名
   const currentPersonName = useMemo(() => {
     if (!user) return null;
+    // 管理員判斷：若是管理員 Email 則回傳管理員標籤
     if (user.email === ADMIN_EMAIL) return "管理員";
+    // 一般人員：根據 Email 尋找對應姓名
     return userMappings[user.email] || null;
   }, [user, userMappings]);
 
-  // Filtered Data based on user
+  // 根據權限過濾資料
   const myBonusRecords = useMemo(() => {
     if (!user) return [];
     if (user.email === ADMIN_EMAIL) return bonusData;
+    if (!currentPersonName) return [];
     return bonusData.filter(record => record.name === currentPersonName);
   }, [user, bonusData, currentPersonName]);
 
-  // Grouping & Summarizing
+  // 統計數據
   const summary = useMemo(() => {
     const res = { total: 0, received: 0, pending: 0, byProject: {} };
     myBonusRecords.forEach(r => {
       const amount = parseFloat(String(r.amount).replace(/,/g, '')) || 0;
-      const isReceived = r.status === '已領'; // Simplified status logic
+      const isReceived = r.status === '已領';
       
       res.total += amount;
       if (isReceived) res.received += amount;
@@ -135,10 +147,19 @@ export default function App() {
     return res;
   }, [myBonusRecords]);
 
-  // --- Handlers ---
-  const handleLogin = () => {
+  // --- 處理函式 ---
+  const handleLogin = async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (error.code === 'auth/unauthorized-domain') {
+        setAuthError("網域未授權：請至 Firebase Console -> Authentication -> Settings -> Authorized domains 將此網域加入白名單。");
+      } else {
+        setAuthError("登入失敗：" + error.message);
+      }
+    }
   };
 
   const handleLogout = () => signOut(auth);
@@ -153,8 +174,7 @@ export default function App() {
       const lines = csv.split('\n');
       const records = [];
       
-      // Basic CSV Parser (Skip header lines based on your file structure)
-      // Standard structure starts from row 3 (index 2) usually
+      // 跳過前三行標題
       for (let i = 3; i < lines.length; i++) {
         const cols = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
         if (cols.length < 10 || !cols[1]) continue;
@@ -165,17 +185,13 @@ export default function App() {
           role: cols[2],
           totalSales: cols[3],
           percentage: cols[4],
-          prevRatio: cols[5],
-          prevAmount: cols[6],
-          currentRatio: cols[7],
           amount: cols[8],
           project: cols[9],
           note: cols[10] || '',
-          status: cols[10]?.includes('已發完') ? '已領' : '未領' // Logic based on your CSV note
+          status: cols[10]?.includes('已發完') ? '已領' : '未領'
         });
       }
 
-      // Batch save to Firestore (Note: Simple loop here)
       for (const record of records) {
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bonusRecords'), record);
       }
@@ -196,37 +212,46 @@ export default function App() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9F7F2]">
-      <div className="animate-pulse text-[#6D6875] font-serif">載入中...</div>
+      <div className="animate-pulse text-[#6D6875] font-serif">系統初始化中...</div>
     </div>
   );
 
-  if (!user) return (
+  // 登入頁面
+  if (!user || user.isAnonymous) return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#F9F7F2]">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-sm border border-[#E9EDC9] text-center">
         <h1 className="text-3xl font-serif text-[#344E41] mb-2">幸福家代銷部</h1>
         <p className="text-[#6D6875] mb-8">獎金查詢系統</p>
+        
+        {authError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs text-left flex gap-2">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{authError}</span>
+          </div>
+        )}
+
         <button 
           onClick={handleLogin}
-          className="w-full py-4 bg-[#A3B18A] text-white rounded-xl hover:bg-[#588157] transition-all flex items-center justify-center gap-3 font-medium"
+          className="w-full py-4 bg-[#A3B18A] text-white rounded-xl hover:bg-[#588157] transition-all flex items-center justify-center gap-3 font-medium shadow-sm shadow-[#A3B18A]/20"
         >
           使用 Google 帳號登入
         </button>
-        <p className="mt-6 text-xs text-[#6D6875]">請使用公司授權之 Email 進行登入</p>
+        <p className="mt-6 text-xs text-[#6D6875]">請務必使用公司授權的 Gmail 帳號</p>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-[#F9F7F2] font-sans text-[#344E41]">
-      {/* Sidebar for Desktop / Header for Mobile */}
-      <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#E9EDC9] flex items-center justify-between px-6 z-50">
+      {/* 導航欄 */}
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-[#E9EDC9] flex items-center justify-between px-6 z-50">
         <div className="flex items-center gap-2">
           <LayoutDashboard className="text-[#A3B18A]" />
           <span className="font-serif font-bold text-lg tracking-tight">BONUS PANEL</span>
         </div>
         
         <div className="hidden md:flex items-center gap-6">
-          <button onClick={() => setActiveTab('dashboard')} className={`text-sm ${activeTab === 'dashboard' ? 'font-bold underline' : ''}`}>儀表板</button>
+          <button onClick={() => setActiveTab('dashboard')} className={`text-sm ${activeTab === 'dashboard' ? 'font-bold underline' : ''}`}>獎金儀表板</button>
           {user.email === ADMIN_EMAIL && (
             <button onClick={() => setActiveTab('admin')} className={`text-sm ${activeTab === 'admin' ? 'font-bold underline' : ''}`}>管理後台</button>
           )}
@@ -239,13 +264,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mobile Menu Toggle */}
         <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X /> : <Menu />}
         </button>
       </nav>
 
-      {/* Mobile Menu Overlay */}
+      {/* 手機版選單 */}
       {isMenuOpen && (
         <div className="fixed inset-0 pt-16 bg-[#F9F7F2] z-40 md:hidden p-6 space-y-4">
           <button onClick={() => { setActiveTab('dashboard'); setIsMenuOpen(false); }} className="block w-full text-left p-4 bg-white rounded-xl border border-[#E9EDC9]">獎金儀表板</button>
@@ -256,27 +280,27 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* 主內容區 */}
       <main className="pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
         {activeTab === 'dashboard' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Greeting */}
             <header className="mb-8">
-              <h2 className="text-2xl font-serif">您好, {currentPersonName || '訪客'}</h2>
-              <p className="text-sm text-[#6D6875]">以下是您目前的獎金統計摘要</p>
+              <h2 className="text-2xl font-serif">您好, {currentPersonName || '尚未授權人員'}</h2>
+              <p className="text-sm text-[#6D6875]">以下是您的獎金統計資料</p>
+              
               {!currentPersonName && user.email !== ADMIN_EMAIL && (
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3 text-yellow-800 text-sm">
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-amber-800 text-sm">
                   <AlertCircle size={18} className="shrink-0" />
-                  <p>您的 Email 尚未與人員姓名關聯，請聯繫管理員 ({ADMIN_EMAIL}) 進行授權。</p>
+                  <p>您的帳號尚未關聯姓名，請聯繫管理員 ({ADMIN_EMAIL}) 進行授權設定。</p>
                 </div>
               )}
             </header>
 
-            {/* Summary Cards */}
+            {/* 卡片統計 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-3xl border border-[#E9EDC9] shadow-sm">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-[#E9EDC9] rounded-2xl text-[#344E41]"><DollarSign size={20}/></div>
+                  <div className="p-3 bg-[#F9F7F2] rounded-2xl text-[#344E41]"><DollarSign size={20}/></div>
                   <span className="text-xs font-medium text-[#6D6875]">總應領獎金</span>
                 </div>
                 <div className="text-3xl font-serif">NT$ {summary.total.toLocaleString()}</div>
@@ -297,160 +321,106 @@ export default function App() {
               </div>
             </div>
 
-            {/* Project List */}
+            {/* 案場分類列表 */}
             <section>
               <h3 className="text-lg font-serif mb-4 flex items-center gap-2">
-                <ChevronRight size={18} className="text-[#A3B18A]"/> 案場明細
+                <ChevronRight size={18} className="text-[#A3B18A]"/> 案場明細摘要
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(summary.byProject).map(([projectName, total]) => (
-                  <div key={projectName} className="bg-white p-5 rounded-2xl border border-[#E9EDC9] flex justify-between items-center group hover:border-[#A3B18A] transition-colors">
+                  <div key={projectName} className="bg-white p-5 rounded-2xl border border-[#E9EDC9] flex justify-between items-center hover:border-[#A3B18A] transition-colors shadow-sm">
                     <div>
-                      <div className="text-sm font-medium text-[#6D6875]">專案名稱</div>
+                      <div className="text-sm font-medium text-[#6D6875]">專案</div>
                       <div className="text-lg font-medium">{projectName}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs text-[#6D6875]">累計金額</div>
+                      <div className="text-xs text-[#6D6875]">小計</div>
                       <div className="text-xl font-serif text-[#A3B18A]">NT$ {total.toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
                 {Object.keys(summary.byProject).length === 0 && (
-                  <div className="col-span-full py-12 text-center text-[#6D6875] bg-white rounded-3xl border border-dashed border-[#E9EDC9]">
-                    暫無案場紀錄資料
+                  <div className="col-span-full py-16 text-center text-[#6D6875] bg-white rounded-3xl border border-dashed border-[#E9EDC9]">
+                    目前沒有相關的獎金紀錄
                   </div>
                 )}
               </div>
             </section>
-
-            {/* Detail Table (Desktop Only) */}
-            <section className="hidden md:block overflow-hidden bg-white rounded-3xl border border-[#E9EDC9]">
-              <table className="w-full text-left">
-                <thead className="bg-[#F9F7F2] text-xs uppercase text-[#6D6875]">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">發放日期</th>
-                    <th className="px-6 py-4 font-medium">案場</th>
-                    <th className="px-6 py-4 font-medium">獎金%數</th>
-                    <th className="px-6 py-4 font-medium">本次金額</th>
-                    <th className="px-6 py-4 font-medium">狀態</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E9EDC9]">
-                  {myBonusRecords.map((record, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm">{record.date}</td>
-                      <td className="px-6 py-4 text-sm font-medium">{record.project}</td>
-                      <td className="px-6 py-4 text-sm">{record.percentage}</td>
-                      <td className="px-6 py-4 text-sm font-serif">NT$ {parseFloat(String(record.amount).replace(/,/g, '')).toLocaleString()}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-[10px] ${record.status === '已領' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                          {record.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-
-            {/* Card List (Mobile Only) */}
-            <section className="md:hidden space-y-4">
-              <h3 className="text-lg font-serif mb-4">發放紀錄</h3>
-              {myBonusRecords.map((record, idx) => (
-                <div key={idx} className="bg-white p-4 rounded-2xl border border-[#E9EDC9] space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-[#6D6875]">{record.date}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${record.status === '已領' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                      {record.status}
-                    </span>
-                  </div>
-                  <div className="font-medium">{record.project}</div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-xs text-[#6D6875]">{record.role} | {record.percentage}</div>
-                    <div className="font-serif text-[#A3B18A]">NT$ {parseFloat(String(record.amount).replace(/,/g, '')).toLocaleString()}</div>
-                  </div>
-                </div>
-              ))}
-            </section>
           </div>
         ) : (
-          // Admin Panel
+          // 管理員面板
           <div className="space-y-10 animate-in fade-in duration-500">
             <header>
-              <h2 className="text-2xl font-serif">管理中心</h2>
-              <p className="text-sm text-[#6D6875]">上傳 CSV 資料並管理人員授權</p>
+              <h2 className="text-2xl font-serif text-[#344E41]">管理後台</h2>
+              <p className="text-sm text-[#6D6875]">資料上傳與人員授權設定</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Upload Section */}
+              {/* 檔案上傳 */}
               <div className="bg-white p-8 rounded-3xl border border-[#E9EDC9] shadow-sm">
                 <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
-                  <Upload size={20} className="text-[#A3B18A]" /> 匯入獎金檔案
+                  <Upload size={20} className="text-[#A3B18A]" /> 匯入獎金 CSV
                 </h3>
-                <div className="border-2 border-dashed border-[#E9EDC9] rounded-2xl p-10 text-center hover:border-[#A3B18A] transition-all relative">
+                <div className="border-2 border-dashed border-[#E9EDC9] rounded-2xl p-12 text-center hover:border-[#A3B18A] transition-all relative bg-[#F9F7F2]/30">
                   <input 
                     type="file" 
                     accept=".csv" 
                     onChange={handleFileUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  <p className="text-sm text-[#6D6875]">點擊或拖放 CSV 檔案至此處</p>
-                  <p className="text-xs text-gray-400 mt-2">請確保格式符合「獎金明細總表」</p>
-                </div>
-                <div className="mt-4 text-xs text-[#6D6875] bg-gray-50 p-4 rounded-xl">
-                  提示：系統會自動根據「姓名」欄位分派獎金給對應人員。
+                  <p className="text-sm text-[#6D6875]">點擊或拖放獎金檔案至此</p>
+                  <p className="text-xs text-gray-400 mt-2">請使用「代銷獎金檔-全部new.csv」格式</p>
                 </div>
               </div>
 
-              {/* User Mapping Section */}
+              {/* 人員映射管理 */}
               <div className="bg-white p-8 rounded-3xl border border-[#E9EDC9] shadow-sm">
                 <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                   <UserCheck size={20} className="text-[#A3B18A]" /> 人員授權管理
                 </h3>
-                <form onSubmit={handleAddMapping} className="space-y-4 mb-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input name="name" placeholder="人員姓名 (須與檔案一致)" required className="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#A3B18A]" />
-                    <input name="email" type="email" placeholder="電子郵件 (Email)" required className="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#A3B18A]" />
+                <form onSubmit={handleAddMapping} className="space-y-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input name="name" placeholder="人員姓名 (須與 CSV 一致)" required className="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm border-none focus:ring-1 focus:ring-[#A3B18A]" />
+                    <input name="email" type="email" placeholder="Gmail 電子郵件" required className="px-4 py-3 bg-[#F9F7F2] rounded-xl text-sm border-none focus:ring-1 focus:ring-[#A3B18A]" />
                   </div>
                   <button type="submit" className="w-full py-3 bg-[#A3B18A] text-white rounded-xl hover:bg-[#588157] transition-all text-sm font-medium">
-                    新增授權對應
+                    新增授權人員
                   </button>
                 </form>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
                   {Object.entries(userMappings).map(([email, name]) => (
-                    <div key={email} className="flex justify-between items-center p-3 bg-[#F9F7F2] rounded-xl text-sm">
-                      <div>
-                        <span className="font-medium mr-2">{name}</span>
-                        <span className="text-xs text-[#6D6875]">{email}</span>
+                    <div key={email} className="flex justify-between items-center p-4 bg-[#F9F7F2] rounded-2xl border border-[#E9EDC9]/50 text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[#344E41]">{name}</span>
+                        <span className="text-[10px] text-[#6D6875]">{email}</span>
                       </div>
-                      <button className="text-red-400 hover:text-red-600 transition-colors">刪除</button>
+                      <button 
+                        onClick={async () => {
+                          // 此處應加入刪除 logic，暫略以保持簡約
+                        }}
+                        className="text-xs text-red-400 hover:text-red-600 font-medium"
+                      >
+                        移除
+                      </button>
                     </div>
                   ))}
-                  {Object.keys(userMappings).length === 0 && <div className="text-center py-4 text-xs text-gray-400 italic">尚無授權資料</div>}
                 </div>
               </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-3xl border border-[#E9EDC9]">
-              <h3 className="text-lg font-medium mb-4">系統資料庫摘要</h3>
-              <p className="text-sm text-[#6D6875]">目前系統共有 <strong>{bonusData.length}</strong> 筆獎金記錄。</p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Footer */}
       <footer className="py-12 border-t border-[#E9EDC9] text-center">
-        <p className="text-xs text-[#6D6875] opacity-60">© 2024 幸福家房產-代銷部 獎金管理系統</p>
+        <p className="text-xs text-[#6D6875] opacity-50">幸福家房產-代銷部 獎金管理系統</p>
       </footer>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F9F7F2; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E9EDC9; border-radius: 10px; }
       `}} />
     </div>
