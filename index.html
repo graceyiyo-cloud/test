@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>幸福家房產 - 獎金管理系統</title>
+    <title>幸福家房產 - 獎金領取結算系統</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: 僅使用非襯線體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg: #F9F7F2; /* 莫蘭迪米白 */
-            --primary: #8DA08A; /* 莫蘭迪草綠 */
-            --secondary: #E3E7D3;
-            --text: #4A5A50; /* 深森林綠 */
-            --accent: #9A8C98; /* 莫蘭迪紫灰 */
-            --danger: #B5838D;
+            --primary: #A3B18A; /* 莫蘭迪鼠尾草綠 */
+            --secondary: #E9EDC9;
+            --text: #344E41; /* 深森林綠 */
+            --accent: #6D6875; /* 莫蘭迪紫灰 */
+            --danger: #B5838D; /* 莫蘭迪粉紅 */
         }
         body {
             font-family: 'Noto Sans TC', sans-serif;
@@ -23,7 +26,7 @@
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
-        /* 嚴格移除襯線與斜體 */
+        /* 嚴格禁止襯線體與斜體 */
         * { font-style: normal !important; }
         
         .fade-in { animation: fadeIn 0.6s ease-out forwards; }
@@ -34,12 +37,12 @@
             border: 1px solid var(--secondary);
             border-radius: 1.25rem;
             transition: all 0.3s ease;
-            word-wrap: break-word;
-            overflow: hidden;
+            overflow: hidden; /* 確保內容不溢出 */
+            word-break: break-all; /* 防止案名過長 */
         }
         .morandi-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 10px 25px -5px rgba(141, 160, 138, 0.15);
+            box-shadow: 0 12px 24px -10px rgba(163, 177, 138, 0.2);
         }
 
         .btn-primary {
@@ -47,7 +50,8 @@
             color: white;
             transition: all 0.2s;
         }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:hover { opacity: 0.9; transform: scale(0.98); }
+        .btn-primary:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -58,134 +62,139 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+    <!-- 登入介面 -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6 bg-[#F9F7F2]">
         <div class="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-sm border border-secondary text-center fade-in">
-            <h1 class="text-2xl font-bold mb-2 tracking-tight">幸福家代銷部</h1>
-            <p class="text-accent mb-8 text-[10px] tracking-[0.3em] font-light uppercase">Bonus Calculation System</p>
+            <h1 class="text-2xl font-bold mb-2 tracking-tight text-[#344E41]">幸福家代銷部</h1>
+            <p class="text-accent mb-10 text-[10px] tracking-[0.4em] font-light uppercase">Bonus Management</p>
             
             <div class="space-y-4">
                 <button id="btn-login" class="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium shadow-sm">
                     <i data-lucide="log-in" id="login-icon" class="w-5 h-5"></i>
                     <div id="login-spinner" class="spinner hidden"></div>
-                    <span>使用 Google 帳號登入</span>
+                    <span id="login-text">使用 Google 帳號登入</span>
                 </button>
             </div>
             
-            <div id="error-container" class="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
-                <p class="text-[11px] text-red-500 flex gap-2">
+            <div id="error-container" class="mt-8 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
+                <div class="flex gap-2 text-red-600 mb-2">
                     <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                    <span>網域授權異常，管理員可點擊下方進入。</span>
+                    <span class="text-xs font-bold">登入異常偵測</span>
+                </div>
+                <p id="error-message" class="text-[11px] text-red-500 leading-relaxed mb-3">
+                    瀏覽器可能封鎖了登入視窗，或此網域尚未獲得授權。
                 </p>
-                <button id="btn-guest-access" class="mt-3 w-full py-2 bg-white border border-red-200 rounded-lg text-[10px] text-red-600">使用臨時授權</button>
+                <button id="btn-guest-access" class="w-full py-2 bg-white border border-red-200 rounded-lg text-[10px] text-red-600 font-bold hover:bg-red-50 transition-colors">使用臨時測試模式進入</button>
             </div>
         </div>
     </div>
 
+    <!-- 主應用程式介面 -->
     <div id="app-screen" class="hidden min-h-screen">
-        <nav class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-secondary flex items-center justify-between px-6 z-50">
+        <nav class="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-md border-b border-secondary flex items-center justify-between px-6 z-50">
             <div class="flex items-center gap-2">
                 <i data-lucide="calculator" class="text-primary w-5 h-5"></i>
-                <span class="font-bold text-lg tracking-tighter">獎金查詢系統</span>
+                <span class="font-bold text-base tracking-tighter">結算管理系統</span>
             </div>
             <div class="flex items-center gap-4">
-                <span id="user-email" class="hidden md:block text-[11px] text-accent font-light"></span>
-                <button id="btn-logout" class="p-2 hover:bg-gray-100 rounded-full">
+                <span id="user-email" class="hidden md:block text-[10px] text-accent font-medium"></span>
+                <button id="btn-logout" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <i data-lucide="log-out" class="w-5 h-5 text-accent"></i>
                 </button>
             </div>
         </nav>
 
-        <main class="pt-24 pb-12 px-4 max-w-6xl mx-auto">
-            <div id="admin-nav" class="hidden flex gap-2 mb-8 overflow-x-auto no-scrollbar">
-                <button onclick="showPage('dashboard')" id="tab-dashboard" class="whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm">獎金儀表板</button>
-                <button onclick="showPage('admin')" id="tab-admin" class="whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary">後台管理</button>
+        <main class="pt-24 pb-12 px-4 max-w-5xl mx-auto">
+            <div id="admin-nav" class="hidden flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
+                <button onclick="showPage('dashboard')" id="tab-dashboard" class="whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm">我的獎金</button>
+                <button onclick="showPage('admin')" id="tab-admin" class="whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary transition-all">管理中心</button>
             </div>
 
+            <!-- 分頁：個人儀表板 -->
             <div id="page-dashboard" class="space-y-6 fade-in">
                 <header>
                     <h2 class="text-xl font-bold">您好，<span id="display-name" class="text-primary">...</span></h2>
-                    <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">My Bonus Overview</p>
+                    <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">My Bonus Settlement</p>
                 </header>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="morandi-card p-6">
-                        <div class="text-[10px] text-accent mb-2 font-bold uppercase tracking-widest">應領獎金總額 (100%)</div>
-                        <div class="text-2xl font-bold tracking-tighter" id="val-total">NT$ 0</div>
+                        <div class="text-[10px] text-accent mb-2 font-bold uppercase tracking-widest">應領獎金總額</div>
+                        <div class="text-2xl font-bold tracking-tight" id="val-total">NT$ 0</div>
                     </div>
                     <div class="morandi-card p-6">
                         <div class="text-[10px] text-primary mb-2 font-bold uppercase tracking-widest">已領獎金 (累計)</div>
-                        <div class="text-2xl font-bold tracking-tighter text-primary" id="val-received">NT$ 0</div>
+                        <div class="text-2xl font-bold tracking-tight text-primary" id="val-received">NT$ 0</div>
                     </div>
                     <div class="morandi-card p-6">
-                        <div class="text-[10px] text-danger mb-2 font-bold uppercase tracking-widest">剩餘未領獎金</div>
-                        <div class="text-2xl font-bold tracking-tighter text-danger" id="val-pending">NT$ 0</div>
+                        <div class="text-[10px] text-danger mb-2 font-bold uppercase tracking-widest">待領剩餘獎金</div>
+                        <div class="text-2xl font-bold tracking-tight text-danger" id="val-pending">NT$ 0</div>
                     </div>
                 </div>
 
                 <section>
                     <h3 class="text-sm font-bold mb-4 flex items-center gap-2">
-                        <i data-lucide="layers" class="w-4 h-4 text-primary"></i> 案場結算摘要
+                        <i data-lucide="layout-list" class="w-4 h-4 text-primary"></i> 各案場結算明細
                     </h3>
                     <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-full py-16 text-center text-gray-300 text-xs">尚無計算數據，請聯繫管理員上傳資料</div>
+                        <div class="col-span-full py-16 text-center text-gray-300 text-xs italic uppercase tracking-widest">No Records Found</div>
                     </div>
                 </section>
             </div>
 
+            <!-- 分頁：管理介面 -->
             <div id="page-admin" class="hidden space-y-8 fade-in">
-                <header>
-                    <h2 class="text-xl font-bold">數據管理中心</h2>
-                    <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">Upload & Data Processing</p>
-                </header>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-8 rounded-[2rem] border border-secondary shadow-sm">
-                        <h3 class="text-xs font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯入獎金 CSV 檔案
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 上傳區 -->
+                    <div class="bg-white p-6 rounded-[2rem] border border-secondary shadow-sm">
+                        <h3 class="text-xs font-bold mb-4 flex items-center gap-2">
+                            <i data-lucide="file-up" class="w-4 h-4"></i> 1. 匯入最新獎金 CSV
                         </h3>
-                        <div id="drop-zone" class="border-2 border-dashed border-secondary rounded-2xl p-10 text-center hover:border-primary transition-all relative bg-gray-50/50">
+                        <div id="drop-zone" class="border-2 border-dashed border-secondary rounded-2xl p-8 text-center hover:border-primary transition-all relative bg-gray-50/50">
                             <input type="file" id="csv-file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                             <div id="upload-status" class="flex flex-col items-center">
-                                <i data-lucide="upload-cloud" class="mx-auto w-8 h-8 text-gray-300 mb-3"></i>
-                                <p class="text-[11px] text-accent">拖放 `代銷獎金檔-全部.csv` 到此處</p>
+                                <i data-lucide="upload-cloud" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i>
+                                <p class="text-[11px] text-accent">點擊選擇或拖放檔案</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-8 rounded-[2rem] border border-secondary shadow-sm">
-                        <h3 class="text-xs font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="shield-check" class="w-4 h-4"></i> 授權人員名單
+                    <!-- 授權區 -->
+                    <div class="bg-white p-6 rounded-[2rem] border border-secondary shadow-sm">
+                        <h3 class="text-xs font-bold mb-4 flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i> 2. 人員名單授權
                         </h3>
-                        <form id="form-auth" class="space-y-3 mb-6">
+                        <form id="form-auth" class="space-y-3 mb-4">
                             <div class="flex gap-2">
                                 <input id="auth-name" placeholder="姓名" required class="flex-1 px-4 py-2 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-primary" />
                                 <input id="auth-email" type="email" placeholder="Gmail" required class="flex-1 px-4 py-2 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-primary" />
                             </div>
-                            <button type="submit" class="w-full py-3 btn-primary rounded-xl text-xs font-bold">新增授權</button>
+                            <button type="submit" class="w-full py-2 btn-primary rounded-xl text-xs font-bold">新增授權人員</button>
                         </form>
                         <div id="auth-list" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
                     </div>
                 </div>
                 
-                <div class="pt-8 flex justify-end">
-                    <button id="btn-clear-data" class="text-[10px] text-red-300 hover:text-red-500 underline flex items-center gap-1">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i> 清除所有獎金紀錄
+                <div class="flex justify-end pt-4">
+                    <button id="btn-clear-data" class="text-[10px] text-red-300 hover:text-red-500 underline flex items-center gap-1 transition-colors">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> 刪除所有資料庫紀錄
                     </button>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, writeBatch, onSnapshot, query, deleteDoc, getDocs, doc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, writeBatch, onSnapshot, getDocs, doc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
@@ -196,22 +205,47 @@
             appId: "1:620488371764:web:77fe6caab7ce0652ab2461"
         };
 
+        // 初始化
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'bonus-system-calc-v1';
+        const appId = 'bonus-system-master-v3';
         const ADMIN_EMAIL = 'jingchuantw@gmail.com';
 
         let currentUser = null;
         let mappingData = {};
         let bonusData = [];
 
+        // 登入邏輯修復
+        const btnLogin = document.getElementById('btn-login');
+        btnLogin.addEventListener('click', async () => {
+            btnLogin.disabled = true;
+            document.getElementById('login-icon').classList.add('hidden');
+            document.getElementById('login-spinner').classList.remove('hidden');
+            
+            const provider = new GoogleAuthProvider();
+            try {
+                // 強制檢查 Popup 是否能開啟
+                console.log("Firebase Auth: Attempting Google Login...");
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                console.error("Firebase Auth Error:", err);
+                document.getElementById('error-container').classList.remove('hidden');
+                btnLogin.disabled = false;
+                document.getElementById('login-icon').classList.remove('hidden');
+                document.getElementById('login-spinner').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('btn-guest-access').onclick = () => signInAnonymously(auth);
+        document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => location.reload());
+
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('user-email').innerText = user.email || "Guest Mode";
+                document.getElementById('user-email').innerText = user.email || "測試訪客";
                 if (user.email === ADMIN_EMAIL || user.isAnonymous) {
                     document.getElementById('admin-nav').classList.remove('hidden');
                 }
@@ -223,25 +257,8 @@
             lucide.createIcons();
         });
 
-        document.getElementById('btn-login').onclick = async () => {
-            const btn = document.getElementById('btn-login');
-            btn.disabled = true;
-            document.getElementById('login-spinner').classList.remove('hidden');
-            document.getElementById('login-icon').classList.add('hidden');
-            try {
-                await signInWithPopup(auth, new GoogleAuthProvider());
-            } catch (err) {
-                document.getElementById('error-container').classList.remove('hidden');
-                btn.disabled = false;
-                document.getElementById('login-spinner').classList.add('hidden');
-                document.getElementById('login-icon').classList.remove('hidden');
-            }
-        };
-
-        document.getElementById('btn-guest-access').onclick = () => signInAnonymously(auth);
-        document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => location.reload());
-
         function startSync() {
+            // 同步授權
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), (snap) => {
                 mappingData = {};
                 const list = document.getElementById('auth-list');
@@ -250,13 +267,14 @@
                     const data = d.data();
                     mappingData[data.email.toLowerCase().trim()] = data.name;
                     const el = document.createElement('div');
-                    el.className = "flex justify-between items-center p-3 bg-gray-50 rounded-xl text-[10px]";
-                    el.innerHTML = `<span><b>${data.name}</b> (${data.email})</span>`;
+                    el.className = "p-3 bg-gray-50 rounded-xl text-[10px] border border-secondary/50 flex justify-between";
+                    el.innerHTML = `<span><b>${data.name}</b></span><span class="opacity-50">${data.email}</span>`;
                     list.appendChild(el);
                 });
                 renderUI();
             });
 
+            // 同步獎金
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'), (snap) => {
                 bonusData = [];
                 snap.forEach(d => bonusData.push(d.data()));
@@ -270,21 +288,21 @@
                 ? "管理員" 
                 : (mappingData[currentUser.email?.toLowerCase().trim()] || null);
 
-            document.getElementById('display-name').innerText = myName || "未授權人員";
+            document.getElementById('display-name').innerText = myName || "未獲得授權";
             
             const filtered = (myName === "管理員") ? bonusData : bonusData.filter(b => b.name === myName);
             
-            let totalExpected = 0, alreadyPaid = 0, remaining = 0;
+            let totalExp = 0, totalPaid = 0, totalRem = 0;
             const byProject = {};
 
             filtered.forEach(b => {
-                const exp = parseFloat(b.expectedBonus) || 0;
-                const paid = parseFloat(b.amountPaid) || 0;
+                const exp = parseFloat(b.expected) || 0;
+                const paid = parseFloat(b.paid) || 0;
                 const rem = parseFloat(b.remaining) || 0;
                 
-                totalExpected += exp;
-                alreadyPaid += paid;
-                remaining += rem;
+                totalExp += exp;
+                totalPaid += paid;
+                totalRem += rem;
 
                 if (!byProject[b.project]) byProject[b.project] = { exp: 0, paid: 0, rem: 0 };
                 byProject[b.project].exp += exp;
@@ -292,41 +310,41 @@
                 byProject[b.project].rem += rem;
             });
 
-            document.getElementById('val-total').innerText = `NT$ ${totalExpected.toLocaleString()}`;
-            document.getElementById('val-received').innerText = `NT$ ${alreadyPaid.toLocaleString()}`;
-            document.getElementById('val-pending').innerText = `NT$ ${remaining.toLocaleString()}`;
+            document.getElementById('val-total').innerText = `NT$ ${totalExp.toLocaleString()}`;
+            document.getElementById('val-received').innerText = `NT$ ${totalPaid.toLocaleString()}`;
+            document.getElementById('val-pending').innerText = `NT$ ${totalRem.toLocaleString()}`;
 
             const list = document.getElementById('project-list');
             list.innerHTML = '';
             Object.entries(byProject).forEach(([name, data]) => {
                 const card = document.createElement('div');
-                card.className = "morandi-card p-5 space-y-3";
+                card.className = "morandi-card p-5 space-y-4";
                 card.innerHTML = `
-                    <div class="flex justify-between items-start border-b border-gray-50 pb-2">
-                        <div>
-                            <div class="text-[9px] text-accent uppercase font-bold">Project Name</div>
+                    <div class="flex justify-between items-start">
+                        <div class="max-w-[70%]">
+                            <div class="text-[9px] text-accent uppercase font-bold tracking-tighter">Project</div>
                             <div class="text-sm font-bold text-text">${name}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-[9px] text-accent uppercase font-bold">Expected</div>
+                            <div class="text-[9px] text-accent uppercase font-bold tracking-tighter">Total Due</div>
                             <div class="text-sm font-bold text-text">NT$ ${data.exp.toLocaleString()}</div>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center text-[10px]">
-                        <span class="text-accent">已領取: NT$ ${data.paid.toLocaleString()}</span>
-                        <span class="text-danger font-bold">待領取: NT$ ${data.rem.toLocaleString()}</span>
+                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg text-[10px]">
+                        <span class="text-primary font-medium">已領: NT$ ${data.paid.toLocaleString()}</span>
+                        <span class="text-danger font-bold">未領: NT$ ${data.rem.toLocaleString()}</span>
                     </div>`;
                 list.appendChild(card);
             });
-            if (filtered.length === 0) list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 text-[10px] tracking-widest uppercase">No Records Available</div>`;
+            if (filtered.length === 0) list.innerHTML = `<div class="col-span-full py-12 text-center text-gray-300 text-[10px] tracking-[0.2em] uppercase">No data for the current user</div>`;
             lucide.createIcons();
         }
 
-        // --- 核心運算匯入邏輯 ---
+        // --- 核心匯入邏輯 (公式運算版) ---
         async function processFile(file) {
             if (!file || !currentUser) return;
             const statusEl = document.getElementById('upload-status');
-            statusEl.innerHTML = `<div class="spinner border-gray-200 border-t-primary w-6 h-6 mb-2"></div><p class="text-[10px] text-primary font-bold">數據運算中...</p>`;
+            statusEl.innerHTML = `<div class="spinner border-gray-200 border-t-primary w-6 h-6 mb-2"></div><p class="text-[10px] text-primary font-bold">計算結算中...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
@@ -335,41 +353,36 @@
                     const records = [];
                     const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
-                    // 從第 4 行 (index 3) 開始
+                    // 從第 4 行 (index 3) 開始讀取
                     for (let i = 3; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line || line.replace(/,/g, '').trim() === '') continue;
 
                         const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
-                        
-                        // 欄位定義：1:姓名, 3:總銷, 4:獎金%, 8:獎金合計, 9:案別
                         if (cols.length < 10 || !cols[1]) continue;
 
-                        const sales = parseFloat(cols[3].replace(/[^0-9.-]+/g, '')) || 0;
-                        const percent = parseFloat(cols[4].replace('%', '')) / 100 || 0;
-                        const paid = parseFloat(cols[8].replace(/[^0-9.-]+/g, '')) || 0;
+                        // 數據提取與清洗
+                        const sales = parseFloat(cols[3].replace(/[^0-9.-]+/g, '')) || 0; // 總銷
+                        const percent = parseFloat(cols[4].replace('%', '')) / 100 || 0; // 獎金%
+                        const paidAmount = parseFloat(cols[8].replace(/[^0-9.-]+/g, '')) || 0; // 獎金合計
 
-                        // 公式計算：總銷 * 獎金% - 獎金合計
-                        const expectedBonus = Math.round(sales * percent);
-                        const remaining = expectedBonus - paid;
+                        // 公式：應領 = 總銷 * 獎金%, 剩餘 = 應領 - 獎金合計
+                        const expected = Math.round(sales * percent);
+                        const remaining = expected - paidAmount;
 
                         records.push({
                             date: cols[0],
                             name: cols[1],
                             role: cols[2],
-                            sales: sales,
-                            percent: cols[4],
-                            expectedBonus: expectedBonus, // 應領 (100%)
-                            amountPaid: paid,             // 已領 (獎金合計)
-                            remaining: remaining,         // 待領 (剩餘)
+                            expected: expected,
+                            paid: paidAmount,
+                            remaining: remaining,
                             project: cols[9],
                             createdAt: Date.now()
                         });
                     }
 
-                    if (records.length === 0) throw new Error("無效數據格式");
-
-                    const batchSize = 400;
+                    const batchSize = 350;
                     for (let i = 0; i < records.length; i += batchSize) {
                         const batch = writeBatch(db);
                         records.slice(i, i + batchSize).forEach(record => {
@@ -378,9 +391,9 @@
                         });
                         await batch.commit();
                     }
-                    alert(`成功匯入 ${records.length} 筆資料，已自動完成獎金差額結算。`);
+                    alert(`✅ 已匯入 ${records.length} 筆資料，獎金差額已自動結算。`);
                 } catch (err) {
-                    alert(`錯誤：${err.message}`);
+                    alert(`匯入失敗：${err.message}`);
                 } finally {
                     resetUploadStatus();
                 }
@@ -389,7 +402,7 @@
         }
 
         function resetUploadStatus() {
-            document.getElementById('upload-status').innerHTML = `<i data-lucide="upload-cloud" class="mx-auto w-8 h-8 text-gray-300 mb-3"></i><p class="text-[11px] text-accent">拖放 `代銷獎金檔-全部.csv` 到此處</p>`;
+            document.getElementById('upload-status').innerHTML = `<i data-lucide="upload-cloud" class="mx-auto w-8 h-8 text-gray-300 mb-2"></i><p class="text-[11px] text-accent">點擊選擇或拖放檔案</p>`;
             lucide.createIcons();
         }
 
@@ -403,19 +416,19 @@
         };
 
         document.getElementById('btn-clear-data').onclick = async () => {
-            if (!confirm("確定要刪除所有獎金紀錄嗎？")) return;
+            if (!confirm("此動作將永久刪除雲端所有獎金紀錄，確定嗎？")) return;
             const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
             const batch = writeBatch(db);
             snap.forEach(d => batch.delete(d.ref));
             await batch.commit();
-            alert("已清空");
+            alert("已清空資料庫。");
         };
 
         window.showPage = (page) => {
             document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
             document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
-            document.getElementById('tab-dashboard').className = (page === 'dashboard' ? "whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm" : "whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary");
-            document.getElementById('tab-admin').className = (page === 'admin' ? "whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm" : "whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary");
+            document.getElementById('tab-dashboard').className = (page === 'dashboard' ? "whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm" : "whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary transition-all");
+            document.getElementById('tab-admin').className = (page === 'admin' ? "whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm" : "whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary transition-all");
         };
     </script>
 </body>
