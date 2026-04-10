@@ -156,7 +156,7 @@
 
     const parseUnitInfo = (row) => {
       if (!row) return { f: '', u: '', b: '' };
-      let f = row['樓層'], u = row['編號'], b = row['買方'] || row['姓名'] || row['戶名'] || '';
+      let f = row['樓層'], u = row['編號'], b = row['買方'] || row['姓名'] || '';
       const combined = normStr(row['戶別'] || row['戶名'] || row['編號'] || '');
       if (combined && (!f || !u)) {
         const match = combined.match(/^(\d+)([A-Z]\d*)$/i);
@@ -502,9 +502,7 @@
       }, [allUnitsPaymentStatus]);
 
       const combinedData = useMemo(() => {
-        const tabKey = activeTab.replace(/\//g, '_');
-        let base = sheetsData[tabKey] ? [...sheetsData[tabKey]] : (sheetsData[activeTab] ? [...sheetsData[activeTab]] : []);
-        
+        let base = sheetsData[activeTab] ? [...sheetsData[activeTab]] : []; 
         if (customData?.units && activeTab.includes('收款總表')) {
           Object.keys(customData.units).forEach(key => {
             const cu = customData.units[key]; if (!cu?.基本資料) return;
@@ -515,11 +513,11 @@
           });
         }
         
-        const isTransferTab = activeTab.match(/換約|讓渡/);
-
         return base.filter(row => {
           if (!searchTerm) return true;
           const term = searchTerm.toLowerCase();
+          
+          // 使用智慧解析器提取當前列的戶別資訊，確保跨頁籤篩選準確
           const uInfo = parseUnitInfo(row);
           const f = uInfo.f;
           const u = uInfo.u;
@@ -528,8 +526,6 @@
 
           // 「換約」快捷篩選
           if (term === '換約') {
-              // 若本身就在換約頁籤，搜尋「換約」應視同全顯，避免因 unitKey 抓取不完整導致行消失
-              if (isTransferTab) return true;
               return transferUnitKeys.has(unitKey);
           }
 
