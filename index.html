@@ -61,21 +61,19 @@
         th:hover { background-color: var(--secondary); }
         td { padding: 14px 16px; border-bottom: 1px solid #F1F3E9; font-size: 12px; }
         
-        /* 修正搜尋框符號遮擋問題 */
+        /* 搜尋框：將圖示移出框外 */
         .search-container {
-            position: relative;
             display: flex;
             align-items: center;
+            gap: 12px; /* 框框與圖示的間距 */
         }
         .search-icon {
-            position: absolute;
-            left: 14px;
             color: var(--accent);
-            pointer-events: none;
+            flex-shrink: 0;
         }
         .search-input {
-            padding-left: 44px; /* 增加間距確保不遮擋提示字 */
             background-color: white;
+            padding-left: 16px; /* 回歸正常內距 */
         }
 
         /* 按鈕對比強化 */
@@ -157,9 +155,9 @@
                         <h2 class="text-xl font-bold">您好，<span id="display-name" class="text-primary">...</span></h2>
                         <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">Performance Report</p>
                     </div>
-                    <div class="search-container w-full md:w-80 shadow-sm">
-                        <i data-lucide="search" class="search-icon w-4 h-4"></i>
-                        <input type="text" id="keyword-search" placeholder="搜尋姓名、職位或案場內容..." class="search-input w-full px-4 py-2.5 text-xs bg-white border border-secondary rounded-xl outline-none focus:ring-1 focus:ring-primary" />
+                    <div class="search-container w-full md:w-80">
+                        <i data-lucide="search" class="search-icon w-5 h-5"></i>
+                        <input type="text" id="keyword-search" placeholder="搜尋姓名、職位或案場內容..." class="search-input w-full px-4 py-2.5 text-xs bg-white border border-secondary rounded-xl outline-none focus:ring-1 focus:ring-primary shadow-sm" />
                     </div>
                 </header>
 
@@ -307,7 +305,6 @@
             });
         }
 
-        // --- 排序與篩選 ---
         window.toggleSort = (key) => {
             if (currentSort.key === key) {
                 currentSort.asc = !currentSort.asc;
@@ -330,7 +327,6 @@
             const keyword = document.getElementById('keyword-search').value.toLowerCase().trim();
             let filtered = (myName === "管理員") ? bonusData : bonusData.filter(b => b.name === myName);
             
-            // 生成案場篩選按鈕
             const projectsSet = new Set();
             bonusData.forEach(b => {
                 const match = b.project.match(/^[\u4e00-\u9fa5]+/);
@@ -350,7 +346,6 @@
                 );
             }
 
-            // 排序邏輯
             filtered.sort((a, b) => {
                 let v1 = a[currentSort.key];
                 let v2 = b[currentSort.key];
@@ -414,7 +409,6 @@
             });
         }
 
-        // --- 上傳與合併 ---
         async function processFile(file) {
             if (!file) return;
             const statusEl = document.getElementById('upload-status');
@@ -444,7 +438,7 @@
                         if (aggregateMap.has(key)) {
                             const e = aggregateMap.get(key);
                             e.paid += paid; e.remaining = e.expected - e.paid;
-                            e.date = date; // 以最後一次日期為準
+                            e.date = date; 
                         } else {
                             const expected = Math.round(sales * percentVal);
                             aggregateMap.set(key, { date, name, role, sales, percent: percentStr, expected, paid, remaining: expected - paid, project, createdAt: Date.now() });
