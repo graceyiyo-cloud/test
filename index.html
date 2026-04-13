@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>青森苑 - 獎金領取自動化結算系統</title>
-    <!-- Tailwind CSS -->
+    <title>青森苑 - 獎金領取結算系統 v6</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: 僅載入非襯線體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg: #F9F7F2;
-            --primary: #A3B18A;
+            --primary: #A3B18A; /* 莫蘭迪綠 */
+            --primary-dark: #588157; /* 深綠-強化對比 */
             --secondary: #E9EDC9;
             --text: #344E41;
             --accent: #6D6875;
@@ -26,7 +24,7 @@
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
-        /* 嚴格禁止襯線與斜體 */
+        /* 禁止襯線與斜體 */
         * { font-style: normal !important; text-decoration: none !important; }
         
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -39,7 +37,7 @@
             transition: all 0.3s ease;
         }
 
-        /* 關鍵：橫向捲軸容器防止手機版破圖 */
+        /* 表格容器與排序樣式 */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -49,18 +47,66 @@
             background: white;
         }
         
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { background-color: #F1F3E9; color: var(--accent); font-weight: 700; text-align: left; padding: 12px 16px; font-size: 11px; letter-spacing: 0.05em; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th { 
+            background-color: #F1F3E9; 
+            color: var(--text); 
+            font-weight: 700; 
+            text-align: left; 
+            padding: 14px 16px; 
+            font-size: 11px; 
+            cursor: pointer; 
+            user-select: none;
+            transition: background 0.2s;
+        }
+        th:hover { background-color: var(--secondary); }
         td { padding: 14px 16px; border-bottom: 1px solid #F1F3E9; font-size: 12px; }
-        tr:hover td { background-color: #FAFBF7; }
+        
+        /* 修正搜尋框符號遮擋問題 */
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--accent);
+            pointer-events: none;
+        }
+        .search-input {
+            padding-left: 42px; /* 增加左側間距確保不遮擋提示字 */
+            background-color: white;
+        }
 
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
+        /* 按鈕對比強化 */
+        .tab-active {
+            background-color: var(--primary-dark) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(88, 129, 87, 0.3);
+        }
+        .tab-inactive {
+            background-color: white !important;
+            border: 2px solid var(--primary) !important;
+            color: var(--primary-dark) !important;
+        }
+        
+        /* 案場篩選小按鈕 */
+        .project-btn {
+            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--secondary);
+            background: white;
+            color: var(--accent);
             transition: all 0.2s;
         }
-        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-        
+        .project-btn-active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -69,13 +115,6 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .search-input {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236D6875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 12px center;
-            padding-left: 36px;
-        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -83,87 +122,82 @@
 
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-sm border border-secondary text-center fade-in">
-            <h1 class="text-2xl font-bold mb-2 tracking-tight text-[#344E41]">幸福家代銷結算系統</h1>
-            <p class="text-accent mb-10 text-[10px] tracking-[0.4em] uppercase font-light">Secure Access v5</p>
-            <button id="btn-login" class="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium shadow-sm">
+            <h1 class="text-2xl font-bold mb-2 tracking-tight">幸福家獎金管理系統</h1>
+            <p class="text-accent mb-10 text-[10px] tracking-[0.4em] uppercase font-light">Advanced Management v6</p>
+            <button id="btn-login" class="bg-[#A3B18A] text-white w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium shadow-sm hover:opacity-90">
                 <i data-lucide="shield-check"></i>
                 <div id="login-spinner" class="spinner hidden"></div>
-                <span>Google 帳號登入</span>
+                <span>使用 Google 帳號登入</span>
             </button>
-            <div id="error-container" class="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl hidden text-left fade-in">
-                <p id="error-message" class="text-[11px] text-red-600 leading-relaxed"></p>
-                <button id="btn-guest-access" class="mt-3 w-full py-2 bg-white border border-red-200 rounded-xl text-[10px] text-red-600 font-bold">進入測試模式</button>
-            </div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden min-h-screen">
         <nav class="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-secondary flex items-center justify-between px-6 z-50">
             <div class="flex items-center gap-2">
-                <i data-lucide="calculator" class="text-primary w-5 h-5"></i>
-                <span class="font-bold text-base tracking-tighter uppercase">Bonus Analytics</span>
+                <i data-lucide="trending-up" class="text-primary w-5 h-5"></i>
+                <span class="font-bold text-base tracking-tighter uppercase">青森苑 Admin</span>
             </div>
             <div class="flex items-center gap-4">
-                <span id="user-email" class="hidden md:block text-[10px] text-accent"></span>
-                <button id="btn-logout" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <span id="user-email" class="hidden md:block text-[10px] text-accent font-medium"></span>
+                <button id="btn-logout" class="p-2 hover:bg-gray-100 rounded-full">
                     <i data-lucide="log-out" class="w-5 h-5 text-accent"></i>
                 </button>
             </div>
         </nav>
 
         <main class="pt-24 pb-12 px-4 max-w-6xl mx-auto">
-            <div id="admin-nav" class="hidden flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
-                <button onclick="showPage('dashboard')" id="tab-dashboard" class="whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm">獎金儀表板</button>
-                <button onclick="showPage('admin')" id="tab-admin" class="whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary transition-all">管理中心</button>
+            <div id="admin-nav" class="hidden flex gap-3 mb-8">
+                <button onclick="showPage('dashboard')" id="tab-dashboard" class="tab-active px-8 py-2.5 rounded-full text-xs font-bold transition-all">獎金儀表板</button>
+                <button onclick="showPage('admin')" id="tab-admin" class="tab-inactive px-8 py-2.5 rounded-full text-xs font-bold transition-all">管理中心</button>
             </div>
 
-            <!-- 獎金儀表板 -->
             <div id="page-dashboard" class="space-y-8 fade-in">
-                <header class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <header class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 class="text-xl font-bold">您好，<span id="display-name" class="text-primary">...</span></h2>
-                        <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">Consolidated Bonus Report</p>
+                        <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">Performance Summary</p>
                     </div>
-                    <!-- 關鍵字篩選功能 -->
-                    <div class="w-full md:w-64">
-                        <input type="text" id="keyword-search" placeholder="搜尋姓名或案場..." class="search-input w-full px-4 py-2 text-xs bg-white border border-secondary rounded-full outline-none focus:ring-1 focus:ring-primary shadow-sm" />
+                    <div class="search-container w-full md:w-80 shadow-sm">
+                        <i data-lucide="search" class="search-icon w-4 h-4"></i>
+                        <input type="text" id="keyword-search" placeholder="搜尋姓名、職位或案場內容..." class="search-input w-full px-4 py-2.5 text-xs bg-white border border-secondary rounded-xl outline-none focus:ring-1 focus:ring-primary" />
                     </div>
                 </header>
 
-                <!-- 統計數值 -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="morandi-card p-6 border-l-4 border-l-gray-300">
-                        <div class="text-[9px] text-accent mb-2 font-bold uppercase tracking-widest">應領總額 (100%)</div>
+                        <div class="text-[9px] text-accent mb-2 font-bold uppercase tracking-widest">應領獎金總額</div>
                         <div class="text-2xl font-bold tracking-tighter" id="val-total">NT$ 0</div>
                     </div>
                     <div class="morandi-card p-6 border-l-4 border-l-[#A3B18A]">
-                        <div class="text-[9px] text-primary mb-2 font-bold uppercase tracking-widest">已領獎金累計</div>
+                        <div class="text-[9px] text-primary mb-2 font-bold uppercase tracking-widest">已領合計</div>
                         <div class="text-2xl font-bold tracking-tighter text-primary" id="val-received">NT$ 0</div>
                     </div>
-                    <div class="morandi-card p-6 border-l-4 border-l-[#B5838D]">
-                        <div class="text-[9px] text-danger mb-2 font-bold uppercase tracking-widest">剩餘待領總額</div>
+                    <div class="morandi-card p-6 border-l-4 border-l-[#B5838D] relative">
+                        <div class="text-[9px] text-danger mb-2 font-bold uppercase tracking-widest">待領剩餘總額</div>
                         <div class="text-2xl font-bold tracking-tighter text-danger" id="val-pending">NT$ 0</div>
+                        <div id="project-filters" class="mt-4 flex flex-wrap gap-1.5 pt-3 border-t border-gray-50">
+                            </div>
                     </div>
                 </div>
 
-                <!-- 明細表格 -->
                 <section class="space-y-4">
                     <h3 class="text-sm font-bold flex items-center gap-2">
-                        <i data-lucide="list-checks" class="w-4 h-4 text-primary"></i> 智慧合併明細表
+                        <i data-lucide="table-2" class="w-4 h-4 text-primary"></i> 數據明細清單 (點選表頭可排序)
                     </h3>
                     <div class="table-container shadow-sm">
                         <table id="details-table">
                             <thead>
                                 <tr>
-                                    <th>姓名</th>
-                                    <th>職位</th>
-                                    <th>案場名稱</th>
-                                    <th>總銷/總佣</th>
-                                    <th>獎金%</th>
-                                    <th>應領(100%)</th>
-                                    <th>已領(合計)</th>
-                                    <th>待領(剩餘)</th>
-                                    <th>最後更新日</th>
+                                    <th onclick="toggleSort('name')">姓名 <span id="sort-name"></span></th>
+                                    <th onclick="toggleSort('role')">職位 <span id="sort-role"></span></th>
+                                    <th onclick="toggleSort('project')">案場名稱 <span id="sort-project"></span></th>
+                                    <th onclick="toggleSort('sales')">總銷/總佣 <span id="sort-sales"></span></th>
+                                    <th onclick="toggleSort('percent')">獎金% <span id="sort-percent"></span></th>
+                                    <th onclick="toggleSort('expected')">應領(100%) <span id="sort-expected"></span></th>
+                                    <th onclick="toggleSort('paid')">已領(合計) <span id="sort-paid"></span></th>
+                                    <th onclick="toggleSort('remaining')">待領(剩餘) <span id="sort-remaining"></span></th>
+                                    <th onclick="toggleSort('date')">上次發放日期 <span id="sort-date"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="details-body"></tbody>
@@ -172,34 +206,32 @@
                 </section>
             </div>
 
-            <!-- 管理中心 -->
             <div id="page-admin" class="hidden space-y-8 fade-in">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-8 rounded-[2rem] border border-secondary shadow-sm">
                         <h3 class="text-xs font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="file-up" class="w-4 h-4"></i> 1. 上傳並覆蓋雲端數據
+                            <i data-lucide="cloud-upload" class="w-4 h-4"></i> 1. 上傳並覆蓋雲端數據
                         </h3>
                         <div id="drop-zone" class="border-2 border-dashed border-secondary rounded-2xl p-10 text-center hover:border-primary transition-all relative bg-gray-50/50">
                             <input type="file" id="csv-file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                             <div id="upload-status" class="flex flex-col items-center">
                                 <i data-lucide="database" class="mx-auto w-8 h-8 text-gray-300 mb-3"></i>
-                                <p class="text-[11px] text-accent">拖放 `全部new.csv` (舊資料將被覆蓋)</p>
+                                <p class="text-[11px] text-accent">點擊選擇檔案或拖放 `全部new.csv`</p>
                             </div>
                         </div>
                     </div>
-
                     <div class="bg-white p-8 rounded-[2rem] border border-secondary shadow-sm">
                         <h3 class="text-xs font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="user-check" class="w-4 h-4"></i> 2. 帳號權限管理
+                            <i data-lucide="users" class="w-4 h-4"></i> 2. 人員名單授權
                         </h3>
                         <form id="form-auth" class="space-y-3 mb-6">
                             <div class="flex gap-2">
                                 <input id="auth-name" placeholder="姓名" required class="flex-1 px-4 py-2 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-primary" />
                                 <input id="auth-email" type="email" placeholder="Gmail" required class="flex-1 px-4 py-2 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-primary" />
                             </div>
-                            <button type="submit" class="w-full py-3 btn-primary rounded-xl text-xs font-bold">確認授權</button>
+                            <button type="submit" class="w-full py-3 bg-[#A3B18A] text-white rounded-xl text-xs font-bold hover:opacity-90">確認新增授權</button>
                         </form>
-                        <div id="auth-list" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar pr-1"></div>
+                        <div id="auth-list" class="space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
                     </div>
                 </div>
             </div>
@@ -209,7 +241,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, writeBatch, onSnapshot, getDocs, doc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, writeBatch, onSnapshot, getDocs, doc, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
@@ -229,8 +261,9 @@
         let currentUser = null;
         let mappingData = {};
         let bonusData = [];
+        let currentSort = { key: 'date', asc: false };
+        let activeProjectFilter = null;
 
-        // 登入監聽
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
@@ -247,7 +280,6 @@
         });
 
         document.getElementById('btn-login').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
-        document.getElementById('btn-guest-access').onclick = () => signInAnonymously(auth);
         document.getElementById('btn-logout').onclick = () => signOut(auth).then(() => location.reload());
 
         function startSync() {
@@ -272,7 +304,17 @@
             });
         }
 
-        // --- 關鍵字篩選與渲染 ---
+        // --- 排序與篩選邏輯 ---
+        window.toggleSort = (key) => {
+            if (currentSort.key === key) {
+                currentSort.asc = !currentSort.asc;
+            } else {
+                currentSort.key = key;
+                currentSort.asc = true;
+            }
+            renderUI();
+        };
+
         document.getElementById('keyword-search').oninput = () => renderUI();
 
         function renderUI() {
@@ -282,34 +324,59 @@
             document.getElementById('display-name').innerText = myName || "未授權人員";
 
             const keyword = document.getElementById('keyword-search').value.toLowerCase().trim();
-            
-            // 基礎過濾：管理員看全部，員工看自己
             let filtered = (myName === "管理員") ? bonusData : bonusData.filter(b => b.name === myName);
             
-            // 關鍵字過濾
+            // 1. 案場大類篩選 (國字部分)
+            const projectsSet = new Set();
+            bonusData.forEach(b => {
+                const match = b.project.match(/^[\u4e00-\u9fa5]+/);
+                if (match) projectsSet.add(match[0]);
+            });
+            updateProjectButtons(Array.from(projectsSet));
+
+            if (activeProjectFilter) {
+                filtered = filtered.filter(b => b.project.startsWith(activeProjectFilter));
+            }
+
+            // 2. 關鍵字過濾
             if (keyword) {
                 filtered = filtered.filter(b => 
                     b.name.toLowerCase().includes(keyword) || 
-                    b.project.toLowerCase().includes(keyword)
+                    b.project.toLowerCase().includes(keyword) ||
+                    b.role.toLowerCase().includes(keyword)
                 );
             }
+
+            // 3. 排序
+            filtered.sort((a, b) => {
+                let v1 = a[currentSort.key];
+                let v2 = b[currentSort.key];
+                // 如果是數值
+                if (['sales', 'expected', 'paid', 'remaining'].includes(currentSort.key)) {
+                    return currentSort.asc ? v1 - v2 : v2 - v1;
+                }
+                // 如果是字串
+                return currentSort.asc ? String(v1).localeCompare(String(v2), 'zh-TW') : String(v2).localeCompare(String(v1), 'zh-TW');
+            });
+
+            updateSortIcons();
 
             let tExp = 0, tPaid = 0, tRem = 0;
             const body = document.getElementById('details-body'); body.innerHTML = '';
 
-            filtered.sort((a,b) => b.createdAt - a.createdAt).forEach(b => {
+            filtered.forEach(b => {
                 tExp += b.expected; tPaid += b.paid; tRem += b.remaining;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="font-bold">${b.name}</td>
                     <td>${b.role}</td>
-                    <td class="font-medium">${b.project}</td>
+                    <td class="font-medium text-[11px]">${b.project}</td>
                     <td>${b.sales.toLocaleString()}</td>
                     <td>${b.percent}</td>
                     <td class="font-bold">NT$ ${b.expected.toLocaleString()}</td>
-                    <td class="text-primary">NT$ ${b.paid.toLocaleString()}</td>
+                    <td class="text-primary-dark">NT$ ${b.paid.toLocaleString()}</td>
                     <td class="text-danger font-bold">NT$ ${b.remaining.toLocaleString()}</td>
-                    <td class="text-[10px] text-accent">${b.date}</td>
+                    <td class="text-[10px] text-accent font-medium">${b.date}</td>
                 `;
                 body.appendChild(tr);
             });
@@ -317,14 +384,46 @@
             document.getElementById('val-total').innerText = `NT$ ${tExp.toLocaleString()}`;
             document.getElementById('val-received').innerText = `NT$ ${tPaid.toLocaleString()}`;
             document.getElementById('val-pending').innerText = `NT$ ${tRem.toLocaleString()}`;
-            if (filtered.length === 0) body.innerHTML = `<tr><td colspan="9" class="py-20 text-center text-gray-300 italic">找不到匹配的資料內容</td></tr>`;
         }
 
-        // --- 核心上傳覆蓋與合併邏輯 ---
+        function updateProjectButtons(projects) {
+            const container = document.getElementById('project-filters');
+            container.innerHTML = '';
+            
+            // "全部" 按鈕
+            const allBtn = document.createElement('button');
+            allBtn.innerText = '全部';
+            allBtn.className = `project-btn ${!activeProjectFilter ? 'project-btn-active' : ''}`;
+            allBtn.onclick = () => { activeProjectFilter = null; renderUI(); };
+            container.appendChild(allBtn);
+
+            projects.forEach(p => {
+                const btn = document.createElement('button');
+                btn.innerText = p;
+                btn.className = `project-btn ${activeProjectFilter === p ? 'project-btn-active' : ''}`;
+                btn.onclick = () => { activeProjectFilter = p; renderUI(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateSortIcons() {
+            const keys = ['name', 'role', 'project', 'sales', 'percent', 'expected', 'paid', 'remaining', 'date'];
+            keys.forEach(k => {
+                const el = document.getElementById(`sort-${k}`);
+                if (currentSort.key === k) {
+                    el.innerHTML = currentSort.asc ? '▴' : '▾';
+                    el.className = 'text-primary font-bold ml-1';
+                } else {
+                    el.innerHTML = '';
+                }
+            });
+        }
+
+        // --- 匯入邏輯 (包含智慧合併) ---
         async function processFile(file) {
-            if (!file || !currentUser) return;
+            if (!file) return;
             const statusEl = document.getElementById('upload-status');
-            statusEl.innerHTML = `<div class="spinner border-gray-200 border-t-primary w-6 h-6 mb-2"></div><p class="text-[10px] text-primary font-bold">正在覆蓋並智慧合併數據...</p>`;
+            statusEl.innerHTML = `<div class="spinner border-gray-200 border-t-primary w-6 h-6 mb-2"></div><p class="text-[10px] text-primary font-bold">重組結算中...</p>`;
 
             const reader = new FileReader();
             reader.onload = async (ev) => {
@@ -332,8 +431,7 @@
                     let csvContent = ev.target.result;
                     if (csvContent.charCodeAt(0) === 0xFEFF) csvContent = csvContent.substr(1);
                     const lines = csvContent.split(/\r?\n/);
-                    
-                    const aggregateMap = new Map(); // 用於合併相同條件的資料
+                    const aggregateMap = new Map();
                     const csvRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
                     for (let i = 3; i < lines.length; i++) {
@@ -342,81 +440,55 @@
                         const cols = line.split(csvRegex).map(c => c.trim().replace(/^"|"$/g, '').trim());
                         if (cols.length < 10 || !cols[1]) continue;
 
-                        const name = cols[1];
-                        const role = cols[2];
-                        const salesRaw = cols[3].replace(/[^0-9.-]+/g, '');
-                        const sales = parseFloat(salesRaw) || 0;
-                        const percentStr = cols[4];
-                        const percentVal = parseFloat(percentStr.replace('%', '')) / 100 || 0;
+                        const name = cols[1], role = cols[2], project = cols[9];
+                        const salesRaw = cols[3].replace(/[^0-9.-]+/g, ''), percentStr = cols[4];
+                        const sales = parseFloat(salesRaw) || 0, percentVal = parseFloat(percentStr.replace('%', '')) / 100 || 0;
                         const paid = parseFloat(cols[8].replace(/[^0-9.-]+/g, '')) || 0;
-                        const project = cols[9];
 
-                        // 定義合併特徵金鑰：姓名|職位|總銷|百分比|案別
+                        // 合併金鑰：姓名|職位|總銷|百分比|案別
                         const key = `${name}|${role}|${salesRaw}|${percentStr}|${project}`;
-
                         if (aggregateMap.has(key)) {
-                            const existing = aggregateMap.get(key);
-                            existing.paid += paid; // 累加已領獎金
-                            existing.remaining = existing.expected - existing.paid; // 重新計算餘額
+                            const e = aggregateMap.get(key);
+                            e.paid += paid; e.remaining = e.expected - e.paid;
                         } else {
                             const expected = Math.round(sales * percentVal);
-                            aggregateMap.set(key, {
-                                date: cols[0],
-                                name, role, sales, percent: percentStr,
-                                expected, paid, remaining: expected - paid,
-                                project, createdAt: Date.now()
-                            });
+                            aggregateMap.set(key, { date: cols[0], name, role, sales, percent: percentStr, expected, paid, remaining: expected - paid, project, createdAt: Date.now() });
                         }
                     }
 
-                    // 1. 先執行覆蓋：刪除舊數據
                     const oldSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
                     const deleteBatch = writeBatch(db);
                     oldSnap.forEach(d => deleteBatch.delete(d.ref));
                     await deleteBatch.commit();
 
-                    // 2. 寫入新數據
                     const writeBatchInstance = writeBatch(db);
-                    const finalRecords = Array.from(aggregateMap.values());
-                    finalRecords.forEach(record => {
-                        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses'));
-                        writeBatchInstance.set(ref, record);
+                    Array.from(aggregateMap.values()).forEach(record => {
+                        writeBatchInstance.set(doc(collection(db, 'artifacts', appId, 'public', 'data', 'bonuses')), record);
                     });
                     await writeBatchInstance.commit();
-                    
-                    alert(`✅ 覆蓋成功！已將原始筆數智慧合併為 ${finalRecords.length} 筆結算紀錄。`);
-                } catch (err) {
-                    alert(`錯誤：${err.message}`);
-                } finally {
-                    resetUploadStatus();
-                }
+                    alert(`✅ 成功合併匯入數據！`);
+                } catch (err) { alert(`錯誤：${err.message}`); } finally { resetUploadStatus(); }
             };
             reader.readAsText(file);
         }
 
         function resetUploadStatus() {
-            document.getElementById('upload-status').innerHTML = `<i data-lucide="database" class="mx-auto w-8 h-8 text-gray-300 mb-3"></i><p class="text-[11px] text-accent">拖放 \`全部new.csv\` (舊資料將被覆蓋)</p>`;
+            document.getElementById('upload-status').innerHTML = `<i data-lucide="database" class="mx-auto w-8 h-8 text-gray-300 mb-3"></i><p class="text-[11px] text-accent">點擊選擇檔案或拖放檔案</p>`;
             lucide.createIcons();
         }
 
         document.getElementById('csv-file').onchange = (e) => processFile(e.target.files[0]);
         document.getElementById('form-auth').onsubmit = async (e) => {
             e.preventDefault();
-            const name = document.getElementById('auth-name').value;
-            const email = document.getElementById('auth-email').value;
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name, email });
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'mappings'), { name: document.getElementById('auth-name').value, email: document.getElementById('auth-email').value });
             e.target.reset();
         };
 
         window.showPage = (page) => {
             document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
             document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
-            const tabs = { dashboard: 'tab-dashboard', admin: 'tab-admin' };
-            Object.keys(tabs).forEach(k => {
-                document.getElementById(tabs[k]).className = (page === k 
-                    ? "whitespace-nowrap px-6 py-2 rounded-full bg-primary text-white text-xs font-medium shadow-sm" 
-                    : "whitespace-nowrap px-6 py-2 rounded-full bg-white border border-secondary text-accent text-xs hover:border-primary transition-all");
-            });
+            document.getElementById('tab-dashboard').className = (page === 'dashboard' ? 'tab-active px-8 py-2.5 rounded-full text-xs font-bold transition-all' : 'tab-inactive px-8 py-2.5 rounded-full text-xs font-bold transition-all');
+            document.getElementById('tab-admin').className = (page === 'admin' ? 'tab-active px-8 py-2.5 rounded-full text-xs font-bold transition-all' : 'tab-inactive px-8 py-2.5 rounded-full text-xs font-bold transition-all');
         };
     </script>
 </body>
