@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>青森苑 - 獎金領取結算系統 v8</title>
+    <title>青森苑 - 獎金領取結算系統 v9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -90,7 +90,7 @@
         
         /* 案場篩選按鈕樣式 */
         .project-btn {
-            font-size: 11px; /* 加大按鈕字體 */
+            font-size: 11px; 
             padding: 6px 16px;
             border-radius: 999px;
             border: 1px solid var(--secondary);
@@ -133,7 +133,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="max-w-md w-full bg-white p-10 rounded-[2.5rem] shadow-sm border border-secondary text-center fade-in">
             <h1 class="text-2xl font-bold mb-2 tracking-tight">幸福家獎金管理系統</h1>
-            <p class="text-accent mb-10 text-[10px] tracking-[0.4em] uppercase font-light">青森苑結算平台 v8</p>
+            <p class="text-accent mb-10 text-[10px] tracking-[0.4em] uppercase font-light">青森苑結算平台 v9</p>
             <button id="btn-login" class="bg-[#A3B18A] text-white w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium shadow-sm hover:opacity-90">
                 <i data-lucide="shield-check"></i>
                 <div id="login-spinner" class="spinner hidden"></div>
@@ -169,22 +169,22 @@
                         <p class="text-[10px] text-accent mt-1 tracking-widest uppercase">Performance Dashboard</p>
                         <div class="search-container mt-4 w-full md:w-80">
                             <i data-lucide="search" class="search-icon w-5 h-5"></i>
-                            <input type="text" id="keyword-search" placeholder="搜尋姓名、職位或案場..." class="search-input w-full px-4 py-2.5 text-xs bg-white border border-secondary rounded-xl outline-none focus:ring-1 focus:ring-primary shadow-sm" />
+                            <input type="text" id="keyword-search" placeholder="搜尋金額或戶別..." class="search-input w-full px-4 py-2.5 text-xs bg-white border border-secondary rounded-xl outline-none focus:ring-1 focus:ring-primary shadow-sm" />
                         </div>
                     </div>
 
                     <div class="flex flex-1 flex-wrap lg:flex-nowrap justify-start xl:justify-end gap-3">
-                        <div class="morandi-card p-5 border-l-4 border-l-gray-300 min-w-[160px] flex-1">
-                            <div class="text-[11px] text-accent mb-1 font-bold uppercase tracking-widest">應領獎金總額</div>
-                            <div class="text-3xl font-bold tracking-tighter" id="val-total">NT$ 0</div>
+                        <div class="morandi-card p-4 border-l-4 border-l-gray-300 min-w-[150px] flex-1">
+                            <div class="text-[10px] text-accent mb-1 font-bold uppercase tracking-widest">應領獎金總額</div>
+                            <div class="text-xl font-bold tracking-tighter" id="val-total">NT$ 0</div>
                         </div>
-                        <div class="morandi-card p-5 border-l-4 border-l-primary min-w-[160px] flex-1">
-                            <div class="text-[11px] text-primary mb-1 font-bold uppercase tracking-widest">已領取累計</div>
-                            <div class="text-3xl font-bold tracking-tighter text-primary" id="val-received">NT$ 0</div>
+                        <div class="morandi-card p-4 border-l-4 border-l-primary min-w-[150px] flex-1">
+                            <div class="text-[10px] text-primary mb-1 font-bold uppercase tracking-widest">已領取累計</div>
+                            <div class="text-xl font-bold tracking-tighter text-primary" id="val-received">NT$ 0</div>
                         </div>
-                        <div class="morandi-card p-5 border-l-4 border-l-danger min-w-[160px] flex-1">
-                            <div class="text-[11px] text-danger mb-1 font-bold uppercase tracking-widest">待領剩餘總額</div>
-                            <div class="text-3xl font-bold tracking-tighter text-danger" id="val-pending">NT$ 0</div>
+                        <div class="morandi-card p-4 border-l-4 border-l-danger min-w-[150px] flex-1">
+                            <div class="text-[10px] text-danger mb-1 font-bold uppercase tracking-widest">待領剩餘總額</div>
+                            <div class="text-xl font-bold tracking-tighter text-danger" id="val-pending">NT$ 0</div>
                         </div>
                     </div>
                 </header>
@@ -379,7 +379,16 @@
             updateProjectButtons(Array.from(projectsSet));
 
             if (activeProjectFilter) filtered = filtered.filter(b => b.project.startsWith(activeProjectFilter));
-            if (keyword) filtered = filtered.filter(b => b.name.toLowerCase().includes(keyword) || b.project.toLowerCase().includes(keyword) || b.role.toLowerCase().includes(keyword));
+            
+            // 搜尋邏輯更新：金額或戶別 (戶別通常包含在案場名稱 project 中)
+            if (keyword) {
+                filtered = filtered.filter(b => 
+                    b.expected.toString().includes(keyword) || 
+                    b.paid.toString().includes(keyword) || 
+                    b.remaining.toString().includes(keyword) ||
+                    b.project.toLowerCase().includes(keyword)
+                );
+            }
 
             filtered.sort((a, b) => {
                 let v1 = a[currentSort.key], v2 = b[currentSort.key];
