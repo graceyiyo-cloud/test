@@ -811,7 +811,9 @@
             const list = document.getElementById('recordList');
             list.innerHTML = data.map(i => {
                 let services = [];
-                if(i.acCount > 0) services.push(`冷氣${i.acCount}台`);
+                // 需求 1: 冷氣台數與明細串接
+                const acTitle = `冷氣${i.acCount}台`;
+                if(i.acCount > 0) services.push(i.acBrand ? `${acTitle}：${i.acBrand}` : acTitle);
                 if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
                 if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
 
@@ -844,16 +846,15 @@
                     </td>
                     <td data-label="服務明細" class="px-6 py-2 text-slate-600">
                         <div class="leading-tight">${services.join('、')}</div>
-                        ${i.acBrand ? `<div class="text-[11px] text-slate-400 note-display mt-0.5">#${i.acBrand}</div>` : ''}
-                        ${asDisplay ? `<div class="text-[11px] text-rose-500 font-medium mt-0.5">${asDisplay}</div>` : ''}
                         ${i.note ? `<div class="text-[11px] text-slate-400 note-display mt-0.5">備註: ${i.note}</div>` : ''}
+                        ${asDisplay ? `<div class="text-[11px] text-rose-500 font-medium mt-0.5">${asDisplay}</div>` : ''}
                     </td>
                     <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
                         收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700 font-bold">淨 ${(i.totalAmount - i.assistantPay).toLocaleString()}</span>
                     </td>
                     <td class="px-6 py-4 action-cell">
-                        <button onclick="downloadRec('${i.id}')" class="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100 text-[10px] font-bold">
-                            <i data-lucide="image" class="w-3 h-3"></i>截圖
+                        <button onclick="downloadRec('${i.id}')" class="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100 text-[10px] font-bold" title="截圖">
+                            <i data-lucide="image" class="w-3 h-3"></i>
                         </button>
                         <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
                             <i data-lucide="${isComp ? 'check-circle' : 'circle'}" class="w-3 h-3"></i>
@@ -863,11 +864,11 @@
                             <i data-lucide="${isPaid ? 'banknote' : 'clock'}" class="w-3 h-3"></i>
                             <span>${isPaid ? '已收款' : '待收款'}</span>
                         </button>
-                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="edit-2" class="w-3 h-3"></i>修改
+                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="修改">
+                            <i data-lucide="edit-2" class="w-3 h-3"></i>
                         </button>
-                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i>刪除
+                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="刪除">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
                         </button>
                     </td>
                 </tr>`;
