@@ -926,7 +926,7 @@
         window.quickFilterUnpaid = () => { document.getElementById('paymentFilter').value = 'unpaid'; filterRecords(); };
         window.deleteRec = async (id) => { if(confirm('確定要刪除嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
 
-        // 截圖下載功能
+        // 截圖自動下載優化功能
         window.downloadRec = (id) => {
             const el = document.getElementById(`rec-${id}`);
             const actionCell = el.querySelector('.action-cell');
@@ -944,12 +944,24 @@
                 // 3. 還原按鈕區域
                 actionCell.style.display = 'flex';
                 
-                // 4. 下載圖片
-                const name = el.querySelector('[data-label="客戶"] span').innerText;
-                const link = document.createElement('a');
-                link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
+                // 4. 將畫布轉換為 Blob 以進行「真正的」靜默下載
+                canvas.toBlob((blob) => {
+                    const name = el.querySelector('[data-label="客戶"] span').innerText;
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
+                    
+                    // 必須插入 DOM 才能在某些瀏覽器中穩定觸發 click
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // 下載後清理
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                }, 'image/png');
             });
         };
     </script>
