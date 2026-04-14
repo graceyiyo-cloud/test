@@ -245,15 +245,15 @@
         const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
         const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
         
-        const master = masterUnits[rem.unitKey];
         const cleanRem = { ...rem }; 
         delete cleanRem._isRec;
 
+        // 清除舊版的預收扣除標記，避免污染後續資料
+        if (cleanRem._prepayDeducted !== undefined) {
+          delete cleanRem._prepayDeducted;
+        }
+
         if (checked) {
-          if (selectedStage === '使照' && master?.prepayAmt > 0 && !cleanRem._prepayDeducted) {
-            cleanRem.匯款金額 = Math.max(0, cleanRem.匯款金額 - master.prepayAmt);
-            cleanRem._prepayDeducted = true; 
-          }
           try {
             await updateInvoiceData(rem.id, '已對帳', true);
             const newPending = pendingRems.filter(r => r.id !== rem.id);
@@ -261,10 +261,6 @@
             await setDoc(addRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
           } catch (e) { alert("同步失敗"); }
         } else {
-          if (selectedStage === '使照' && master?.prepayAmt > 0 && cleanRem._prepayDeducted) {
-            cleanRem.匯款金額 = cleanRem.匯款金額 + master.prepayAmt;
-            cleanRem._prepayDeducted = false; 
-          }
           try {
             await updateInvoiceData(rem.id, '已對帳', false);
             const newReconciled = reconciledRems.filter(r => r.id !== rem.id);
@@ -509,8 +505,8 @@
                     const isRec = viewMode === 'archived' ? (sub._wasRec !== undefined ? sub._wasRec : true) : sub._isRec;
                     const isDuplicate = unitCounts[sub.unitKey] > 1;
 
-                    // 取得目前畫面上要顯示的比對金額（若已扣除預收則加回來顯示）
-                    const currentDisplayAmt = (sub._isRec && sub._prepayDeducted) ? (sub.匯款金額 + (master?.prepayAmt || 0)) : sub.匯款金額;
+                    // 金額直接對應資料庫原始值，不再隱式增減
+                    const currentDisplayAmt = sub.匯款金額;
 
                     return (
                       <tr key={sub.id} className={`transition-colors ${isDuplicate ? 'bg-yellow-50/80 hover:bg-yellow-100/80' : 'hover:bg-gray-50/50'}`}>
@@ -566,10 +562,9 @@
                                         defaultValue={currentDisplayAmt}
                                         onBlur={(e) => {
                                             const newVal = Number(e.target.value);
-                                            // 如果資料已經扣過預收，存檔時要扣回去
-                                            const valToSave = (sub._isRec && sub._prepayDeducted) ? (newVal - (master?.prepayAmt || 0)) : newVal;
-                                            if (valToSave !== sub.匯款金額) {
-                                                updateRemittanceField(sub, '匯款金額', valToSave);
+                                            // 直接儲存更新後的金額
+                                            if (newVal !== sub.匯款金額) {
+                                                updateRemittanceField(sub, '匯款金額', newVal);
                                             }
                                         }}
                                         className="w-24 bg-transparent outline-none text-[#4A4A4A] text-base"
