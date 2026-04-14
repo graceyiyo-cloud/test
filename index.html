@@ -31,20 +31,14 @@
       max-width: 320px; 
     }
 
-    /* 針對鎖定欄位設定固定寬度，確保 Left Offset 計算精準 */
     .col-action { width: 44px !important; min-width: 44px; }
     .col-floor { width: 45px !important; min-width: 45px; border-right: none !important; }
     .col-unit { width: 45px !important; min-width: 45px; border-left: none !important; }
     .col-buyer { width: 110px !important; min-width: 110px; max-width: 110px; }
     .col-total { width: 100px !important; min-width: 100px; max-width: 100px; }
 
-    .sticky-shadow {
-      box-shadow: 1px 0 3px rgba(0,0,0,0.05);
-    }
-
-    .sticky-bottom-shadow {
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-    }
+    .sticky-shadow { box-shadow: 1px 0 3px rgba(0,0,0,0.05); }
+    .sticky-bottom-shadow { box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
     
     table { table-layout: auto; border-collapse: separate; border-spacing: 0; }
     th, td { border: 1px solid #E5E7EB; }
@@ -77,8 +71,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
-    const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'qingsenyuan-admin';
-    const initialAuthToken = typeof window !== 'undefined' && window.__initial_auth_token ? window.__initial_auth_token : null;
+    const appId = 'qingsenyuan-admin';
 
     const MASTER_COLUMN_ORDER = [
       '樓層', '編號', '買方', '成交總價', 
@@ -129,11 +122,6 @@
             return `${mYear}/${String(date.getUTCMonth() + 1).padStart(2, '0')}/${String(date.getUTCDate()).padStart(2, '0')}`;
           }
         }
-        const gMatch = sVal.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
-        if (gMatch) {
-          const year = parseInt(gMatch[1], 10);
-          if (year > 1911) return `${year - 1911}/${gMatch[2].padStart(2, '0')}/${gMatch[3].padStart(2, '0')}`;
-        }
       }
       return sVal;
     };
@@ -157,21 +145,6 @@
       return { f: normStr(f), u: normStr(u), b: String(b || '').trim() };
     };
 
-    const getStageKeyForColumn = (colName) => {
-      if (!colName) return null;
-      if (colName.includes('訂金')) return '訂金';
-      if (colName.includes('簽約')) return '簽約';
-      if (colName.includes('2F')) return '2F';
-      if (colName.includes('5F')) return '5F';
-      if (colName.includes('7F')) return '7F';
-      if (colName.includes('10F')) return '10F';
-      if (colName.includes('13F')) return '13F';
-      if (colName.includes('使照')) return '使照';
-      if (colName.includes('銀貸')) return '銀貸';
-      if (colName.includes('交屋')) return '交屋';
-      return null;
-    };
-
     const PAYMENT_STAGES = [
       { k: '客變', l: '客變費用' },
       { k: '訂金', l: '訂金' }, { k: '簽約', l: '簽約金' }, { k: '2F', l: '2F工程' }, 
@@ -191,22 +164,15 @@
       const [showUnpaidDetails, setShowUnpaidDetails] = useState(false);
       const [expandedStage, setExpandedStage] = useState(null);
       const [copyStatus, setCopyStatus] = useState(null);
-      
       const [user, setUser] = useState(null);
       const [cloudStatus, setCloudStatus] = useState("idle"); 
       const [isAuthLoading, setIsAuthLoading] = useState(true);
-      const [authError, setAuthError] = useState("");
-      
       const [firebaseInvoices, setFirebaseInvoices] = useState({});
       const [customData, setCustomData] = useState({ units: {}, remittances: [], customChanges: [], deletedImportedRemittances: [], allowedViewers: [] });
       const [pendingRems, setPendingRems] = useState([]);
       const [archivedRems, setArchivedRems] = useState([]);
-
       const [remitInput, setRemitInput] = useState({ date: '', amt: '' });
       const [cbInput, setCbInput] = useState({ date: '', note: '', amt: '' });
-      const [showExportMenu, setShowExportMenu] = useState(false);
-      const [selectedExportStages, setSelectedExportStages] = useState([]);
-      const exportMenuRef = useRef(null);
 
       const isAdmin = useMemo(() => user && user.email === ADMIN_EMAIL, [user]);
 
@@ -237,8 +203,10 @@
               newSheets[docSnap.id] = docSnap.data().rows || []; 
             });
             setSheetsData(newSheets);
-            const sortedKeys = Object.keys(newSheets).filter(t => !t.includes('匯款及發票明細') && !t.includes('預收款')).sort((a,b) => a.includes('收款總表') ? -1 : b.includes('收款總表') ? 1 : 0);
-            if ((activeTab === "請匯入資料") && sortedKeys.length > 0) setActiveTab(sortedKeys[0]);
+            if (activeTab === "請匯入資料" || activeTab === "請先登入系統") {
+               const firstKey = Object.keys(newSheets).find(t => t.includes('收款總表')) || Object.keys(newSheets)[0];
+               if(firstKey) setActiveTab(firstKey);
+            }
             setCloudStatus("synced");
           } else { setCloudStatus("synced"); }
         });
@@ -404,30 +372,13 @@
         return t;
       }, [combinedData, currentColumns]);
 
-      const handleInvoiceChange = async (rK, field, val) => {
-        if (!isAdmin) return;
-        let finalVal = (field === '發票日期') ? convertToMinguo(val) : val;
-        const updated = { ...firebaseInvoices, [rK]: { ...(firebaseInvoices[rK] || {}), [field]: finalVal } };
-        setFirebaseInvoices(updated);
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices'), updated);
-      };
-
-      const handleCopyUnpaid = (stLabel, count, unitLabels) => {
-        const text = `${stLabel}款未付：${count}戶 (${unitLabels.join('、')})`;
-        const textArea = document.createElement("textarea");
-        textArea.value = text; document.body.appendChild(textArea);
-        textArea.select();
-        try { document.execCommand('copy'); setCopyStatus(stLabel); setTimeout(() => setCopyStatus(null), 1500); } catch (err) {}
-        document.body.removeChild(textArea);
-      };
-
       if (isAuthLoading || (user && cloudStatus === "loading")) return <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]"><RefreshCw className="animate-spin text-[#8C9B90]" size={32} /></div>;
 
       if (!user) return (
         <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0] p-4">
           <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-[#D4C9B9]/20 text-center space-y-8">
             <div className="flex justify-center"><div className="bg-[#8C9B90] p-4 rounded-2xl text-white shadow-lg"><Lock size={40} /></div></div>
-            <div><h1 className="text-2xl font-bold text-[#4A4A4A]">青森苑 案場管理系統</h1><p className="text-gray-400 text-sm mt-2 font-medium tracking-wide">請登入帳號以存取資料</p></div>
+            <div><h1 className="text-2xl font-bold text-[#4A4A4A]">青森苑 案場管理系統</h1><p className="text-gray-400 text-sm mt-2 font-medium tracking-wide">請登入 Google 帳號以存取</p></div>
             <button onClick={() => signInWithPopup(auth, provider)} className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-3.5 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5"/> 使用 Google 帳號登入</button>
           </div>
         </div>
@@ -438,15 +389,14 @@
           <header className="bg-white shadow-sm border-b sticky top-0 z-[60] px-4 py-3 flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2"><div className="bg-[#8C9B90] p-1.5 rounded-lg text-white"><Home size={20} /></div><h1 className="text-lg font-bold">青森苑系統</h1></div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border rounded-full text-[10px] font-bold text-gray-500 uppercase"><Database size={12} className={cloudStatus === "synced" ? "text-green-500" : "animate-spin text-orange-400"} />{cloudStatus === "synced" ? "雲端同步中" : "載入中"}</div>
+              <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 border rounded-full text-[10px] font-bold text-gray-500 uppercase"><Database size={12} className={cloudStatus === "synced" ? "text-green-500" : "animate-spin text-orange-400"} />{cloudStatus === "synced" ? "雲端已同步" : "載入中"}</div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex gap-3">
               <div className="bg-[#F5F5F0] p-1 rounded-full border border-gray-200 shadow-inner flex">
                 <button onClick={() => setSearchTerm('')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '' ? 'bg-white text-[#8C9B90] shadow-sm' : 'text-gray-400'}`}>全部</button>
                 <button onClick={() => setSearchTerm('客變')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '客變' ? 'bg-purple-100 text-purple-700 shadow-sm' : 'text-gray-400'}`}>客變</button>
                 <button onClick={() => setSearchTerm('換約')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${searchTerm === '換約' ? 'bg-orange-100 text-orange-600 shadow-sm' : 'text-gray-400'}`}>換約</button>
               </div>
-              {isAdmin && <button onClick={() => setShowAuthModal(true)} className="bg-white border border-[#8C9B90] text-[#8C9B90] px-3 py-1.5 rounded-full text-[11px] font-bold hover:bg-[#8C9B90] hover:text-white flex items-center gap-1 shadow-sm transition-all"><ShieldAlert size={12} />權限管理</button>}
               <button onClick={()=>signOut(auth)} className="p-1.5 text-gray-400 hover:text-red-500"><LogOut size={18} /></button>
             </div>
           </header>
@@ -458,7 +408,7 @@
                 <div className="flex items-center gap-2 border-l pl-6"><CreditCard size={16} className="text-green-500"/><div className="flex flex-col"><span className="text-[10px] text-gray-400 font-bold">累計實收</span><span className="font-bold text-base text-green-600">{projectStats.received.toLocaleString()}</span></div></div>
                 <div className="flex items-center gap-2 border-l pl-6 relative">
                   <Clock size={16} className="text-orange-400"/>
-                  <div className="flex flex-col"><span className="text-[10px] text-gray-400 font-bold flex items-center gap-1">未收餘額<button onClick={() => setShowUnpaidDetails(!showUnpaidDetails)}><AlertCircle size={10} /></button></span><span className="font-bold text-base text-orange-500">{projectStats.outstanding.toLocaleString()}</span></div>
+                  <div className="flex flex-col"><span className="text-[10px] text-gray-400 font-bold flex items-center gap-1">未收餘額<button onClick={() => {setShowUnpaidDetails(!showUnpaidDetails); setExpandedStage(null);}}><AlertCircle size={10} /></button></span><span className="font-bold text-base text-orange-500">{projectStats.outstanding.toLocaleString()}</span></div>
                   {showUnpaidDetails && (
                     <div className="absolute top-full left-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-orange-100 z-[70] p-4 space-y-3">
                       <div className="flex justify-between items-center border-b pb-2"><h4 className="text-[11px] font-bold text-orange-600">催收清單</h4><button onClick={() => setShowUnpaidDetails(false)}><X size={12}/></button></div>
@@ -469,7 +419,7 @@
                           return (
                             <div key={st.k} className="flex flex-col gap-1">
                               <button onClick={() => setExpandedStage(isExp ? null : st.k)} className={`w-full flex justify-between items-center text-[10px] px-2 py-1.5 rounded-md ${count > 0 ? 'bg-orange-50' : 'bg-gray-50 text-gray-300'}`}><span>{st.l}</span><span className="font-bold">{count}</span></button>
-                              {isExp && count > 0 && <div className="p-2 border border-orange-100 rounded-lg bg-white"><div className="flex justify-between items-center border-b mb-1 pb-1"><span className="text-[9px] text-orange-400 font-bold">未繳戶：</span><button onClick={() => handleCopyUnpaid(st.l, count, units)}>{copyStatus === st.l ? <Check size={10} className="text-green-500" /> : <Copy size={10} className="text-orange-400" />}</button></div><div className="flex flex-wrap gap-1">{units.map((u, i) => <span key={i} className="bg-gray-100 text-[9px] px-1 rounded">{u}</span>)}</div></div>}
+                              {isExp && count > 0 && <div className="p-2 border border-orange-100 rounded-lg bg-white"><div className="flex justify-between items-center border-b mb-1 pb-1 text-[9px] text-orange-400 font-bold">未繳戶：</div><div className="flex flex-wrap gap-1">{units.map((u, i) => <span key={i} className="bg-gray-100 text-[9px] px-1 rounded">{u}</span>)}</div></div>}
                             </div>
                           );
                         })}
@@ -481,7 +431,7 @@
             </div>
 
             <div className="flex overflow-x-auto gap-2 border-b border-gray-200 mb-2 scrollbar-hide">
-              {Object.keys(sheetsData).filter(t => !t.includes('匯款及發票明細') && !t.includes('預收款')).sort((a,b) => a.includes('收款總表') ? -1 : b.includes('收款總表') ? 1 : 0).map(t => <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-t-xl font-bold text-[11px] transition-all whitespace-nowrap ${ activeTab === t ? 'bg-white text-[#8C9B90] border-t-2 border-l border-r border-[#8C9B90]' : 'text-gray-400' }`}>{t}</button>)}
+              {Object.keys(sheetsData).filter(t => !t.includes('匯款及發票明細') && !t.includes('預收款')).sort((a,b) => a.includes('收款總表') ? -1 : b.includes('收款總表') ? 1 : 0).map(t => <button key={t} onClick={() => setActiveTab(t)} className={`px-4 py-2 rounded-t-xl font-bold text-[11px] transition-all whitespace-nowrap ${ activeTab === t ? 'bg-white text-[#8C9B90] border-t-2 border-l border-r border-[#8C9B90]' : 'text-gray-400 hover:text-gray-600' }`}>{t}</button>)}
             </div>
             
             <div className="bg-white rounded-xl shadow-sm border overflow-hidden border-[#D4C9B9]/20 relative">
@@ -503,7 +453,7 @@
                         const span = rowSpans[unitKey] || 1; const isF = !idx || `${normStr(combinedData[idx-1]['樓層'])}_${normStr(combinedData[idx-1]['編號'])}` !== unitKey;
                         return (
                           <tr key={idx} className="hover:bg-gray-50/50">
-                            {isF && <td rowSpan={span} className="px-1 py-2 border-r text-center sticky left-0 bg-white z-30 sticky-shadow align-middle"><button onClick={() => openUnitDetails(uInfo.f, uInfo.u, uInfo.b)} className="text-[9px] bg-[#D4C9B9] text-white px-2 py-1 rounded-md">檢視</button></td>}
+                            {isF && <td rowSpan={span} className="px-1 py-2 border-r text-center sticky left-0 bg-white z-30 sticky-shadow align-middle"><button onClick={() => { const details = getUnitFullDetails(uInfo.f, uInfo.u, uInfo.b); setSelectedUnit(details); }} className="text-[9px] bg-[#D4C9B9] text-white px-2 py-1 rounded-md shadow-sm">檢視</button></td>}
                             {currentColumns.map((col, i) => {
                                 const isSticky = ['樓層', '編號', '買方', '成交總價'].includes(col);
                                 const leftPos = col==='樓層'?'44px':col==='編號'?'89px':col==='買方'?'134px':col==='成交總價'?'244px':'0px';
@@ -532,26 +482,21 @@
                   <div className="flex items-center gap-4">
                     <div className="bg-[#8C9B90] text-white text-2xl font-bold h-14 px-5 rounded-xl flex items-center justify-center">{selectedUnit.基本資料.樓層}{selectedUnit.基本資料.編號}</div>
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-xl font-bold flex flex-wrap items-center gap-2">{isEditingMode ? <input className="border px-2 py-1 rounded w-28 text-base" value={selectedUnit.基本資料.買方} onChange={e=>setSelectedUnit({...selectedUnit, 基本資料:{...selectedUnit.基本資料, 買方:e.target.value}})}/> : (selectedUnit.基本資料.買方||'未填寫')} {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號) && <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-md border border-gray-200 flex items-center gap-1"><MapPin size={14}/> {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號)}</span>}</h2>
+                      <h2 className="text-xl font-bold">{selectedUnit.基本資料.買方 || '未填寫'}</h2>
+                      <div className="flex items-center gap-2">
+                        {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號) && <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded flex items-center gap-1"><MapPin size={12}/> {getDoorplateAddress(selectedUnit.基本資料.樓層, selectedUnit.基本資料.編號)}</span>}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    {isAdmin && <button onClick={isEditingMode ? saveClientEdits : ()=>setIsEditingMode(true)} className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${isEditingMode?'bg-green-600 text-white shadow-lg':'bg-white border'}`}>{isEditingMode ? '儲存退出' : '✏️ 編輯資料'}</button>}
-                    <button onClick={()=>{setSelectedUnit(null);setIsEditingMode(false);}} className="text-gray-400 hover:bg-gray-100 p-2.5 rounded-full"><X size={24}/></button>
-                  </div>
+                  <button onClick={()=>{setSelectedUnit(null); setIsEditingMode(false);}} className="text-gray-400 hover:bg-gray-100 p-2.5 rounded-full"><X size={24}/></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50 scrollbar-hide space-y-6">
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
                     <h3 className="text-sm font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><User size={16}/>聯絡資料</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3">
-                      {(() => {
-                        const items = { ...selectedUnit.客戶資料 }, zip = items['郵遞區號'] || '', addr = items['通訊地址'] || '', staticFields = ['樓層','編號','買方'];
-                        const fields = Object.entries(items).filter(([k,v]) => !staticFields.includes(normStr(k)) && !k.startsWith('__EMPTY') && !['郵遞區號','通訊地址'].includes(k) && (isEditingMode || (v && String(v).trim() !== ""))).map(([k,v])=>(
-                          <div key={k} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 px-3"><span className="text-gray-400">{k}</span>{isEditingMode ? <input className="border px-2 py-1 rounded w-2/3" value={v} onChange={e=>setSelectedUnit({...selectedUnit, 客戶資料: {...selectedUnit.客戶資料, [k]: e.target.value}})}/> : <span className={`font-medium whitespace-pre-wrap ${getAlignClass(k, v)}`}>{renderDateIfApplicable(k,v)}</span>}</div>
-                        ));
-                        if (isEditingMode || zip || addr) fields.push(<div key="merged" className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 px-3 md:col-span-1"><span className="text-gray-400">通訊地址</span>{isEditingMode ? <div className="flex gap-1 w-2/3"><input className="border px-2 py-1 rounded w-1/4" value={zip} onChange={e=>setSelectedUnit({...selectedUnit, 客戶資料:{...selectedUnit.客戶資料, 郵遞區號:e.target.value}})}/><input className="border px-2 py-1 rounded flex-1" value={addr} onChange={e=>setSelectedUnit({...selectedUnit, 客戶資料:{...selectedUnit.客戶資料, 通訊地址:e.target.value}})}/></div> : <span className="font-medium text-center">{zip?`[${zip}] `:''}{addr}</span>}</div>);
-                        return fields;
-                      })()}
+                      {Object.entries(selectedUnit.客戶資料).filter(([k,v]) => !['樓層','編號','買方'].includes(normStr(k)) && !k.startsWith('__EMPTY') && v && String(v).trim() !== "").map(([k,v])=>(
+                          <div key={k} className="flex justify-between items-center text-sm border-b border-gray-50 pb-2 px-3"><span className="text-gray-400">{k}</span><span className="font-medium">{renderDateIfApplicable(k,v)}</span></div>
+                      ))}
                     </div>
                   </div>
 
@@ -565,7 +510,7 @@
                         let rem = receipts;
                         const displayStages = [{ k: '客變', l: '客變費用' }, { k: '成交', l: '合約總價' }, ...PAYMENT_STAGES.filter(st => st.k !== '客變')];
                         return displayStages.map(st => {
-                          let exp=0,hA=0,lA=0;
+                          let hA=0, lA=0, exp=0;
                           if (st.k === '客變') { exp=charges; } else { 
                             hA = parseFloat(String(house[Object.keys(house).find(x=>x.includes(st.k)) || '']).replace(/,/g,'')) || 0; 
                             lA = parseFloat(String(land[Object.keys(land).find(x=>x.includes(st.k)) || '']).replace(/,/g,'')) || 0; 
@@ -581,7 +526,7 @@
                                 <td className="text-right px-2 font-bold">{exp?exp.toLocaleString():''}</td>
                                 <td className="text-right px-2 text-green-600 font-bold">{st.k==='成交'?'':paid.toLocaleString()}</td>
                                 <td className="text-right px-2 text-red-500">{st.k==='成交'?'':(exp-paid).toLocaleString()}</td>
-                                <td className="text-center px-2">{st.k==='成交'?'':(paid>=exp?<span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-[10px] font-bold">已清</span>:<span className="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-[10px] font-bold">未清</span>)}</td>
+                                <td className="text-center px-2">{st.k==='成交'?'':(paid>=exp?<span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold">已清</span>:<span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[10px] font-bold">未清</span>)}</td>
                             </tr>
                           );
                         });
@@ -590,7 +535,8 @@
 
                   <div className="bg-white p-5 rounded-2xl border shadow-sm">
                     <h3 className="text-sm font-bold text-[#8C9B90] mb-4 border-b pb-2 flex items-center gap-2"><FileText size={16}/>匯款紀錄管理</h3>
-                    <table className="w-full text-xs border-separate border-spacing-y-1.5"><thead><tr className="bg-emerald-50 text-emerald-700 font-bold"><th className="py-2 text-center rounded-l-md">匯款日期</th><th className="px-2 text-center">實收金額</th><th className="py-2 text-center bg-orange-50 text-orange-700">發票日期</th><th className="px-2 text-center bg-orange-50 text-orange-700 rounded-r-md">發票號碼</th>{isAdmin && <th className="text-center w-16 text-gray-400">操作</th>}</tr></thead>
+                    <table className="w-full text-xs border-separate border-spacing-y-1.5">
+                      <thead><tr className="bg-emerald-50 text-emerald-700 font-bold"><th className="py-2 text-center rounded-l-md">匯款日期</th><th className="px-2 text-center">實收金額</th><th className="px-2 text-center bg-orange-50 text-orange-700">發票日期</th><th className="px-2 text-center bg-orange-50 text-orange-700 rounded-r-md">發票號碼</th></tr></thead>
                       <tbody>
                       {(selectedUnit.匯款紀錄 || []).map((r,i) => {
                         const amt = parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0, rK = r._id, cD = firebaseInvoices[rK] || {};
@@ -598,31 +544,14 @@
                           <tr key={i} className="hover:opacity-80">
                             <td className="px-2 py-2.5 text-center bg-emerald-50/70 rounded-l-md">{renderDateIfApplicable('日期',r[Object.keys(r).find(k=>k.includes('日期'))||'日期'])}</td>
                             <td className="text-right px-2 font-bold bg-emerald-50/70">{amt.toLocaleString()}</td>
-                            <td className="px-2 bg-orange-50/70"><input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-center text-orange-900" value={cD['發票日期'] !== undefined ? cD['發票日期'] : renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/></td>
-                            <td className="px-2 bg-orange-50/70 rounded-r-md"><input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-center font-mono text-orange-900" value={cD['發票號碼'] || r['發票號碼'] || ''} onChange={e=>handleInvoiceChange(rK,'發票號碼',e.target.value)} placeholder="號碼"/></td>
-                            {isAdmin && <td className="text-center"><button onClick={async ()=>{if(!confirm("刪除此紀錄？"))return; if(r._isImported) { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), { deletedImportedRemittances: arrayUnion(r._id) }, { merge: true }); } else { let path = 'additions', list = customData.remittances || []; if (pendingRems.some(x => x.id === r.id)) { path = 'pending_remittances'; list = pendingRems; } else if (archivedRems.some(x => x.id === r.id)) { path = 'archived'; list = archivedRems; } await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', path), { remittances: list.filter(x=>x.id!==r.id) }, { merge: true }); } setSelectedUnit({...selectedUnit, 匯款紀錄: selectedUnit.匯款紀錄.filter(x=>x._id !== r._id)});}} className="text-red-400"><Trash2 size={14}/></button></td>}
+                            <td className="px-2 bg-orange-50/70 text-center">{cD['發票日期'] || renderDateIfApplicable('發票日期', r['發票日期']) || '-'}</td>
+                            <td className="px-2 bg-orange-50/70 text-center font-mono">{cD['發票號碼'] || r['發票號碼'] || '-'}</td>
                           </tr>
                         );
                       })}
-                      {isAdmin && (
-                        <tr className="bg-blue-50/40 rounded-xl">
-                            <td className="p-2 rounded-l-md"><input type="date" className="border rounded text-xs w-full p-1.5 text-center bg-white" value={remitInput.date} onChange={e=>setRemitInput({...remitInput, date: e.target.value})}/></td>
-                            <td className="p-2"><input type="number" placeholder="金額" className="border rounded text-xs w-full p-1.5 text-right bg-white" value={remitInput.amt} onChange={e=>setRemitInput({...remitInput, amt: e.target.value})}/></td>
-                            <td colSpan="3" className="p-2 text-right rounded-r-md"><button onClick={async () => { if(remitInput.amt){ const rec = { unitKey:`${selectedUnit.基本資料.樓層}_${selectedUnit.基本資料.編號}`, 匯款日期:convertToMinguo(remitInput.date), 匯款金額:Number(remitInput.amt), _isCustom:true, id:Date.now().toString() }; await setDoc(doc(db,'artifacts',appId,'public','data','custom','additions'), { remittances:[...(customData.remittances || []), rec] }, { merge:true }); setSelectedUnit({...selectedUnit, 匯款紀錄: [...selectedUnit.匯款紀錄, {...rec, _id: rec.id, _isCustom: true}]}); setRemitInput({ date: '', amt: '' }); } }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md">新增實收</button></td>
-                        </tr>
-                      )}
                     </tbody></table>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-          {showAuthModal && isAdmin && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-              <div className="bg-white p-8 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="flex justify-between items-center border-b pb-4 mb-4"><h3 className="font-bold text-lg text-[#8C9B90]">權限管理</h3><button onClick={() => setShowAuthModal(false)}><X size={20}/></button></div>
-                <div className="flex gap-2 mb-6"><input id="new_auth_name" type="text" placeholder="名稱" className="border w-1/3 p-2.5 rounded-xl text-sm" /><input id="new_auth_email" type="email" placeholder="Email" className="border flex-1 p-2.5 rounded-xl text-sm" /><button onClick={async () => { const n=document.getElementById('new_auth_name').value, e=document.getElementById('new_auth_email').value.trim().toLowerCase(); if(e&&e.includes('@')){ await setDoc(doc(db,'artifacts',appId,'public','data','custom','additions'), {allowedViewers: [...(customData.allowedViewers || []), { name: n, email: e }]}, {merge:true}); document.getElementById('new_auth_name').value=''; document.getElementById('new_auth_email').value=''; } }} className="bg-[#8C9B90] text-white px-5 py-2.5 rounded-xl text-sm font-bold">加入</button></div>
-                <div className="border rounded-xl overflow-y-auto"><table className="w-full text-sm text-left"><thead className="bg-gray-50 text-xs"><tr><th className="px-4 py-3 font-bold border-b">名稱</th><th className="px-4 py-3 font-bold border-b">Email</th><th className="px-4 py-3 text-center font-bold border-b">移除</th></tr></thead><tbody className="divide-y">{(customData.allowedViewers || []).map((item, idx) => ( <tr key={idx}><td className="px-4 py-3">{item.name || '-'}</td><td className="px-4 py-3">{item.email}</td><td className="px-4 py-3 text-center"><button onClick={async () => { if(!confirm(`移除授權？`)) return; await setDoc(doc(db,'artifacts',appId,'public','data','custom','additions'), {allowedViewers: customData.allowedViewers.filter(e => (e.email || e) !== (item.email || item))}, {merge:true}); }} className="text-red-400"><Trash2 size={16}/></button></td></tr> ))}</tbody></table></div>
               </div>
             </div>
           )}
