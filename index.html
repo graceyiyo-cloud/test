@@ -494,7 +494,8 @@
                 <tbody className="divide-y divide-gray-50 text-[15px] text-gray-700 font-normal">
                   {combinedRemittances.map((sub) => {
                     const master = masterUnits[sub.unitKey];
-                    const currentStage = (viewMode === 'archived' && sub._archivedStage) ? sub._archivedStage : selectedStage;
+                    // 修正點：在封存區嚴格使用 _archivedStage（若無則預設 '使照'），完全切斷與主畫面 selectedStage 的連動
+                    const currentStage = viewMode === 'archived' ? (sub._archivedStage || '使照') : selectedStage;
                     const currentStageLabel = PAYMENT_STAGES.find(s => s.k === currentStage)?.l || currentStage;
                     
                     const baseExp = master?.stages?.[currentStage] || 0;
