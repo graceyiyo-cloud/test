@@ -433,17 +433,18 @@
                       <RotateCcw size={18} /> 批次復原 ({selectedArchiveIds.length})
                     </button>
                   )}
-                  
-                  <button 
-                    onClick={() => { setViewMode(viewMode === 'active' ? 'archived' : 'active'); setSelectedArchiveIds([]); }} 
-                    className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'archived' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                  >
-                    <Database size={18} /> {viewMode === 'active' ? '檢視封存區' : '回對帳主頁'}
-                  </button>
 
                   <button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '關閉人員管理' : '授權名單管理'}</button>
                 </>
               )}
+              
+              <button 
+                onClick={() => { setViewMode(viewMode === 'active' ? 'archived' : 'active'); setSelectedArchiveIds([]); }} 
+                className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'archived' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+              >
+                <Database size={18} /> {viewMode === 'active' ? '檢視封存區' : '回對帳主頁'}
+              </button>
+
               {viewMode === 'active' && (
                 <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
                   <span className="text-sm font-bold text-gray-500">期款比對：</span>
@@ -606,9 +607,13 @@
                               <Trash2 size={18} />
                             </button>
                           ) : (
-                            <button onClick={() => handleRestoreArchive(sub)} className="text-blue-300 hover:text-blue-600 transition-all p-2 hover:bg-blue-50 rounded-full" title="復原至主畫面">
-                              <RotateCcw size={18} />
-                            </button>
+                            isSuperAdmin ? (
+                              <button onClick={() => handleRestoreArchive(sub)} className="text-blue-300 hover:text-blue-600 transition-all p-2 hover:bg-blue-50 rounded-full" title="復原至主畫面">
+                                <RotateCcw size={18} />
+                              </button>
+                            ) : (
+                              <span className="text-gray-300 text-xs font-medium cursor-not-allowed" title="僅管理員可復原">-</span>
+                            )
                           )}
                         </td>
                       </tr>
