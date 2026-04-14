@@ -278,6 +278,49 @@
         await setDoc(ref, { remittances: list.filter(r => r.id !== rem.id) }, { merge: true });
       };
 
+      // 【資料校正：修復舊版預收自動扣除邏輯】
+      const handleFixLegacyAmounts = async () => {
+        const fixList = (list) => {
+          let changed = false;
+          const newList = list.map(r => {
+            if (r._prepayDeducted) {
+              changed = true;
+              const master = masterUnits[r.unitKey];
+              const prepay = master?.prepayAmt || 0;
+              const fixed = { ...r, 匯款金額: r.匯款金額 + prepay };
+              delete fixed._prepayDeducted; // 移除標記，確保未來不再被干擾
+              return fixed;
+            }
+            return r;
+          });
+          return { changed, newList };
+        };
+
+        const { changed: archChanged, newList: newArch } = fixList(archivedRems);
+        const { changed: recChanged, newList: newRec } = fixList(reconciledRems);
+        const { changed: penChanged, newList: newPen } = fixList(pendingRems);
+
+        if (!archChanged && !recChanged && !penChanged) {
+          alert("✅ 系統掃描完畢，目前資料庫中沒有需要修復的舊版預收扣除紀錄。");
+          return;
+        }
+
+        const totalAffected = (archChanged ? archivedRems.filter(r => r._prepayDeducted).length : 0) +
+                              (recChanged ? reconciledRems.filter(r => r._prepayDeducted).length : 0) +
+                              (penChanged ? pendingRems.filter(r => r._prepayDeducted).length : 0);
+
+        if (!window.confirm(`⚠️ 偵測到 ${totalAffected} 筆受舊版邏輯影響而扣除預收的紀錄。\n確定要一鍵將它們還原成客戶填寫的原始金額嗎？\n(此操作會覆寫資料庫，還原後將恢復正常顯示)`)) return;
+
+        try {
+          if (archChanged) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived'), { remittances: newArch }, { merge: true });
+          if (recChanged) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), { remittances: newRec }, { merge: true });
+          if (penChanged) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances'), { remittances: newPen }, { merge: true });
+          alert("✅ 所有受影響的金額已成功還原！");
+        } catch (e) {
+          alert("修復失敗，請檢查網路連線或權限。");
+        }
+      };
+
       // 【封存邏輯】
       const handleBulkArchive = async () => {
         if (selectedArchiveIds.length === 0) return;
@@ -433,6 +476,15 @@
                       <RotateCcw size={18} /> 批次復原 ({selectedArchiveIds.length})
                     </button>
                   )}
+
+                  {/* 新增的資料修復按鈕 */}
+                  <button 
+                    onClick={handleFixLegacyAmounts} 
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 shadow-sm"
+                    title="一鍵將被系統扣除預收的歷史金額還原為客戶填寫的原價"
+                  >
+                    <CheckCircle size={18} /> 校正舊版金額
+                  </button>
                   
                   <button 
                     onClick={() => { setViewMode(viewMode === 'active' ? 'archived' : 'active'); setSelectedArchiveIds([]); }} 
@@ -560,63 +612,3 @@
                                     <input 
                                         type="number"
                                         defaultValue={currentDisplayAmt}
-                                        onBlur={(e) => {
-                                            const newVal = Number(e.target.value);
-                                            // 直接儲存更新後的金額
-                                            if (newVal !== sub.匯款金額) {
-                                                updateRemittanceField(sub, '匯款金額', newVal);
-                                            }
-                                        }}
-                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-base"
-                                    />
-                                </div>
-                            ) : (
-                                <span className="text-[#4A4A4A] text-base">${currentDisplayAmt?.toLocaleString()}</span>
-                            )}
-                            
-                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (
-                              <CheckCircle size={18} className="text-green-500" />
-                            ) : totalExpected > 0 ? (
-                              <XCircle size={18} className="text-orange-400" />
-                            ) : null}
-                          </div>
-                          <div className="text-[10px] text-gray-400 mt-1 leading-tight">
-                            應收總額: ${totalExpected.toLocaleString()}
-                            {currentStage === '使照' && prepayExp > 0 && (
-                              <div className="text-[9px]">
-                                ({currentStageLabel}${baseExp.toLocaleString()}+預收 ${prepayExp.toLocaleString()})
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-1.5 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 bg-white w-28" />) : (<span className="text-gray-600">{toROC(invData['發票日期']) || '-'}</span>)}</td>
-                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<div className="flex items-center gap-1"><Edit3 size={14} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-3 py-1.5 border border-gray-100 rounded-lg text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono">{invData['發票號碼'] || '-'}</span>)}</td>
-                        <td className="py-3 px-5 text-center">
-                          {viewMode === 'active' ? (
-                            <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="刪除紀錄">
-                              <Trash2 size={18} />
-                            </button>
-                          ) : (
-                            <button onClick={() => handleRestoreArchive(sub)} className="text-blue-300 hover:text-blue-600 transition-all p-2 hover:bg-blue-50 rounded-full" title="復原至主畫面">
-                              <RotateCcw size={18} />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {combinedRemittances.length === 0 && <div className="p-32 text-center text-gray-300 font-bold">目前無{viewMode === 'archived' ? '封存' : '回報'}紀錄</div>}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    const container = document.getElementById('root');
-    const root = createRoot(container);
-    root.render(<App />);
-  </script>
-</body>
-</html>
