@@ -612,3 +612,63 @@
                                     <input 
                                         type="number"
                                         defaultValue={currentDisplayAmt}
+                                        onBlur={(e) => {
+                                            const newVal = Number(e.target.value);
+                                            // 直接儲存更新後的金額
+                                            if (newVal !== sub.匯款金額) {
+                                                updateRemittanceField(sub, '匯款金額', newVal);
+                                            }
+                                        }}
+                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-base"
+                                    />
+                                </div>
+                            ) : (
+                                <span className="text-[#4A4A4A] text-base">${currentDisplayAmt?.toLocaleString()}</span>
+                            )}
+                            
+                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (
+                              <CheckCircle size={18} className="text-green-500" />
+                            ) : totalExpected > 0 ? (
+                              <XCircle size={18} className="text-orange-400" />
+                            ) : null}
+                          </div>
+                          <div className="text-[10px] text-gray-400 mt-1 leading-tight">
+                            應收總額: ${totalExpected.toLocaleString()}
+                            {currentStage === '使照' && prepayExp > 0 && (
+                              <div className="text-[9px]">
+                                ({currentStageLabel}${baseExp.toLocaleString()}+預收 ${prepayExp.toLocaleString()})
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-1.5 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 bg-white w-28" />) : (<span className="text-gray-600">{toROC(invData['發票日期']) || '-'}</span>)}</td>
+                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<div className="flex items-center gap-1"><Edit3 size={14} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-3 py-1.5 border border-gray-100 rounded-lg text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono">{invData['發票號碼'] || '-'}</span>)}</td>
+                        <td className="py-3 px-5 text-center">
+                          {viewMode === 'active' ? (
+                            <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="刪除紀錄">
+                              <Trash2 size={18} />
+                            </button>
+                          ) : (
+                            <button onClick={() => handleRestoreArchive(sub)} className="text-blue-300 hover:text-blue-600 transition-all p-2 hover:bg-blue-50 rounded-full" title="復原至主畫面">
+                              <RotateCcw size={18} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {combinedRemittances.length === 0 && <div className="p-32 text-center text-gray-300 font-bold">目前無{viewMode === 'archived' ? '封存' : '回報'}紀錄</div>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const container = document.getElementById('root');
+    const root = createRoot(container);
+    root.render(<App />);
+  </script>
+</body>
+</html>
