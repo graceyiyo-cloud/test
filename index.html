@@ -1,688 +1,987 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>瀞川日禾對帳管理中心</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冷氣清洗紀錄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 整體字體加大約 10% */
+        html { font-size: 110%; }
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; }
+        .hidden { display: none; }
+        /* 提升已完成狀態的視覺對比度 */
+        .completed-row { background-color: #f1f5f9 !important; border-left: 5px solid #64748b !important; opacity: 0.95; }
+        
+        .note-display { white-space: pre-wrap; word-break: break-all; display: block; line-height: 1.3; }
 
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-      }
-    }
-  </script>
+        @keyframes highlight-fade {
+            0% { background-color: #fef08a; transform: scale(1.02); }
+            100% { background-color: white; transform: scale(1); }
+        }
+        .highlight-target { animation: highlight-fade 2s ease-out; z-index: 10; }
+
+        /* 全裝置統一使用卡片式佈局 - 針對手機版面進行清晰度優化 */
+        thead { display: none; }
+        tr { 
+            display: block; margin-bottom: 1.25rem; border-radius: 12px; background: white;
+            padding: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        /* 增加儲存格的上下空間，並加深基礎文字顏色 */
+        td { display: block; width: 100%; padding: 0.35rem 0 !important; border: none !important; text-align: left; color: #334155; }
+        
+        /* 客戶名稱加大加粗，增加對比 */
+        td[data-label="客戶"] { font-weight: 800; font-size: 1.2rem; color: #0f172a; padding-bottom: 0.3rem !important; }
+        /* 金額帳目增加明顯分隔線與粗體 */
+        td[data-label="金額帳目"] { 
+            padding-top: 0.75rem !important; margin-top: 0.5rem;
+            border-top: 2px dashed #cbd5e1 !important; color: #1e293b; font-size: 0.9rem; font-weight: 700;
+        }
+        td.action-cell {
+            border-top: 1px solid #e2e8f0 !important; margin-top: 0.75rem;
+            padding-top: 0.75rem !important; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
+        }
+
+        /* 預約時間增加底線做為頭部資訊區隔 */
+        .time-display { font-size: 0.85rem; color: #475569; font-weight: 600; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem !important; margin-bottom: 0.25rem; }
+
+        @media (min-width: 1024px) {
+            .desktop-half-width { max-width: 50% !important; margin-left: auto; margin-right: auto; }
+        }
+
+        /* 小幫手統計浮窗樣式 */
+        #assistantSummaryModal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 100; width: 90%; max-width: 350px;
+        }
+
+        /* Lucide 圖示統一微調 */
+        .lucide { width: 14px; height: 14px; stroke-width: 2; display: inline-block; vertical-align: -2px; }
+        .btn-icon { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
+    </style>
 </head>
-<body class="bg-[#F9F8F6]">
-  <div id="root">
-    <div id="initial-loading" class="min-h-screen flex items-center justify-center">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8BA39E]"></div>
-        <p class="mt-4 text-gray-400 font-medium">系統安全環境初始化中...</p>
-      </div>
-    </div>
-  </div>
+<body class="bg-[#faf9f6] min-h-screen text-slate-700">
 
-  <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useMemo } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { CheckCircle, XCircle, Edit3, Lock, LogIn, LogOut, Trash2, AlertCircle, ShieldCheck, Loader2, Database, Users, Plus, X, User, MessageSquare, Archive, CheckSquare, Square, RotateCcw, History, Download } from 'lucide-react';
-    import { initializeApp, getApps } from 'firebase/app';
-    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-    import { getFirestore, doc, setDoc, onSnapshot, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
-
-    // ==========================================
-    // 1. 設定固定管理員 (預設最高權限)
-    // ==========================================
-    const FIXED_ADMIN = "jingchuantw@gmail.com";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDREvduzrja4xjF-RCpKa-qv45JZCw9tjI",
-      authDomain: "gen-lang-client-0168131217.firebaseapp.com",
-      projectId: "gen-lang-client-0168131217",
-      storageBucket: "gen-lang-client-0168131217.firebasestorage.app",
-      messagingSenderId: "620488371764",
-      appId: "1:620488371764:web:d5eb9d1dff62d66bab2461"
-    };
-
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-    const appId = 'qingsenyuan-admin'; 
-
-    const PAYMENT_STAGES = [
-      { k: '訂金', l: '訂金' }, { k: '簽約', l: '簽約金' }, { k: '2F', l: '2F工程' },
-      { k: '5F', l: '5F工程' }, { k: '7F', l: '7F工程' }, { k: '10F', l: '10F工程' },
-      { k: '13F', l: '13F工程' }, { k: '使照', l: '使照款' }, { k: '銀貸', l: '銀貸' },
-      { k: '交屋', l: '交屋款' }
-    ];
-
-    // 民國年轉換工具
-    const toROC = (dateStr) => {
-      if (!dateStr) return '';
-      const parts = dateStr.replace(/-/g, '/').split('/');
-      if (parts.length < 3) return dateStr;
-      let y = parseInt(parts[0]);
-      if (isNaN(y)) return dateStr;
-      if (y > 1911) y -= 1911; 
-      return `${y}/${parts[1]}/${parts[2]}`;
-    };
-
-    function App() {
-      const [user, setUser] = useState(null);
-      const [isAuthLoading, setIsAuthLoading] = useState(true);
-      const [isReady, setIsReady] = useState(false);
-      const [dbError, setDbError] = useState('');
-      const [cloudAuthorizedUsers, setCloudAuthorizedUsers] = useState([]); 
-
-      const isAdmin = useMemo(() => {
-        if (!user) return false;
-        const email = user.email.toLowerCase();
-        return email === FIXED_ADMIN.toLowerCase() || cloudAuthorizedUsers.some(u => u.email.toLowerCase() === email);
-      }, [user, cloudAuthorizedUsers]);
-
-      useEffect(() => {
-        const timer = setTimeout(() => { if (isAuthLoading) setIsAuthLoading(false); }, 8000);
-        return () => clearTimeout(timer);
-      }, [isAuthLoading]);
-
-      useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
-          setUser(u);
-          if (!u) { setIsAuthLoading(false); setCloudAuthorizedUsers([]); }
-        });
-        return () => unsubscribeAuth();
-      }, []);
-
-      useEffect(() => {
-        if (!user) return;
-        const unsubAuthList = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails'), (s) => {
-          if (s.exists()) {
-            const data = s.data();
-            const list = data.users || (data.emails || []).map(e => ({ email: e, name: '未命名同仁' }));
-            setCloudAuthorizedUsers(list);
-          }
-          setIsAuthLoading(false);
-        }, (err) => { setIsAuthLoading(false); });
-        return () => unsubAuthList();
-      }, [user]);
-
-      const [masterUnits, setMasterUnits] = useState({}); 
-      const [reconciledRems, setReconciledRems] = useState([]); 
-      const [pendingRems, setPendingRems] = useState([]);
-      const [archivedRems, setArchivedRems] = useState([]);
-      const [invoices, setInvoices] = useState({});         
-
-      useEffect(() => {
-        if (!user || !isAdmin) return;
-        const handleError = (error) => { setDbError(error.message); setIsReady(true); };
-        const unsubAdditions = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), (s) => setReconciledRems(s.data()?.remittances || []), handleError);
-        const unsubPending = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances'), (s) => setPendingRems(s.data()?.remittances || []), handleError);
-        const unsubArchived = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived'), (s) => setArchivedRems(s.data()?.remittances || []), handleError);
-        const unsubInv = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices'), (s) => setInvoices(s.data() || {}), handleError);
-        const unsubMaster = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'master_sheets'), (snap) => {
-          const units = {};
-          snap.forEach(docSnap => {
-            const data = docSnap.data();
-            const isMaster = docSnap.id.includes('收款總表');
-            const isPrepay = docSnap.id.includes('預收款及車位');
-            if (!isMaster && !isPrepay) return;
-            data.rows?.forEach(row => {
-              let f = String(row['樓層'] || '').trim().replace(/\.0$/, '');
-              let u = String(row['編號'] || '').trim().replace(/\.0$/, '');
-              if (f && u && !f.includes('合計')) {
-                const key = `${f}_${u}`;
-                if (!units[key]) units[key] = { floor: f, unit: u, buyer: row['買方'] || row['姓名'] || '-', stages: {}, prepayAmt: 0 };
-                if (isMaster) {
-                  PAYMENT_STAGES.forEach(st => {
-                    let contractAmt = 0, paidAmt = 0, unpaidAmt = NaN;
-                    Object.keys(row).forEach(rk => {
-                      const val = parseFloat(String(row[rk] || '').replace(/,/g, ''));
-                      if (rk.includes(st.k)) {
-                         if (rk.includes('應收') || rk.includes('應付')) contractAmt += isNaN(val) ? 0 : val;
-                         if (rk.includes('已付') || rk.includes('實收')) paidAmt += isNaN(val) ? 0 : val;
-                         if (rk.includes('未付') || rk.includes('餘額')) { if (!isNaN(val)) unpaidAmt = val; }
-                      }
-                    });
-                    const finalStageUnpaid = !isNaN(unpaidAmt) ? unpaidAmt : (contractAmt - paidAmt);
-                    units[key].stages[st.k] = (units[key].stages[st.k] || 0) + finalStageUnpaid;
-                  });
-                }
-                if (isPrepay) {
-                  const prepayVal = parseFloat(String(row['預收代書款'] || '0').replace(/,/g, '')) || 0;
-                  units[key].prepayAmt = prepayVal;
-                }
-              }
-            });
-          });
-          setMasterUnits(units); setIsReady(true);
-        }, handleError);
-        return () => { unsubAdditions(); unsubPending(); unsubArchived(); unsubInv(); unsubMaster(); };
-      }, [user, isAdmin]);
-
-      const handleGoogleLogin = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert("登入失敗: " + e.message); } };
-
-      if (isAuthLoading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><Loader2 className="animate-spin text-[#8BA39E] mb-4" size={40} /><p className="text-gray-500 font-medium">正在建立安全連線...</p></div>;
-      if (!user) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-8 border border-gray-100"><div className="flex justify-center"><div className="bg-[#8BA39E] p-5 rounded-2xl text-white shadow-lg"><Lock size={40} /></div></div><div><h1 className="text-2xl font-bold text-gray-800">瀞川日禾對帳管理中心</h1><p className="text-gray-400 text-sm mt-2 font-medium tracking-wide">請登入您的 Google 帳號以存取後台</p></div><button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 border-b-4 border-b-gray-100"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5"/> 使用 Google 帳號登入</button></div></div>;
-      if (!isAdmin) return <div className="min-h-screen flex items-center justify-center bg-[#F9F8F6] p-4"><div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center space-y-6 border border-red-100"><AlertCircle className="w-16 h-16 text-red-400 mx-auto" /><h2 className="text-xl font-bold text-gray-800">權限不足</h2><p className="text-gray-500 text-sm leading-relaxed">您的帳號 ({user.email}) 不在授權名單中。<br/>請聯繫系統負責人開通權限。</p><button onClick={() => signOut(auth)} className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors">登出並切換帳號</button></div></div>;
-      if (!isReady) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#F9F8F6]"><div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#8BA39E] mb-4"></div><p className="text-[#8BA39E] font-bold">正在同步雲端資料庫...</p></div>;
-
-      return <AdminDashboard 
-        user={user} pendingRems={pendingRems} reconciledRems={reconciledRems} archivedRems={archivedRems}
-        invoices={invoices} masterUnits={masterUnits} cloudAuthorizedUsers={cloudAuthorizedUsers}
-        handleLogout={() => signOut(auth)} 
-      />;
-    }
-
-    function AdminDashboard({ user, pendingRems, reconciledRems, archivedRems, invoices, masterUnits, cloudAuthorizedUsers, handleLogout }) {
-      const [selectedStage, setSelectedStage] = useState('使照');
-      const [showUserPanel, setShowUserPanel] = useState(false);
-      const [viewMode, setViewMode] = useState('active'); // 'active' | 'archived'
-      const [newNameInput, setNewNameInput] = useState('');
-      const [newEmailInput, setNewEmailInput] = useState('');
-      const [selectedArchiveIds, setSelectedArchiveIds] = useState([]);
-
-      const combinedRemittances = useMemo(() => {
-        if (viewMode === 'archived') {
-          return [...archivedRems].sort((a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0));
-        }
-        const p = pendingRems.map(r => ({ ...r, _isRec: false }));
-        const r = reconciledRems.map(r => ({ ...r, _isRec: true }));
-        return [...p, ...r].sort((a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0));
-      }, [pendingRems, reconciledRems, archivedRems, viewMode]);
-
-      // 【重複檢查邏輯】
-      const unitCounts = useMemo(() => {
-        const counts = {};
-        combinedRemittances.forEach(r => {
-          counts[r.unitKey] = (counts[r.unitKey] || 0) + 1;
-        });
-        return counts;
-      }, [combinedRemittances]);
-
-      // 【全選邏輯】
-      const isAllSelected = useMemo(() => {
-        return combinedRemittances.length > 0 && selectedArchiveIds.length === combinedRemittances.length;
-      }, [combinedRemittances, selectedArchiveIds]);
-
-      const handleToggleAll = () => {
-        if (isAllSelected) {
-          setSelectedArchiveIds([]);
-        } else {
-          setSelectedArchiveIds(combinedRemittances.map(r => r.id));
-        }
-      };
-
-      const updateInvoiceData = async (remittanceId, field, value) => {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'invoices', 'all_invoices');
-        try { await setDoc(docRef, { [remittanceId]: { [field]: value } }, { merge: true }); } catch (e) {}
-      };
-
-      const updateRemittanceField = async (rem, field, value) => {
-        const path = rem._isRec ? 'additions' : 'pending_remittances';
-        const list = rem._isRec ? reconciledRems : pendingRems;
-        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'custom', path);
-        
-        const updatedList = list.map(r => r.id === rem.id ? { ...r, [field]: value } : r);
-        try {
-          await setDoc(ref, { remittances: updatedList }, { merge: true });
-        } catch (e) {
-          alert("金額更新失敗，請檢查權限。");
-        }
-      };
-
-      const handleToggleReconcile = async (rem, checked) => {
-        if (viewMode === 'archived') return; // 封存區不允許直接切換對帳狀態
-        const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
-        const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
-        
-        const cleanRem = { ...rem }; 
-        delete cleanRem._isRec;
-
-        // 清除舊版的預收扣除標記，避免污染後續資料
-        if (cleanRem._prepayDeducted !== undefined) {
-          delete cleanRem._prepayDeducted;
-        }
-
-        if (checked) {
-          try {
-            await updateInvoiceData(rem.id, '已對帳', true);
-            const newPending = pendingRems.filter(r => r.id !== rem.id);
-            await setDoc(penRef, { remittances: newPending }, { merge: true });
-            await setDoc(addRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
-          } catch (e) { alert("同步失敗"); }
-        } else {
-          try {
-            await updateInvoiceData(rem.id, '已對帳', false);
-            const newReconciled = reconciledRems.filter(r => r.id !== rem.id);
-            await setDoc(addRef, { remittances: newReconciled }, { merge: true });
-            await setDoc(penRef, { remittances: arrayUnion(cleanRem) }, { merge: true });
-          } catch (e) { alert("同步失敗"); }
-        }
-      };
-
-      const handleDeleteRemittance = async (rem) => {
-        if (!window.confirm("確定要刪除這筆紀錄嗎？這將從資料庫永久移除。")) return;
-        const path = rem._isRec ? 'additions' : 'pending_remittances';
-        const list = rem._isRec ? reconciledRems : pendingRems;
-        const ref = doc(db, 'artifacts', appId, 'public', 'data', 'custom', path);
-        await setDoc(ref, { remittances: list.filter(r => r.id !== rem.id) }, { merge: true });
-      };
-
-      // 【封存邏輯】
-      const handleBulkArchive = async () => {
-        if (selectedArchiveIds.length === 0) return;
-        if (!window.confirm(`確定要封存這 ${selectedArchiveIds.length} 筆紀錄嗎？\n資料將從主畫面移至備份區，不會被刪除。`)) return;
-
-        const archiveRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived');
-        const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
-        const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
-
-        const itemsToArchive = combinedRemittances
-          .filter(r => selectedArchiveIds.includes(r.id))
-          .map(r => {
-            const clean = { ...r, _archivedAt: new Date().toISOString(), _wasRec: r._isRec, _archivedStage: selectedStage };
-            delete clean._isRec;
-            return clean;
-          });
-
-        try {
-          // 1. 加入封存區
-          const existingArchive = (await getDoc(archiveRef)).data()?.remittances || [];
-          await setDoc(archiveRef, { remittances: [...existingArchive, ...itemsToArchive] }, { merge: true });
-
-          // 2. 從原始清單移除
-          const newPending = pendingRems.filter(r => !selectedArchiveIds.includes(r.id));
-          const newReconciled = reconciledRems.filter(r => !selectedArchiveIds.includes(r.id));
-          
-          await setDoc(penRef, { remittances: newPending }, { merge: true });
-          await setDoc(addRef, { remittances: newReconciled }, { merge: true });
-
-          setSelectedArchiveIds([]);
-        } catch (e) {
-          alert("封存失敗，請檢查網路連線。");
-        }
-      };
-
-      // 【批次封存復原邏輯】
-      const handleBulkRestore = async () => {
-        if (selectedArchiveIds.length === 0) return;
-        if (!window.confirm(`確定要復原這 ${selectedArchiveIds.length} 筆紀錄嗎？`)) return;
-
-        const archiveRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived');
-        const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
-        const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
-
-        const itemsToRestore = archivedRems.filter(r => selectedArchiveIds.includes(r.id));
-        const newPending = [...pendingRems];
-        const newReconciled = [...reconciledRems];
-
-        itemsToRestore.forEach(r => {
-          const clean = { ...r };
-          delete clean._archivedAt;
-          const wasRec = clean._wasRec;
-          delete clean._wasRec;
-          delete clean._archivedStage;
-
-          if (wasRec) {
-            newReconciled.push(clean);
-          } else {
-            newPending.push(clean);
-          }
-        });
-
-        try {
-          const newArchive = archivedRems.filter(r => !selectedArchiveIds.includes(r.id));
-          await setDoc(archiveRef, { remittances: newArchive }, { merge: true });
-          await setDoc(penRef, { remittances: newPending }, { merge: true });
-          await setDoc(addRef, { remittances: newReconciled }, { merge: true });
-          
-          setSelectedArchiveIds([]);
-        } catch (e) {
-          alert("復原失敗");
-        }
-      };
-
-      // 【單一封存復原邏輯】
-      const handleRestoreArchive = async (rem) => {
-        if (!window.confirm("確定要將此筆資料復原至主畫面嗎？")) return;
-        
-        const archiveRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived');
-        const penRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'pending_remittances');
-        const addRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions');
-        
-        try {
-          const clean = { ...rem };
-          delete clean._archivedAt;
-          const wasRec = clean._wasRec;
-          delete clean._wasRec;
-          delete clean._archivedStage;
-          
-          const newArchive = archivedRems.filter(r => r.id !== rem.id);
-          await setDoc(archiveRef, { remittances: newArchive }, { merge: true });
-
-          if (wasRec) {
-            await setDoc(addRef, { remittances: arrayUnion(clean) }, { merge: true });
-          } else {
-            await setDoc(penRef, { remittances: arrayUnion(clean) }, { merge: true });
-          }
-          
-          alert("資料已復原至主畫面。");
-        } catch (e) {
-          alert("復原失敗");
-        }
-      };
-
-      const handleAddUser = async () => {
-        const email = newEmailInput.trim().toLowerCase();
-        const name = newNameInput.trim();
-        if (!name || !email.includes('@')) { alert("請輸入完整資料"); return; }
-        try {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails');
-          await setDoc(docRef, { users: arrayUnion({ email, name }), emails: arrayUnion(email) }, { merge: true });
-          setNewNameInput(''); setNewEmailInput('');
-        } catch (e) {}
-      };
-
-      const handleRemoveUser = async (targetUser) => {
-        if (!window.confirm(`確定要移除 ${targetUser.name} 的授權嗎？`)) return;
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'authorized_emails');
-        const newList = cloudAuthorizedUsers.filter(u => u.email.toLowerCase() !== targetUser.email.toLowerCase());
-        await setDoc(docRef, { users: newList, emails: newList.map(u => u.email) }, { merge: true });
-      };
-
-      // 【匯出預收款至 Excel (CSV) 邏輯】
-      const handleExportExcel = () => {
-        if (combinedRemittances.length === 0) {
-          alert("目前無資料可供匯出");
-          return;
-        }
-        // 加入 UTF-8 BOM，確保 Excel 能夠正確解析中文
-        let csvContent = "\uFEFF"; 
-        csvContent += "戶別,買方,匯款日期,帳號後五碼,戶名,備註,使照款,預收款,匯款金額,發票日期,發票號碼\n";
-
-        combinedRemittances.forEach(sub => {
-          const master = masterUnits[sub.unitKey];
-          const unit = master ? `${master.floor}${master.unit}` : sub.unitKey;
-          const buyer = master ? master.buyer : '未識別';
-          const date = toROC(sub.匯款日期);
-          const acc = sub.帳號後五碼 || '無';
-          const name = sub.匯款帳戶戶名 || '-';
-          // 處理備註裡的換行與雙引號，避免破壞 CSV 格式
-          const note = (sub.備註 || '').replace(/\n/g, ' ').replace(/"/g, '""');
-          
-          // 新增取出 使照款、預收款
-          const useLicenseFee = master?.stages?.['使照'] || 0;
-          const prepayFee = master?.prepayAmt || 0;
-          const amt = sub.匯款金額 || 0;
-          
-          const invData = invoices[sub.id] || {};
-          const invDate = toROC(invData['發票日期']) || '-';
-          const invNum = invData['發票號碼'] || '-';
-
-          // 寫入 CSV
-          csvContent += `"${unit}","${buyer}","${date}","${acc}","${name}","${note}","${useLicenseFee}","${prepayFee}","${amt}","${invDate}","${invNum}"\n`;
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", "封存區_預收款紀錄.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const stageLabel = PAYMENT_STAGES.find(s => s.k === selectedStage)?.l || selectedStage;
-      const isSuperAdmin = user.email.toLowerCase() === FIXED_ADMIN.toLowerCase();
-
-      return (
-        <div className="py-6 px-4 sm:px-6 lg:px-8 font-sans max-w-[1400px] mx-auto animate-in fade-in duration-500">
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-50 p-2 rounded-lg text-green-600 shadow-inner"><ShieldCheck size={24}/></div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-800">瀞川日禾對帳管理中心 {viewMode === 'archived' && <span className="text-blue-500 ml-1">(封存資料庫)</span>}</h1>
-                <p className="text-xs text-gray-400 font-medium">{user.email} ({isSuperAdmin ? '最高管理員' : '獲授權人員'})</p>
-              </div>
+    <section id="authPage" class="fixed inset-0 z-[100] bg-slate-100 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <i data-lucide="lock" class="text-white w-8 h-8"></i>
             </div>
-            <div className="flex items-center gap-3">
-              {isSuperAdmin && (
-                <>
-                  {viewMode === 'active' ? (
-                    <button 
-                      onClick={handleBulkArchive} 
-                      disabled={selectedArchiveIds.length === 0}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${selectedArchiveIds.length > 0 ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
-                    >
-                      <Archive size={18} /> 批次封存 ({selectedArchiveIds.length})
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleBulkRestore} 
-                      disabled={selectedArchiveIds.length === 0}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${selectedArchiveIds.length > 0 ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}
-                    >
-                      <RotateCcw size={18} /> 批次復原 ({selectedArchiveIds.length})
-                    </button>
-                  )}
-
-                  <button onClick={() => setShowUserPanel(!showUserPanel)} className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${showUserPanel ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}><Users size={18} /> {showUserPanel ? '關閉人員管理' : '授權名單管理'}</button>
-                </>
-              )}
-              
-              {viewMode === 'archived' && (
-                <button 
-                  onClick={handleExportExcel} 
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all bg-green-600 text-white shadow-md hover:bg-green-700"
-                >
-                  <Download size={18} /> 匯出預收款
-                </button>
-              )}
-
-              <button 
-                onClick={() => { setViewMode(viewMode === 'active' ? 'archived' : 'active'); setSelectedArchiveIds([]); }} 
-                className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'archived' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-              >
-                <Database size={18} /> {viewMode === 'active' ? '檢視封存區' : '回對帳主頁'}
-              </button>
-
-              {viewMode === 'active' && (
-                <div className="bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-500">期款比對：</span>
-                  <select value={selectedStage} onChange={(e) => setSelectedStage(e.target.value)} className="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer">{PAYMENT_STAGES.map(s => <option key={s.k} value={s.k}>{s.l}</option>)}</select>
-                </div>
-              )}
-              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition-all hover:bg-red-50 rounded-full"><LogOut size={20}/></button>
-            </div>
-          </div>
-
-          {isSuperAdmin && showUserPanel && (
-            <div className="bg-white p-6 rounded-2xl shadow-md border-2 border-orange-100 mb-6 animate-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 mb-4 text-orange-600"><Users size={20} /><h2 className="font-bold">授權名單管理</h2></div>
-              <div className="flex flex-col md:flex-row gap-3 mb-6">
-                <input type="text" placeholder="同仁名稱" value={newNameInput} onChange={(e) => setNewNameInput(e.target.value)} className="flex-1 px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
-                <input type="email" placeholder="Google 帳號 Email" value={newEmailInput} onChange={(e) => setNewEmailInput(e.target.value)} className="flex-[1.5] px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-200" />
-                <button onClick={handleAddUser} className="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 flex items-center justify-center gap-1"><Plus size={18}/> 加入授權</button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                <div className="p-3 bg-gray-50 rounded-xl border flex justify-between items-center opacity-60"><div className="flex flex-col"><span className="text-xs font-bold text-gray-400 uppercase">管理員</span><span className="text-sm font-medium">{FIXED_ADMIN}</span></div><span className="text-[10px] bg-gray-200 px-1.5 py-0.5 rounded font-bold">系統預設</span></div>
-                {cloudAuthorizedUsers.map(u => (<div key={u.email} className="p-3 bg-orange-50/30 rounded-xl border border-orange-100 flex justify-between items-center group"><div className="flex flex-col overflow-hidden"><span className="text-xs font-bold text-orange-400">{u.name}</span><span className="text-sm font-medium text-gray-700 truncate">{u.email}</span></div><button onClick={() => handleRemoveUser(u)} className="text-red-300 hover:text-red-500 transition-colors ml-2"><X size={18} /></button></div>))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap table-fixed">
-                <thead>
-                  <tr className="bg-[#F8F7F3] text-gray-500 text-xs uppercase tracking-wider font-medium">
-                    {isSuperAdmin && (
-                      <th className="py-3 px-5 w-8 text-center">
-                        <button onClick={handleToggleAll} className="text-gray-400 hover:text-blue-500 transition-colors" title="全選/取消全選">
-                          {isAllSelected ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} />}
-                        </button>
-                      </th>
-                    )}
-                    <th className="py-3 px-5 w-20">對帳</th>
-                    <th className="py-3 px-5 w-28">戶別 / 買方</th>
-                    <th className="py-3 px-5 w-56">匯款資訊 (民國年) {viewMode === 'archived' && <span className="text-blue-400 block font-bold mt-1">已被封存</span>}</th>
-                    <th className="py-3 px-5 w-40 text-left">備註</th>
-                    <th className="py-3 px-5 w-56">金額比對 ({viewMode === 'archived' ? '封存時狀態' : stageLabel})</th>
-                    <th className="py-3 px-5 w-32 text-sky-700">發票日期</th>
-                    <th className="py-3 px-5 w-44 text-sky-700">發票號碼</th>
-                    <th className="py-3 px-5 w-20 text-center">管理</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 text-[15px] text-gray-700 font-normal">
-                  {combinedRemittances.map((sub) => {
-                    const master = masterUnits[sub.unitKey];
-                    // 修正點：在封存區嚴格使用 _archivedStage（若無則預設 '使照'），完全切斷與主畫面 selectedStage 的連動
-                    const currentStage = viewMode === 'archived' ? (sub._archivedStage || '使照') : selectedStage;
-                    const currentStageLabel = PAYMENT_STAGES.find(s => s.k === currentStage)?.l || currentStage;
-                    
-                    const baseExp = master?.stages?.[currentStage] || 0;
-                    const prepayExp = (currentStage === '使照') ? (master?.prepayAmt || 0) : 0;
-                    const totalExpected = baseExp + prepayExp;
-                    
-                    const invData = invoices[sub.id] || {};
-                    const isRec = viewMode === 'archived' ? (sub._wasRec !== undefined ? sub._wasRec : true) : sub._isRec;
-                    const isDuplicate = unitCounts[sub.unitKey] > 1;
-
-                    // 金額直接對應資料庫原始值，不再隱式增減
-                    const currentDisplayAmt = sub.匯款金額;
-
-                    return (
-                      <tr key={sub.id} className={`transition-colors ${isDuplicate ? 'bg-yellow-50/80 hover:bg-yellow-100/80' : 'hover:bg-gray-50/50'}`}>
-                        {isSuperAdmin && (
-                          <td className="py-3 px-5 text-center">
-                            <button 
-                              onClick={() => {
-                                setSelectedArchiveIds(prev => 
-                                  prev.includes(sub.id) ? prev.filter(id => id !== sub.id) : [...prev, sub.id]
-                                );
-                              }}
-                              className="text-gray-400 hover:text-blue-500 transition-colors"
-                            >
-                              {selectedArchiveIds.includes(sub.id) ? <CheckSquare size={20} className="text-blue-600" /> : <Square size={20} />}
-                            </button>
-                          </td>
-                        )}
-                        <td className="py-3 px-5">
-                          <label className={`flex items-center gap-2 ${viewMode === 'archived' ? 'cursor-default' : 'cursor-pointer'}`}>
-                            <input 
-                              type="checkbox" 
-                              checked={isRec} 
-                              disabled={viewMode === 'archived'}
-                              onChange={(e) => handleToggleReconcile(sub, e.target.checked)} 
-                              className={`w-5 h-5 rounded-md border-gray-300 focus:ring-0 ${viewMode === 'archived' ? 'text-blue-300' : 'text-[#8BA39E] cursor-pointer'}`} 
-                            />
-                            <span className={`transition-colors ${isRec ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
-                              {viewMode === 'archived' ? '已封存' : (isRec ? '已對帳' : '待處理')}
-                            </span>
-                          </label>
-                        </td>
-                        <td className="py-3 px-5">
-                          <div className="text-gray-800 text-base flex items-center gap-2">
-                            {master ? `${master.floor}${master.unit}` : sub.unitKey}
-                            {isDuplicate && <span className="bg-yellow-200 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded-full font-medium">重複</span>}
-                          </div>
-                          <div className="text-xs text-[#8BA39E]">{master ? master.buyer : '未識別'}</div>
-                        </td>
-                        <td className="py-3 px-5">
-                          <div>{toROC(sub.匯款日期)}</div>
-                          <div className="text-[10px] text-gray-400 font-mono mt-1">
-                            帳號: {sub.帳號後五碼 || '無'} &nbsp;|&nbsp; 戶名: {sub.匯款帳戶戶名 || '-'}
-                          </div>
-                        </td>
-                        <td className="py-3 px-5">{sub.備註 ? (<div className="text-[11px] text-blue-600 bg-blue-50 px-2 py-1.5 rounded border border-blue-100 whitespace-pre-wrap max-w-[150px] leading-relaxed">{sub.備註}</div>) : (<span className="text-gray-200">-</span>)}</td>
-                        <td className="py-3 px-5">
-                          <div className="flex items-center gap-2">
-                            {isSuperAdmin && viewMode === 'active' ? (
-                                <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded border border-gray-200 focus-within:border-[#8BA39E] transition-colors">
-                                    <span className="text-gray-400 text-sm">$</span>
-                                    <input 
-                                        type="number"
-                                        defaultValue={currentDisplayAmt}
-                                        onBlur={(e) => {
-                                            const newVal = Number(e.target.value);
-                                            // 直接儲存更新後的金額
-                                            if (newVal !== sub.匯款金額) {
-                                                updateRemittanceField(sub, '匯款金額', newVal);
-                                            }
-                                        }}
-                                        className="w-24 bg-transparent outline-none text-[#4A4A4A] text-base"
-                                    />
-                                </div>
-                            ) : (
-                                <span className="text-[#4A4A4A] text-base">${currentDisplayAmt?.toLocaleString()}</span>
-                            )}
-                            
-                            {currentDisplayAmt === totalExpected && totalExpected > 0 ? (
-                              <CheckCircle size={18} className="text-green-500" />
-                            ) : totalExpected > 0 ? (
-                              <XCircle size={18} className="text-orange-400" />
-                            ) : null}
-                          </div>
-                          <div className="text-[10px] text-gray-400 mt-1 leading-tight">
-                            {currentStage === '使照' ? (
-                              <>
-                                應收總額: ${totalExpected.toLocaleString()}
-                                {prepayExp > 0 && (
-                                  <div className="text-[9px]">
-                                    ({currentStageLabel}${baseExp.toLocaleString()}+預收 ${prepayExp.toLocaleString()})
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                應收{currentStageLabel}: ${totalExpected.toLocaleString()}
-                              </>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<input type="text" placeholder="民國年" value={toROC(invData['發票日期'])} onChange={(e) => updateInvoiceData(sub.id, '發票日期', e.target.value)} className="px-3 py-1.5 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 bg-white w-28" />) : (<span className="text-gray-600">{toROC(invData['發票日期']) || '-'}</span>)}</td>
-                        <td className="py-3 px-5">{isSuperAdmin && viewMode === 'active' ? (<div className="flex items-center gap-1"><Edit3 size={14} className="text-gray-300"/><input type="text" placeholder="發票號碼" value={invData['發票號碼'] || ''} onChange={(e) => updateInvoiceData(sub.id, '發票號碼', e.target.value)} className="w-32 px-3 py-1.5 border border-gray-100 rounded-lg text-xs font-mono outline-none uppercase bg-white" /></div>) : (<span className="text-gray-600 font-mono">{invData['發票號碼'] || '-'}</span>)}</td>
-                        <td className="py-3 px-5 text-center">
-                          {viewMode === 'active' ? (
-                            <button onClick={() => handleDeleteRemittance(sub)} className="text-red-200 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="刪除紀錄">
-                              <Trash2 size={18} />
-                            </button>
-                          ) : (
-                            isSuperAdmin ? (
-                              <button onClick={() => handleRestoreArchive(sub)} className="text-blue-300 hover:text-blue-600 transition-all p-2 hover:bg-blue-50 rounded-full" title="復原至主畫面">
-                                <RotateCcw size={18} />
-                              </button>
-                            ) : (
-                              <span className="text-gray-300 text-xs font-medium cursor-not-allowed" title="僅管理員可復原">-</span>
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {combinedRemittances.length === 0 && <div className="p-32 text-center text-gray-300 font-bold">目前無{viewMode === 'archived' ? '封存' : '回報'}紀錄</div>}
-            </div>
-          </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">系統登入</h2>
+            <p class="text-slate-400 text-sm mb-8">請使用授權的 Google 帳號進行登入</p>
+            
+            <button onclick="handleLogin()" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-4 rounded-xl border border-slate-200 shadow-sm transition-all active:scale-95 mb-4">
+                <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_128dp.png" class="w-5 h-5">
+                Google 帳號登入
+            </button>
+            <p id="authError" class="text-rose-500 text-xs font-bold hidden whitespace-pre-wrap"></p>
         </div>
-      );
-    }
+    </section>
 
-    const container = document.getElementById('root');
-    const root = createRoot(container);
-    root.render(<App />);
-  </script>
+    <div id="mainApp" class="hidden">
+        <nav class="bg-slate-600 text-white py-2 px-4 shadow-md sticky top-0 z-50">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-lg font-bold tracking-widest">冷氣清洗紀錄</h1>
+                <div class="flex space-x-2">
+                    <button onclick="showPage('listPage')" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
+                        <i data-lucide="list" class="btn-icon"></i>清單
+                    </button>
+                    <button onclick="prepareNewForm()" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
+                        <i data-lucide="pen-line" class="btn-icon"></i>填寫
+                    </button>
+                    <button onclick="handleLogout()" class="flex items-center px-3 py-1.5 bg-slate-700 hover:bg-rose-600 border border-slate-500 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
+                        <i data-lucide="log-out" class="btn-icon"></i>登出
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-1.5 md:px-4 py-6">
+            
+            <section id="formPage" class="hidden max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <i data-lucide="clipboard-list" class="w-6 h-6"></i> 新增紀錄
+                </h2>
+                <form id="recordForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">預約日期時間</label>
+                            <input type="datetime-local" id="bookingTime" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">客戶姓名</label>
+                            <input type="text" id="customerName" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">連絡電話</label>
+                            <input type="tel" id="phone" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">施工地址</label>
+                            <input type="text" id="address" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">冷氣台數</label>
+                            <input type="number" id="acCount" value="0" min="0" onfocus="this.select()" oninput="handleAcCountChange()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">洗衣機</label>
+                            <input type="number" id="wmCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">水塔</label>
+                            <input type="number" id="wtCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
+                        </div>
+                    </div>
+
+                    <div id="acBrandSection" class="hidden space-y-2 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-emerald-600 uppercase tracking-wider"><i data-lucide="snowflake" class="lucide mr-1"></i> 冷氣明細</label>
+                            <button type="button" onclick="addAcDetailRow()" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded shadow-sm">+ 增加明細</button>
+                        </div>
+                        <div id="acDetailsContainer" class="space-y-2"></div>
+                    </div>
+
+                    <div class="space-y-2 bg-rose-50/30 p-4 rounded-xl border border-rose-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-rose-600 uppercase tracking-wider"><i data-lucide="users" class="lucide mr-1"></i> 小幫手明細</label>
+                            <button type="button" onclick="addAssistantRow()" class="text-[10px] bg-rose-500 text-white px-2 py-1 rounded shadow-sm">+ 增加小幫手</button>
+                        </div>
+                        <div id="assistantDetailsContainer" class="space-y-2"></div>
+                        <div id="quickAssistantTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-rose-100/50"></div>
+                    </div>
+
+                    <div class="space-y-2 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-bold text-indigo-600 uppercase tracking-wider"><i data-lucide="forward" class="lucide mr-1"></i> PASS 案件設定</label>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="passFrom" list="passNamesList" placeholder="輸入 PASS 來源對象名稱" class="flex-1 rounded-lg p-2 border border-indigo-100 text-sm" oninput="updateQuickPassTags()">
+                        </div>
+                        <div id="quickPassTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-indigo-100/50"></div>
+                    </div>
+
+                    <datalist id="assistantNamesList"></datalist>
+                    <datalist id="passNamesList"></datalist>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required onfocus="this.select()" oninput="calcFormNet()" class="w-full border-slate-200 rounded-xl p-3 border font-bold"></div>
+                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手總支出</label><input type="number" id="assistantPay" value="0" readonly class="w-full bg-slate-50 border-slate-200 rounded-xl p-3 border font-bold text-rose-500"></div>
+                        <div><label class="block text-xs font-bold text-emerald-600 uppercase mb-1">預估淨利</label><input type="text" id="formNetProfit" value="$0" readonly class="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 border font-bold text-emerald-700"></div>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
+                    
+                    <div class="flex gap-3">
+                        <button type="button" onclick="showPage('listPage')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-xl transition-all active:scale-[0.98] border border-slate-200/50">返回清單</button>
+                        <button type="submit" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="listPage" class="desktop-half-width">
+                
+                <div class="bg-slate-700 p-4 rounded-2xl shadow-sm border-l-4 border-slate-400 text-white flex items-center mb-4 relative">
+                    <div class="flex flex-col text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-4 border-r border-slate-600 pr-3 text-center leading-tight">
+                        <span>全</span><span>部</span><span>年</span><span>份</span><span>總</span><span>累</span><span>計</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="grid grid-cols-3 gap-2 text-center border-b border-slate-600 pb-2 mb-2">
+                            <div><p class="text-[10px] text-slate-400">冷氣</p><p class="text-xl font-bold" id="allAc">0</p></div>
+                            <div><p class="text-[10px] text-slate-400">洗衣機</p><p class="text-xl font-bold" id="allWm">0</p></div>
+                            <div><p class="text-[10px] text-slate-400">水塔</p><p class="text-xl font-bold" id="allWt">0</p></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center items-end">
+                            <div><p class="text-[10px] text-slate-400 mb-1">總收入</p><p class="text-sm font-bold leading-tight" id="allRev">$0</p></div>
+                            <div class="relative group">
+                                <p class="text-[10px] text-slate-400 mb-1">小幫手</p>
+                                <button onclick="showAllAssistantDetails()" class="text-sm font-bold text-rose-300 underline decoration-rose-300/40 leading-tight p-0 inline-block bg-transparent border-none" id="allExp">$0</button>
+                            </div>
+                            <div><p class="text-[10px] text-emerald-300 mb-1">淨實收</p><p class="text-sm font-bold text-emerald-300 leading-tight" id="allNet">$0</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="assistantSummaryOverlay" onclick="toggleAssistantModal()" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90]"></div>
+                <div id="assistantSummaryModal" class="hidden bg-white rounded-2xl shadow-2xl p-5 border border-slate-200">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i data-lucide="handshake" class="w-4 h-4"></i> <span id="assistantModalTitle">小幫手薪資總計 (全期)</span>
+                        </h4>
+                        <button onclick="toggleAssistantModal()" class="text-slate-400 text-xl hover:text-slate-600">&times;</button>
+                    </div>
+                    <div id="assistantSummaryList" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+                    <div class="mt-4 pt-3 border-t text-[10px] text-slate-400 text-center">
+                        點擊背景或叉叉可關閉
+                    </div>
+                </div>
+
+                <div class="space-y-3 mb-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-400">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="yearTitle">年度統計</h3>
+                                <div class="text-[10px] text-slate-400">年度數量: <span class="text-slate-700 font-bold" id="yCounts">冷0 / 洗0 / 水0</span></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                                <div><p class="text-[10px] text-slate-400 mb-1">年度總營收</p><p class="text-lg font-bold text-slate-800" id="yRev">$0</p></div>
+                                <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><button onclick="showYearAssistantDetails()" class="text-lg font-bold text-rose-400 underline decoration-rose-400/40 leading-tight p-0 inline-block bg-transparent border-none" id="yExp">$0</button></div>
+                                <div><p class="text-[10px] text-emerald-600 font-bold mb-1">年度淨利</p><p class="text-lg font-bold text-emerald-700" id="yNet">$0</p></div>
+                            </div>
+
+                            <div id="passYearSummarySection" class="mt-3 pt-3 border-t border-indigo-100 bg-indigo-50/20 -mx-5 px-5 hidden">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (年度)
+                                    </h3>
+                                    <span class="text-[10px] text-indigo-400 font-bold" id="passYearTotal">總額 $0</span>
+                                </div>
+                                <div id="passYearSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50/40 p-5 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-emerald-600 text-[10px] font-bold uppercase tracking-widest" id="monthTitle">本月統計</h3>
+                                <div class="text-[10px] text-emerald-600/70">月度數量: <span class="text-emerald-800 font-bold" id="mCounts">冷0 / 洗0 / 水0</span></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月總營收</p><p class="text-lg font-bold text-emerald-900" id="mRev">$0</p></div>
+                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月支出</p><button onclick="showMonthAssistantDetails()" class="text-lg font-bold text-rose-500 underline decoration-rose-500/40 leading-tight p-0 inline-block bg-transparent border-none" id="mExp">$0</button></div>
+                                <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-lg font-bold text-emerald-700" id="mNet">$0</p></div>
+                            </div>
+                            
+                            <div id="passSummarySection" class="mt-3 pt-3 border-t border-emerald-100 bg-white/40 -mx-5 px-5 hidden">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-emerald-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (月度)
+                                    </h3>
+                                    <span class="text-[10px] text-emerald-600 font-bold" id="passMonthTotal">總額 $0</span>
+                                </div>
+                                <div id="passSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
+                            </div>
+                        </div>
+
+                        <div id="unpaidSection" class="border-t border-amber-200 mt-4 pt-4 -mx-5 px-5 pb-2 hidden">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-amber-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-3 h-3"></i> 本月待收款明細 (點擊姓名跳轉)
+                                </h3>
+                                <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
+                            </div>
+                            <div id="unpaidList" class="space-y-1 text-[11px] text-amber-900"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <div class="flex-[3] relative">
+                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址、機型、PASS..." class="w-full bg-slate-50 border-none rounded-xl p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-slate-100">
+                        </div>
+                        <div class="flex-[3] flex items-center gap-1">
+                            <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
+                            <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <button onclick="clearMonthFilter()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none" title="清除年月篩選"><i data-lucide="calendar-x" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <select id="typeFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">全部品項</option><option value="ac">冷氣</option><option value="wm">洗衣機</option><option value="wt">水塔</option></select>
+                        <select id="statusFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">施工進度</option><option value="completed">已完成</option><option value="pending">待處理</option></select>
+                        <select id="paymentFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">帳務狀態</option><option value="paid">已收款</option><option value="unpaid">待收款</option></select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto"><table class="min-w-full text-sm"><tbody id="recordList" class="divide-y divide-slate-100"></tbody></table></div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTyt_nIV1h_MFRhQoT9PHFMXhus1jQVL4",
+            projectId: "ac-records-b8c40",
+            authDomain: "ac-records-b8c40.firebaseapp.com",
+            storageBucket: "ac-records-b8c40.firebasestorage.app",
+            messagingSenderId: "471993362594",
+            appId: "1:471993362594:web:1be7e72af1021760c64ffb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        const recordsCol = collection(db, "cleaningRecords");
+        let allRecords = [];
+        let editingId = null;
+        let knownAssistantNames = []; 
+        let knownPassNames = [];
+        let snapshotUnsubscribe = null;
+
+        // 篩選快取，供支出浮窗使用
+        let currentYearRecords = [];
+        let currentMonthRecords = [];
+
+        // 授權清單
+        const allowedEmails = ['eroraror@gmail.com', 'graceyiyo@gmail.com'];
+
+        // 初始化圖示
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // 登入狀態監聽
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (allowedEmails.includes(user.email.toLowerCase())) {
+                    document.getElementById('authPage').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    document.getElementById('authError').classList.add('hidden');
+                    startDataSubscription();
+                } else {
+                    document.getElementById('authError').innerText = "⚠️ 您沒有存取權限，請換個帳號試試。";
+                    document.getElementById('authError').classList.remove('hidden');
+                    signOut(auth);
+                }
+            } else {
+                document.getElementById('authPage').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                if (snapshotUnsubscribe) {
+                    snapshotUnsubscribe();
+                    snapshotUnsubscribe = null;
+                }
+            }
+            lucide.createIcons();
+        });
+
+        window.handleLogin = async () => {
+            const errorEl = document.getElementById('authError');
+            errorEl.classList.add('hidden');
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Login failed", error);
+                errorEl.innerText = `⚠️ 登入失敗！\n錯誤代碼: ${error.code}\n請檢查 Firebase Console 是否啟動 Google 登入並加入授權網域。`;
+                errorEl.classList.remove('hidden');
+            }
+        };
+
+        window.handleLogout = () => {
+            if (confirm('確定要登出嗎？')) {
+                signOut(auth);
+            }
+        };
+
+        function startDataSubscription() {
+            if (snapshotUnsubscribe) return;
+            snapshotUnsubscribe = onSnapshot(recordsCol, (snap) => {
+                allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateDatalists();
+                filterRecords();
+            });
+        }
+
+        document.getElementById('monthFilter').value = new Date().toISOString().substring(0, 7);
+
+        window.showPage = (id) => {
+            document.getElementById('formPage').classList.toggle('hidden', id !== 'formPage');
+            document.getElementById('listPage').classList.toggle('hidden', id !== 'listPage');
+            lucide.createIcons(); 
+        };
+
+        window.prepareNewForm = () => {
+            editingId = null;
+            document.getElementById('recordForm').reset();
+            document.getElementById('acDetailsContainer').innerHTML = '';
+            document.getElementById('assistantDetailsContainer').innerHTML = '';
+            document.getElementById('passFrom').value = '';
+            document.getElementById('formNetProfit').value = '$0';
+            toggleAcBrand();
+            updateQuickAssistantTags();
+            updateQuickPassTags();
+            showPage('formPage');
+        };
+
+        window.handleAcCountChange = () => {
+            const count = parseInt(document.getElementById('acCount').value) || 0;
+            toggleAcBrand();
+            const container = document.getElementById('acDetailsContainer');
+            if (count > 0 && container.children.length === 0) addAcDetailRow(count);
+        };
+
+        window.toggleAcBrand = () => {
+            document.getElementById('acBrandSection').classList.toggle('hidden', document.getElementById('acCount').value <= 0);
+            lucide.createIcons();
+        };
+
+        window.addAcDetailRow = (val = "") => {
+            const container = document.getElementById('acDetailsContainer');
+            const totalTarget = parseInt(document.getElementById('acCount').value) || 0;
+            if (val === "" && totalTarget > 0) {
+                let currentFilled = 0;
+                document.querySelectorAll('.ac-qty-input').forEach(input => currentFilled += (parseInt(input.value) || 0));
+                val = Math.max(0, totalTarget - currentFilled);
+            }
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
+            div.innerHTML = `
+                <div class="col-span-5"><input type="text" placeholder="廠牌" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
+                <div class="col-span-3"><input type="number" value="${val}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div>
+                <div class="col-span-3"><input type="number" placeholder="單價" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
+                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>
+            `;
+            container.appendChild(div);
+        };
+
+        window.calcTotalFromDetails = () => {
+            let total = 0;
+            document.querySelectorAll('.ac-detail-row').forEach(row => {
+                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
+                const price = parseInt(row.querySelector('.ac-price-input').value) || 0;
+                total += (qty * price);
+            });
+            if (total > 0) {
+                document.getElementById('totalAmount').value = total;
+                calcFormNet();
+            }
+        };
+
+        window.addAssistantRow = (name = "", amount = "") => {
+            const container = document.getElementById('assistantDetailsContainer');
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-12 gap-2 items-center assistant-detail-row mb-2";
+            div.innerHTML = `
+                <div class="col-span-6"><input type="text" value="${name}" list="assistantNamesList" placeholder="名字" class="as-name-input w-full rounded-lg p-2 border border-rose-100 text-sm" oninput="updateQuickAssistantTags()"></div>
+                <div class="col-span-5"><input type="number" value="${amount}" onfocus="this.select()" oninput="calcAssistantTotal()" class="as-amount-input w-full rounded-lg p-2 border border-rose-100 text-sm font-bold text-rose-600"></div>
+                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcAssistantTotal(); updateQuickAssistantTags();" class="text-rose-400 font-bold text-lg">&times;</button></div>
+            `;
+            container.appendChild(div);
+            updateQuickAssistantTags();
+            calcAssistantTotal();
+        };
+
+        window.calcAssistantTotal = () => {
+            let total = 0;
+            document.querySelectorAll('.as-amount-input').forEach(input => total += (parseInt(input.value) || 0));
+            document.getElementById('assistantPay').value = total;
+            calcFormNet();
+        };
+
+        window.calcFormNet = () => {
+            const rev = parseInt(document.getElementById('totalAmount').value) || 0;
+            const exp = parseInt(document.getElementById('assistantPay').value) || 0;
+            document.getElementById('formNetProfit').value = `$${(rev - exp).toLocaleString()}`;
+        };
+
+        window.updateQuickAssistantTags = () => {
+            const container = document.getElementById('quickAssistantTags');
+            const currentNamesInForm = Array.from(document.querySelectorAll('.as-name-input')).map(input => input.value.trim());
+            const availableNames = knownAssistantNames.filter(name => !currentNamesInForm.includes(name));
+            if (availableNames.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-rose-300">無更多常用名字</span>';
+                return;
+            }
+            container.innerHTML = availableNames.map(name => `
+                <button type="button" onclick="addAssistantRow('${name}')" class="px-2 py-1 bg-white border border-rose-200 text-rose-600 rounded text-[10px] hover:bg-rose-50 transition-colors font-medium">+ ${name}</button>
+            `).join('');
+        };
+
+        window.updateQuickPassTags = () => {
+            const container = document.getElementById('quickPassTags');
+            const currentName = document.getElementById('passFrom').value.trim();
+            const availableNames = knownPassNames.filter(name => name !== currentName);
+            if (availableNames.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-indigo-300">尚無常用對象</span>';
+                return;
+            }
+            container.innerHTML = availableNames.map(name => `
+                <button type="button" onclick="document.getElementById('passFrom').value='${name}'; updateQuickPassTags();" class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded text-[10px] hover:bg-indigo-50 transition-colors font-medium">${name}</button>
+            `).join('');
+        };
+
+        window.toggleDone = async (id, currentStatus) => {
+            await updateDoc(doc(db, "cleaningRecords", id), { status: currentStatus === 'completed' ? 'pending' : 'completed' });
+        };
+
+        window.togglePayment = async (id, currentPayment) => {
+            await updateDoc(doc(db, "cleaningRecords", id), { payment: currentPayment === 'paid' ? 'unpaid' : 'paid' });
+        };
+
+        document.getElementById('recordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const totalAc = parseInt(document.getElementById('acCount').value) || 0;
+            let acDetailTotal = 0; let acDetailsArray = [];
+            document.querySelectorAll('.ac-detail-row').forEach(row => {
+                const brand = row.querySelector('.ac-brand-input').value.trim();
+                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
+                const price = row.querySelector('.ac-price-input').value;
+                acDetailTotal += qty;
+                if (brand || qty > 0) acDetailsArray.push(`${brand || '機型未填'}-${qty}台${price ? `*${price}元` : ''}`);
+            });
+            if (totalAc > 0 && acDetailTotal !== totalAc) { alert(`⚠️ 明細台數不符！`); return; }
+
+            let assistantArray = [];
+            document.querySelectorAll('.assistant-detail-row').forEach(row => {
+                const n = row.querySelector('.as-name-input').value.trim();
+                const a = row.querySelector('.as-amount-input').value;
+                if (n && a) assistantArray.push(`${n}:${a}`);
+            });
+
+            const record = {
+                bookingTime: document.getElementById('bookingTime').value,
+                customerName: document.getElementById('customerName').value,
+                phone: document.getElementById('phone').value || "",
+                address: document.getElementById('address').value || "",
+                acCount: totalAc, acBrand: acDetailsArray.join('+'),
+                assistantDetail: assistantArray.join(','),
+                passFrom: document.getElementById('passFrom').value.trim(),
+                wmCount: parseInt(document.getElementById('wmCount').value) || 0,
+                wtCount: parseInt(document.getElementById('wtCount').value) || 0,
+                totalAmount: parseInt(document.getElementById('totalAmount').value) || 0,
+                assistantPay: parseInt(document.getElementById('assistantPay').value) || 0,
+                note: document.getElementById('note').value || ''
+            };
+
+            try {
+                if (editingId) {
+                    const original = allRecords.find(r => r.id === editingId);
+                    record.status = original.status; record.payment = original.payment;
+                    await updateDoc(doc(db, "cleaningRecords", editingId), record);
+                    editingId = null;
+                } else {
+                    record.status = 'pending'; record.payment = 'unpaid';
+                    await addDoc(recordsCol, record);
+                }
+                prepareNewForm();
+                showPage('listPage');
+            } catch (err) { alert('儲存失敗'); }
+        });
+
+        function updateDatalists() {
+            const asNames = new Set();
+            const psNames = new Set();
+            allRecords.forEach(r => { 
+                if (r.assistantDetail) {
+                    r.assistantDetail.split(',').forEach(s => {
+                        const name = s.split(':')[0];
+                        if (name) asNames.add(name);
+                    });
+                } 
+                if (r.passFrom) psNames.add(r.passFrom);
+            });
+            knownAssistantNames = Array.from(asNames).sort();
+            knownPassNames = Array.from(psNames).sort();
+            document.getElementById('assistantNamesList').innerHTML = knownAssistantNames.map(n => `<option value="${n}">`).join('');
+            document.getElementById('passNamesList').innerHTML = knownPassNames.map(n => `<option value="${n}">`).join('');
+            updateQuickAssistantTags();
+            updateQuickPassTags();
+        }
+
+        window.toggleAssistantModal = (title = "小幫手薪資總計 (全期)", records = allRecords) => {
+            const modal = document.getElementById('assistantSummaryModal');
+            const overlay = document.getElementById('assistantSummaryOverlay');
+            const titleEl = document.getElementById('assistantModalTitle');
+            const isHidden = modal.classList.contains('hidden');
+            if (isHidden) {
+                titleEl.innerText = title;
+                renderAssistantSummary(records);
+                modal.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }
+            lucide.createIcons();
+        };
+
+        // 三個快速開啟浮窗的入口
+        window.showAllAssistantDetails = () => {
+            toggleAssistantModal("小幫手薪資總計 (全期)", allRecords);
+        };
+        window.showYearAssistantDetails = () => {
+            const title = document.getElementById('yearTitle').innerText;
+            toggleAssistantModal(`${title} 小幫手薪資`, currentYearRecords);
+        };
+        window.showMonthAssistantDetails = () => {
+            const title = document.getElementById('monthTitle').innerText;
+            toggleAssistantModal(`${title} 小幫手薪資`, currentMonthRecords);
+        };
+
+        function renderAssistantSummary(records) {
+            const summary = {};
+            let unclassified = 0;
+            records.forEach(r => {
+                const totalPay = parseInt(r.assistantPay) || 0;
+                if (totalPay <= 0) return;
+                if (r.assistantDetail) {
+                    const details = r.assistantDetail.split(',');
+                    details.forEach(detail => {
+                        const [name, amount] = detail.split(':');
+                        const amt = parseInt(amount) || 0;
+                        if (name) { summary[name] = (summary[name] || 0) + amt; } 
+                        else { unclassified += amt; }
+                    });
+                } else { unclassified += totalPay; }
+            });
+            const container = document.getElementById('assistantSummaryList');
+            let html = "";
+            const sortedNames = Object.keys(summary).sort((a, b) => summary[b] - summary[a]);
+            sortedNames.forEach(name => {
+                html += `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-slate-400"></i>${name}</span>
+                    <span class="font-black text-rose-500">$${summary[name].toLocaleString()}</span>
+                </div>`;
+            });
+            if (unclassified > 0) {
+                html += `
+                <div class="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <span class="font-bold text-amber-700 flex items-center gap-2"><i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>未分類 / 舊紀錄</span>
+                    <span class="font-black text-amber-600">$${unclassified.toLocaleString()}</span>
+                </div>`;
+            }
+            if (html === "") html = "<p class='text-center text-slate-400 py-4'>該期間尚無小幫手支出紀錄</p>";
+            container.innerHTML = html;
+        }
+
+        window.copyText = (text, btn) => {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="check" class="text-emerald-500 w-[10px] h-[10px]"></i>';
+                lucide.createIcons();
+                setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 1500);
+            });
+        };
+
+        window.clearMonthFilter = () => {
+            document.getElementById('monthFilter').value = "";
+            filterRecords();
+        };
+
+        window.filterRecords = () => {
+            const kw = document.getElementById('searchKeyword').value.toLowerCase();
+            const mon = document.getElementById('monthFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const payment = document.getElementById('paymentFilter').value;
+
+            // 統計數據變數 (僅受時間過濾影響，不受關鍵字影響)
+            let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
+            let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
+            let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
+            let mUnpaidDetails = []; 
+            let mPassSummary = {}; 
+            let yPassSummary = {}; 
+            
+            // 重置篩選快取
+            currentYearRecords = [];
+            currentMonthRecords = [];
+
+            const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
+            const filterMonthName = mon ? mon.split('-')[1] : "全部";
+            document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
+            document.getElementById('monthTitle').innerText = mon ? `${filterMonthName} 月份統計` : "全期統計";
+
+            allRecords.forEach(r => {
+                // 全部累積計算
+                aAc += (r.acCount || 0); aWm += (r.wmCount || 0); aWt += (r.wtCount || 0);
+                aRev += (r.totalAmount || 0); aExp += (r.assistantPay || 0);
+
+                const iY = r.bookingTime.split('-')[0];
+                const iM = r.bookingTime.substring(0, 7);
+                const iQty = (r.acCount || 0) + (r.wmCount || 0) + (r.wtCount || 0);
+
+                // 年度統計計算 (不受列表篩選影響)
+                if (iY === filterYear) { 
+                    currentYearRecords.push(r);
+                    yRev += r.totalAmount; yExp += r.assistantPay; yAc += (r.acCount || 0); yWm += (r.wmCount || 0); yWt += (r.wtCount || 0); 
+                    if (r.passFrom) {
+                        yPassSummary[r.passFrom] = (yPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        yPassSummary[r.passFrom].qty += iQty;
+                        yPassSummary[r.passFrom].rev += r.totalAmount;
+                        yPassSummary[r.passFrom].exp += r.assistantPay;
+                    }
+                }
+
+                // 月度統計計算 (不受列表篩選影響)
+                if (!mon || iM === mon) { 
+                    currentMonthRecords.push(r);
+                    mRev += r.totalAmount; mExp += r.assistantPay; mAc += (r.acCount || 0); mWm += (r.wmCount || 0); mWt += (r.wtCount || 0);
+                    if (r.payment === 'unpaid') mUnpaidDetails.push({ id: r.id, name: r.customerName, amount: r.totalAmount });
+                    if (r.passFrom) {
+                        mPassSummary[r.passFrom] = (mPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
+                        mPassSummary[r.passFrom].qty += iQty;
+                        mPassSummary[r.passFrom].rev += r.totalAmount;
+                        mPassSummary[r.passFrom].exp += r.assistantPay;
+                    }
+                }
+            });
+
+            // 列表資料過濾 (受所有篩選器影響)
+            const baseFiltered = allRecords.filter(i => {
+                const iM = i.bookingTime.substring(0, 7);
+                const searchStr = `${i.customerName} ${i.address} ${i.acBrand} ${i.assistantDetail || ''} ${i.passFrom || ''} ${i.note}`.toLowerCase();
+                
+                const matchSearch = searchStr.includes(kw);
+                const matchMonth = (!mon || iM === mon);
+                const matchType = (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0));
+                const matchStatus = (status === 'all' || i.status === status);
+                const matchPayment = (payment === 'all' || i.payment === payment);
+
+                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
+            });
+
+            // 渲染年度 PASS 統計
+            const passYearSortedKeys = Object.keys(yPassSummary).sort((a,b) => yPassSummary[b].rev - yPassSummary[a].rev);
+            if (passYearSortedKeys.length > 0) {
+                document.getElementById('passYearSummarySection').classList.remove('hidden');
+                let passYearTotalAmt = 0;
+                document.getElementById('passYearSummaryList').innerHTML = passYearSortedKeys.map(k => {
+                    passYearTotalAmt += yPassSummary[k].rev;
+                    const net = yPassSummary[k].rev - yPassSummary[k].exp;
+                    return `
+                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-indigo-100 gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-indigo-600 font-bold whitespace-nowrap">${k}</span>
+                            <span class="text-[11px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-400 font-bold whitespace-nowrap">${yPassSummary[k].qty}台</span>
+                        </div>
+                        <div class="text-[11px] flex items-center gap-3 text-slate-500 whitespace-nowrap">
+                            <span>收:$${yPassSummary[k].rev.toLocaleString()}</span>
+                            <span>支:$${yPassSummary[k].exp.toLocaleString()}</span>
+                            <span class="font-bold text-indigo-700 bg-indigo-50/50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('passYearTotal').innerText = `總額 $${passYearTotalAmt.toLocaleString()}`;
+            } else { document.getElementById('passYearSummarySection').classList.add('hidden'); }
+
+            // 渲染月度 PASS 統計
+            const passSortedKeys = Object.keys(mPassSummary).sort((a,b) => mPassSummary[b].rev - mPassSummary[a].rev);
+            if (passSortedKeys.length > 0) {
+                document.getElementById('passSummarySection').classList.remove('hidden');
+                let passTotalAmt = 0;
+                document.getElementById('passSummaryList').innerHTML = passSortedKeys.map(k => {
+                    passTotalAmt += mPassSummary[k].rev;
+                    const net = mPassSummary[k].rev - mPassSummary[k].exp;
+                    return `
+                    <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-emerald-100 gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-emerald-700 font-bold whitespace-nowrap">${k}</span>
+                            <span class="text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded text-emerald-500 font-bold whitespace-nowrap">${mPassSummary[k].qty}台</span>
+                        </div>
+                        <div class="text-[11px] flex items-center gap-3 text-emerald-800/70 whitespace-nowrap">
+                            <span>收:$${mPassSummary[k].rev.toLocaleString()}</span>
+                            <span>支:$${mPassSummary[k].exp.toLocaleString()}</span>
+                            <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('passMonthTotal').innerText = `總額 $${passTotalAmt.toLocaleString()}`;
+            } else { document.getElementById('passSummarySection').classList.add('hidden'); }
+
+            if (mUnpaidDetails.length > 0) {
+                document.getElementById('unpaidSection').classList.remove('hidden');
+                document.getElementById('unpaidList').innerHTML = mUnpaidDetails.map(item => `<div class="flex justify-between py-1"><button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-medium">• ${item.name}</button><span class="font-bold">$${item.amount.toLocaleString()}</span></div>`).join('');
+            } else { document.getElementById('unpaidSection').classList.add('hidden'); }
+
+            document.getElementById('allAc').innerText = aAc; document.getElementById('allWm').innerText = aWm; document.getElementById('allWt').innerText = aWt;
+            document.getElementById('allRev').innerText = `$${aRev.toLocaleString()}`; document.getElementById('allExp').innerText = `$${aExp.toLocaleString()}`; document.getElementById('allNet').innerText = `$${(aRev - aExp).toLocaleString()}`;
+            document.getElementById('mRev').innerText = `$${mRev.toLocaleString()}`; document.getElementById('mExp').innerText = `$${mExp.toLocaleString()}`; document.getElementById('mNet').innerText = `$${(mRev - mExp).toLocaleString()}`;
+            document.getElementById('mCounts').innerText = `冷${mAc} / 洗${mWm} / 水${mWt}`;
+            document.getElementById('yRev').innerText = `$${yRev.toLocaleString()}`; document.getElementById('yExp').innerText = `$${yExp.toLocaleString()}`; document.getElementById('yNet').innerText = `$${(yRev - yExp).toLocaleString()}`;
+            document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
+
+            renderRecords(baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime)));
+            lucide.createIcons();
+        };
+
+        function renderRecords(data) {
+            const list = document.getElementById('recordList');
+            list.innerHTML = data.map(i => {
+                let services = [];
+                const acTitle = `冷氣${i.acCount}台`;
+                if(i.acCount > 0) services.push(i.acBrand ? `${acTitle}：${i.acBrand}` : acTitle);
+                if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
+                if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
+
+                let asDisplay = "";
+                if (i.assistantDetail) {
+                    const parts = i.assistantDetail.split(',').map(s => { const [n, a] = s.split(':'); return `${n}${a}元`; });
+                    asDisplay = `小幫手：${parts.join('+')}`;
+                }
+
+                let isComp = i.status === 'completed';
+                let isPaid = i.payment === 'paid';
+
+                return `
+                <tr id="rec-${i.id}" class="${isComp ? 'completed-row' : ''}">
+                    <td data-label="預約時間" class="px-6 py-4 time-display flex justify-between items-center">
+                        <span>${i.bookingTime.replace('T',' ')}</span>
+                        ${i.passFrom ? `<span class="text-indigo-500 font-bold flex items-center gap-1"><i data-lucide="forward" class="w-3 h-3"></i>PASS: ${i.passFrom}</span>` : '<span></span>'}
+                    </td>
+                    <td data-label="客戶" class="px-6 py-4 flex items-center gap-2">
+                        <span class="font-bold text-slate-900">${i.customerName}</span>
+                        ${i.phone ? `<span class="text-[12px] text-slate-400 font-normal flex items-center gap-0.5"><i data-lucide="phone" class="w-3 h-3"></i>${i.phone}</span>` : ''}
+                    </td>
+                    <td class="px-6 py-1 text-slate-500 text-xs flex items-center gap-1.5">
+                        ${i.address ? `
+                            <span class="flex items-center gap-0.5"><i data-lucide="map-pin" class="w-3 h-3"></i>${i.address}</span>
+                            <button onclick="copyText('${i.address}', this)" class="bg-slate-100 p-1 rounded-md hover:bg-slate-200 transition-colors">
+                                <i data-lucide="copy" class="w-2.5 h-2.5"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                    <td data-label="服務明細" class="px-6 py-2 text-slate-600">
+                        <div class="leading-tight">${services.join('、')}</div>
+                        ${i.note ? `<div class="text-[11px] text-slate-400 note-display mt-0.5">備註: ${i.note}</div>` : ''}
+                        ${asDisplay ? `<div class="text-[11px] text-rose-500 font-medium mt-0.5">${asDisplay}</div>` : ''}
+                    </td>
+                    <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
+                        收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700 font-bold">淨 ${(i.totalAmount - i.assistantPay).toLocaleString()}</span>
+                    </td>
+                    <td class="px-6 py-4 action-cell">
+                        <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
+                            <i data-lucide="${isComp ? 'check-circle' : 'circle'}" class="w-3 h-3"></i>
+                            <span>${isComp ? '已完成' : '未完成'}</span>
+                        </button>
+                        <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
+                            <i data-lucide="${isPaid ? 'banknote' : 'clock'}" class="w-3 h-3"></i>
+                            <span>${isPaid ? '已收款' : '待收款'}</span>
+                        </button>
+                        <button onclick="downloadRec('${i.id}')" class="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100 text-[10px] font-bold" title="截圖">
+                            <i data-lucide="image" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="修改">
+                            <i data-lucide="edit-2" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="刪除">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.scrollToRecord = (id) => {
+            const e = document.getElementById(`rec-${id}`);
+            if (e) { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); e.classList.add('highlight-target'); setTimeout(() => e.classList.remove('highlight-target'), 2000); }
+        };
+
+        window.editRec = (id) => {
+            const r = allRecords.find(x => x.id === id);
+            if(!r) return;
+            editingId = id;
+            document.getElementById('bookingTime').value = r.bookingTime;
+            document.getElementById('customerName').value = r.customerName;
+            document.getElementById('phone').value = r.phone || "";
+            document.getElementById('address').value = r.address || "";
+            document.getElementById('acCount').value = r.acCount;
+            document.getElementById('wmCount').value = r.wmCount;
+            document.getElementById('wtCount').value = r.wtCount;
+            document.getElementById('totalAmount').value = r.totalAmount;
+            document.getElementById('assistantPay').value = r.assistantPay;
+            document.getElementById('note').value = r.note;
+            document.getElementById('passFrom').value = r.passFrom || "";
+            
+            const acContainer = document.getElementById('acDetailsContainer');
+            acContainer.innerHTML = '';
+            if (r.acBrand) {
+                r.acBrand.split('+').forEach(part => {
+                    const m = part.match(/(.*)-(.*)台(?:\*(.*)元)?/);
+                    if (m) {
+                        const div = document.createElement('div');
+                        div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
+                        div.innerHTML = `<div class="col-span-5"><input type="text" value="${m[1]}" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-3"><input type="number" value="${m[2]}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div><div class="col-span-3"><input type="number" value="${m[3]||''}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>`;
+                        acContainer.appendChild(div);
+                    }
+                });
+            }
+            const asContainer = document.getElementById('assistantDetailsContainer');
+            asContainer.innerHTML = '';
+            if (r.assistantDetail) {
+                r.assistantDetail.split(',').forEach(s => { const [name, amt] = s.split(':'); addAssistantRow(name, amt); });
+            }
+            toggleAcBrand();
+            updateQuickAssistantTags();
+            updateQuickPassTags();
+            calcFormNet();
+            showPage('formPage');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.changeMonth = (o) => { const i = document.getElementById('monthFilter'); if (!i.value) i.value = new Date().toISOString().substring(0, 7); let [y, m] = i.value.split('-').map(Number); let d = new Date(y, m - 1); d.setMonth(d.getMonth() + o); i.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; filterRecords(); };
+        window.quickFilterUnpaid = () => { document.getElementById('paymentFilter').value = 'unpaid'; filterRecords(); };
+        window.deleteRec = async (id) => { if(confirm('確定要刪除嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
+
+        // 截圖自動下載優化功能
+        window.downloadRec = (id) => {
+            const el = document.getElementById(`rec-${id}`);
+            const actionCell = el.querySelector('.action-cell');
+            const contentTds = el.querySelectorAll('td:not(.action-cell)');
+            
+            // 1. 暫時隱藏按鈕區域，並強制將卡片底色設為純白
+            actionCell.style.display = 'none';
+            el.style.setProperty('background-color', '#ffffff', 'important');
+            
+            // 將內容文字向上偏移 10px
+            contentTds.forEach(td => {
+                td.style.setProperty('position', 'relative', 'important');
+                td.style.setProperty('top', '-10px', 'important');
+            });
+            
+            // 2. 執行截圖
+            html2canvas(el, {
+                scale: 2, // 提高畫質
+                backgroundColor: "#ffffff", // 確保 canvas 外框也是白色
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                // 3. 還原按鈕區域、卡片底色與文字位移
+                actionCell.style.display = 'flex';
+                el.style.removeProperty('background-color');
+                contentTds.forEach(td => {
+                    td.style.removeProperty('position');
+                    td.style.removeProperty('top');
+                });
+                
+                // 4. 將畫布轉換為 Blob 以進行「真正的」靜默下載
+                canvas.toBlob((blob) => {
+                    const name = el.querySelector('[data-label="客戶"] span').innerText;
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
+                    
+                    // 必須插入 DOM 才能在某些瀏覽器中穩定觸發 click
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // 下載後清理
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                }, 'image/png');
+            });
+        };
+    </script>
 </body>
 </html>
