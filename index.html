@@ -408,7 +408,7 @@
         }
         // 加入 UTF-8 BOM，確保 Excel 能夠正確解析中文
         let csvContent = "\uFEFF"; 
-        csvContent += "戶別,買方,匯款日期,帳號後五碼,戶名,備註,匯款金額,發票日期,發票號碼\n";
+        csvContent += "戶別,買方,匯款日期,帳號後五碼,戶名,備註,使照款,預收款,匯款金額,發票日期,發票號碼\n";
 
         combinedRemittances.forEach(sub => {
           const master = masterUnits[sub.unitKey];
@@ -419,12 +419,18 @@
           const name = sub.匯款帳戶戶名 || '-';
           // 處理備註裡的換行與雙引號，避免破壞 CSV 格式
           const note = (sub.備註 || '').replace(/\n/g, ' ').replace(/"/g, '""');
+          
+          // 新增取出 使照款、預收款
+          const useLicenseFee = master?.stages?.['使照'] || 0;
+          const prepayFee = master?.prepayAmt || 0;
           const amt = sub.匯款金額 || 0;
+          
           const invData = invoices[sub.id] || {};
           const invDate = toROC(invData['發票日期']) || '-';
           const invNum = invData['發票號碼'] || '-';
 
-          csvContent += `"${unit}","${buyer}","${date}","${acc}","${name}","${note}","${amt}","${invDate}","${invNum}"\n`;
+          // 寫入 CSV
+          csvContent += `"${unit}","${buyer}","${date}","${acc}","${name}","${note}","${useLicenseFee}","${prepayFee}","${amt}","${invDate}","${invNum}"\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
