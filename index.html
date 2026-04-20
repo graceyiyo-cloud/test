@@ -492,7 +492,7 @@
                         exp = hA + lA;
                     }
 
-                    // 【修改】在使照階段，先從可用餘額扣除預收款，避免溢繳到銀貸
+                    // 在使照階段，先從可用餘額扣除預收款，避免溢繳到銀貸
                     if (st.k === '使照') {
                         const prepay = parseFloat(String(details.基本資料.預收款).replace(/,/g, '')) || 0;
                         rem = Math.max(0, rem - prepay);
@@ -679,7 +679,7 @@
                     exp = hA + lA;
                 }
 
-                // 【修改】在使照階段，先從可用餘額扣除預收款
+                // 在使照階段，先從可用餘額扣除預收款
                 if (st.k === '使照') {
                     const prepay = parseFloat(String(details.基本資料.預收款).replace(/,/g, '')) || 0;
                     rem = Math.max(0, rem - prepay);
@@ -1121,7 +1121,7 @@
                           }
                           if (exp<=0 && st.k!=='成交') return null;
                           
-                          // 【修改】在使照階段，從匯款餘額(rem)扣除預收款，讓明細表的應付不變
+                          // 在使照階段，從匯款餘額(rem)扣除預收款，讓明細表的應付不變
                           if (st.k === '使照') {
                               rem = Math.max(0, rem - prepay);
                           }
@@ -1176,49 +1176,115 @@
                         </tr>
                       </thead>
                       <tbody>
-                      {(selectedUnit.匯款紀錄 || []).map((r,i) => {
-                        const amt = parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0;
-                        const rK = r._id;
-                        const cD = firebaseInvoices[rK] || {};
-                        return (
-                          <tr key={i} className="hover:opacity-80 transition-all">
-                            <td className={`px-2 py-2.5 text-center bg-emerald-50/70 rounded-l-md ${r._isCustom?'border-l-2 border-emerald-400':''}`}>
-                              {renderDateIfApplicable('日期',r[Object.keys(r).find(k=>k.includes('日期'))||'日期'])} 
-                              {r._isCustom && <span className="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">手</span>}
-                            </td>
-                            <td className="text-right px-2 font-bold bg-emerald-50/70 text-emerald-900">
-                              {amt.toLocaleString()}
-                            </td>
-                            <td className="px-2 bg-orange-50/70">
-                              <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 text-orange-900 placeholder-orange-300" value={cD['發票日期'] !== undefined ? cD['發票日期'] : renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/>
-                            </td>
-                            <td className="px-2 bg-orange-50/70 rounded-r-md">
-                              <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 font-mono text-orange-900 placeholder-orange-300" value={cD['發票號碼'] || r['發票號碼'] || ''} onChange={e=>handleInvoiceChange(rK,'發票號碼',e.target.value)} placeholder="號碼"/>
-                            </td>
-                            {isAdmin && (
-                              <td className="text-center">
-                                <button onClick={async ()=>{
-                                  if(!confirm("確定要刪除這筆匯款紀錄嗎？"))return;
-                                  if(r._isImported) {
+                      {(() => {
+                        const prepayAmount = parseFloat(String(selectedUnit.基本資料.預收款).replace(/,/g, '')) || 0;
+                        let unallocatedPrepay = prepayAmount;
+                        let runningReceipts = 0;
+                        
+                        // 計算「使照之前」所有期別的應付款總和
+                        const houseForExp = selectedUnit.財務款項.house || {};
+                        const landForExp = selectedUnit.財務款項.land || {};
+                        const chargesForExp = (selectedUnit.客變紀錄 || []).reduce((s,r) => s + (Number(r.客變金額)||0), 0);
+                        let expBeforeShiZhao = chargesForExp;
+                        PAYMENT_STAGES.forEach(st => {
+                            if (['客變', '使照', '銀貸', '交屋'].includes(st.k)) return;
+                            const kMatchH = Object.keys(houseForExp).find(x=>x.includes(st.k) && !x.includes('總價'));
+                            const kMatchL = Object.keys(landForExp).find(x=>x.includes(st.k) && !x.includes('總價'));
+                            expBeforeShiZhao += (kMatchH ? (parseFloat(String(houseForExp[kMatchH]).replace(/,/g,''))||0) : 0);
+                            expBeforeShiZhao += (kMatchL ? (parseFloat(String(landForExp[kMatchL]).replace(/,/g,''))||0) : 0);
+                        });
+
+                        return (selectedUnit.匯款紀錄 || []).map((r,i) => {
+                            const rawAmt = parseFloat(String(r[Object.keys(r).find(k=>k.includes('金額'))||'金額']).replace(/,/g,''))||0;
+                            runningReceipts += rawAmt;
+                            
+                            let amt = rawAmt;
+                            let splitPrepay = 0;
+                            
+                            // 若匯款總額突破「使照之前的期數門檻」，代表這筆錢包含使照款，將預收款分離出來
+                            if (unallocatedPrepay > 0 && runningReceipts > expBeforeShiZhao) {
+                                splitPrepay = Math.min(unallocatedPrepay, amt);
+                                amt = amt - splitPrepay;
+                                unallocatedPrepay -= splitPrepay;
+                            }
+
+                            const rK = r._id;
+                            const cD = firebaseInvoices[rK] || {};
+                            
+                            const handleDelete = async ()=>{
+                                if(!confirm("確定要刪除這筆匯款紀錄嗎？"))return;
+                                if(r._isImported) {
                                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), { deletedImportedRemittances: arrayUnion(r._id) }, { merge: true });
-                                  } else {
-                                    // 檢查該紀錄是否在封存區中
+                                } else {
                                     const inArchived = archivedRemittances.some(x => x.id === r.id);
                                     if (inArchived) {
-                                      const uA = archivedRemittances.filter(x => x.id !== r.id);
-                                      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived'), { remittances: uA }, { merge: true });
+                                        const uA = archivedRemittances.filter(x => x.id !== r.id);
+                                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'archived'), { remittances: uA }, { merge: true });
                                     } else {
-                                      const uR = (customData.remittances || []).filter(x=>x.id!==r.id);
-                                      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), { remittances: uR }, { merge: true });
+                                        const uR = (customData.remittances || []).filter(x=>x.id!==r.id);
+                                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'custom', 'additions'), { remittances: uR }, { merge: true });
                                     }
-                                  }
-                                  setSelectedUnit({...selectedUnit, 匯款紀錄: selectedUnit.匯款紀錄.filter(x=>x._id !== r._id)});
-                                }} className="text-red-400 hover:text-red-600 transition-all active:scale-95"><Trash2 size={14}/></button>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
+                                }
+                                setSelectedUnit({...selectedUnit, 匯款紀錄: selectedUnit.匯款紀錄.filter(x=>x._id !== r._id)});
+                            };
+
+                            const renderTr = (amount, isPrepay) => {
+                                if (amount <= 0) return null;
+                                const hasDeleteBtn = isAdmin && (!isPrepay || amt <= 0); // 若主要使照行存在，刪除鍵放那裡；若全額為預收，刪除鍵放預收行
+                                
+                                if (isPrepay) {
+                                    return (
+                                        <tr key={`${i}-prepay`} className="hover:opacity-80 transition-all bg-amber-50/50">
+                                            <td className="px-2 py-2.5 text-center bg-amber-50/70 rounded-l-md border-l-2 border-amber-400">
+                                                {renderDateIfApplicable('日期',r[Object.keys(r).find(k=>k.includes('日期'))||'日期'])} 
+                                                <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">預收</span>
+                                            </td>
+                                            <td className="text-right px-2 font-bold bg-amber-50/70 text-amber-900">
+                                                {amount.toLocaleString()}
+                                            </td>
+                                            <td className="px-2 bg-gray-50/50 text-center text-gray-400 text-[10px]">免開立發票</td>
+                                            <td className="px-2 bg-gray-50/50 text-center text-gray-400 rounded-r-md text-[10px]">-</td>
+                                            {isAdmin && (
+                                                <td className="text-center">
+                                                    {hasDeleteBtn && <button onClick={handleDelete} className="text-red-400 hover:text-red-600 transition-all active:scale-95"><Trash2 size={14}/></button>}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                } else {
+                                    return (
+                                        <tr key={`${i}-main`} className="hover:opacity-80 transition-all">
+                                            <td className={`px-2 py-2.5 text-center bg-emerald-50/70 rounded-l-md ${r._isCustom?'border-l-2 border-emerald-400':''}`}>
+                                                {renderDateIfApplicable('日期',r[Object.keys(r).find(k=>k.includes('日期'))||'日期'])} 
+                                                {r._isCustom && <span className="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">手</span>}
+                                            </td>
+                                            <td className="text-right px-2 font-bold bg-emerald-50/70 text-emerald-900">
+                                                {amount.toLocaleString()}
+                                            </td>
+                                            <td className="px-2 bg-orange-50/70">
+                                                <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 text-orange-900 placeholder-orange-300" value={cD['發票日期'] !== undefined ? cD['發票日期'] : renderDateIfApplicable('發票日期', r['發票日期']) || ''} onChange={e=>handleInvoiceChange(rK,'發票日期',e.target.value)} placeholder="日期"/>
+                                            </td>
+                                            <td className="px-2 bg-orange-50/70 rounded-r-md">
+                                                <input type="text" disabled={!isAdmin} className="border-none bg-transparent w-full text-xs text-center focus:ring-0 font-mono text-orange-900 placeholder-orange-300" value={cD['發票號碼'] || r['發票號碼'] || ''} onChange={e=>handleInvoiceChange(rK,'發票號碼',e.target.value)} placeholder="號碼"/>
+                                            </td>
+                                            {isAdmin && (
+                                                <td className="text-center">
+                                                    {hasDeleteBtn && <button onClick={handleDelete} className="text-red-400 hover:text-red-600 transition-all active:scale-95"><Trash2 size={14}/></button>}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                }
+                            };
+                            
+                            return (
+                                <React.Fragment key={i}>
+                                    {renderTr(amt, false)}
+                                    {renderTr(splitPrepay, true)}
+                                </React.Fragment>
+                            );
+                        });
+                      })()}
                       {isAdmin && (
                         <tr className="bg-blue-50/40 rounded-xl">
                             <td className="p-2 rounded-l-md"><input type="date" className="border border-white/60 rounded text-xs w-full p-1.5 text-center bg-white/60 focus:bg-white" value={remitInput.date} onChange={e=>setRemitInput({...remitInput, date: e.target.value})}/></td>
