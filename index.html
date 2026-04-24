@@ -16,7 +16,7 @@
             --text: #5D5D5D; --accent: #FFD3B6; --white: #FFFFFF;
         }
 
-        * { box-sizing: border-box; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+        * { box-sizing: border-box; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px 15px 80px 15px; overflow-x: hidden; }
 
         .app-header { font-size: 1.3rem; font-weight: 900; margin: 10px 0; color: var(--primary); text-align: center; }
@@ -33,7 +33,11 @@
             width: 100%; padding: 10px; border: 2px solid #F5F5F5; 
             border-radius: 12px; font-size: 1rem; color: var(--text); background: #FAFAFA;
             -webkit-appearance: none;
+            outline: none; transition: border-color 0.2s;
         }
+
+        /* 正在輸入中的樣式提示 */
+        .active-input { border-color: var(--primary) !important; background: #FFF !important; box-shadow: inset 0 0 4px rgba(255,140,148,0.2); }
 
         .flex-row { display: flex; align-items: center; gap: 8px; }
 
@@ -43,7 +47,6 @@
             font-size: 1.1rem; cursor: pointer; flex-shrink: 0;
         }
         .refresh-btn { background: var(--secondary); box-shadow: 0 3px 0px #8DD3B8; }
-        .clear-input-btn { background: #EEE; color: #999; box-shadow: 0 3px 0px #DDD; font-size: 1.3rem; }
         .side-btn:active { transform: translateY(2px); box-shadow: none; }
 
         .save-btn { 
@@ -53,38 +56,40 @@
         }
         .save-btn:active { transform: translateY(3px); box-shadow: none; }
 
-        /* 迷你鍵盤樣式 */
+        /* 迷你鍵盤配色優化 */
         .calc-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 8px;
             margin: 10px 0 15px 0;
-            background: #F9F9F9;
-            padding: 8px;
-            border-radius: 15px;
-            border: 1px solid #EEE;
+            background: #F7F3E3; /* 較明顯的底色 */
+            padding: 12px;
+            border-radius: 18px;
+            border: 1px solid var(--accent);
         }
         .calc-btn {
             background: var(--white);
             border: 1px solid #EEE;
-            padding: 10px 0;
-            border-radius: 10px;
-            font-weight: bold;
+            padding: 12px 0;
+            border-radius: 12px;
+            font-weight: 800;
             color: var(--text);
             text-align: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            box-shadow: 0 2px 0px #EEE;
+            box-shadow: 0 3px 0px #DDD;
         }
-        .calc-btn:active { background: var(--accent); transform: translateY(1px); box-shadow: none; }
-        .calc-btn.op { color: var(--primary); background: #FFF5F5; }
+        .calc-btn:active { transform: translateY(2px); box-shadow: none; background: #F0F0F0; }
+        
+        /* 功能鍵配色 */
+        .calc-btn.clear-op { background: var(--primary); color: white; border: none; box-shadow: 0 3px 0px #E57373; }
+        .calc-btn.spec-op { background: var(--secondary); color: #555; border: none; box-shadow: 0 3px 0px #8DD3B8; }
 
         /* 歷史紀錄區塊標題 */
         .history-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 5px 10px 5px; }
         .history-title { font-size: 1rem; font-weight: bold; color: #AAA; }
         .clear-all-btn { background: transparent; border: 1px solid #CCC; color: #AAA; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; }
 
-        /* 歷史紀錄項目的按鈕前置 */
         .history-item { padding: 12px 5px; border-bottom: 1px dashed var(--accent); }
         .item-main { display: flex; align-items: flex-start; gap: 10px; }
         .action-group { display: flex; gap: 5px; flex-shrink: 0; }
@@ -136,30 +141,30 @@
         <div class="input-group">
             <label>金額 (<span id="currLabel">JPY</span>)</label>
             <div class="flex-row">
-                <input type="number" id="foreign" placeholder="0" oninput="calculate()" inputmode="none" style="flex: 1;">
+                <input type="number" id="foreign" placeholder="0" class="active-input" readonly>
             </div>
         </div>
 
         <div class="input-group">
             <label>折合台幣 (TWD) - 亦可反推</label>
-            <input type="number" id="twd" placeholder="0" oninput="calculateReverse()" inputmode="none">
+            <input type="number" id="twd" placeholder="0" readonly>
         </div>
 
         <div class="calc-container">
             <div class="calc-btn" onclick="inputNum('7')">7</div>
             <div class="calc-btn" onclick="inputNum('8')">8</div>
             <div class="calc-btn" onclick="inputNum('9')">9</div>
-            <div class="calc-btn op" onclick="backspace()">⌫</div>
+            <div class="calc-btn clear-op" onclick="backspace()">⌫</div>
             <div class="calc-btn" onclick="inputNum('4')">4</div>
             <div class="calc-btn" onclick="inputNum('5')">5</div>
             <div class="calc-btn" onclick="inputNum('6')">6</div>
-            <div class="calc-btn op" onclick="clearActiveInput()">C</div>
+            <div class="calc-btn clear-op" onclick="clearActiveInput()">C</div>
             <div class="calc-btn" onclick="inputNum('1')">1</div>
             <div class="calc-btn" onclick="inputNum('2')">2</div>
             <div class="calc-btn" onclick="inputNum('3')">3</div>
-            <div class="calc-btn" onclick="inputNum('.')">.</div>
-            <div class="calc-btn" style="grid-column: span 3;" onclick="inputNum('0')">0</div>
-            <div class="calc-btn op" onclick="inputNum('00')">00</div>
+            <div class="calc-btn spec-op" onclick="inputNum('.')">.</div>
+            <div class="calc-btn" style="grid-column: span 2;" onclick="inputNum('0')">0</div>
+            <div class="calc-btn spec-op" style="grid-column: span 2;" onclick="inputNum('00')">00</div>
         </div>
 
         <div class="flex-row" style="margin-bottom: 10px;">
@@ -195,18 +200,29 @@
         const savedRate = localStorage.getItem('manual_rate_' + currentCurrency);
         document.getElementById('rate').value = savedRate || 0.1977;
 
-        // 初始化焦點監聽
+        // 初始化焦點監聽與 readonly 點擊處理
         window.onload = function() {
             const fInput = document.getElementById('foreign');
             const tInput = document.getElementById('twd');
             
-            fInput.addEventListener('focus', () => activeInputId = 'foreign');
-            tInput.addEventListener('focus', () => activeInputId = 'twd');
+            fInput.addEventListener('click', () => {
+                activeInputId = 'foreign';
+                fInput.classList.add('active-input');
+                tInput.classList.remove('active-input');
+            });
+
+            tInput.addEventListener('click', () => {
+                activeInputId = 'twd';
+                tInput.classList.add('active-input');
+                fInput.classList.remove('active-input');
+            });
         }
 
         // 鍵盤輸入邏輯
         function inputNum(n) {
             const target = document.getElementById(activeInputId);
+            // 避免小數點重複
+            if (n === '.' && target.value.includes('.')) return;
             target.value += n;
             if (activeInputId === 'foreign') calculate();
             else calculateReverse();
