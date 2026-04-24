@@ -2,986 +2,371 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>冷氣清洗紀錄</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>換匯計算機</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="換匯計算機">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <style>
-        /* 整體字體加大約 10% */
-        html { font-size: 110%; }
-        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; }
-        .hidden { display: none; }
-        /* 提升已完成狀態的視覺對比度 */
-        .completed-row { background-color: #f1f5f9 !important; border-left: 5px solid #64748b !important; opacity: 0.95; }
+        :root { 
+            --bg: #FFF9E1; --primary: #FF8C94; --secondary: #A8E6CF; 
+            --text: #5D5D5D; --accent: #FFD3B6; --white: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px 15px 80px 15px; overflow-x: hidden; }
+
+        .app-header { font-size: 1.3rem; font-weight: 900; margin: 10px 0; color: var(--primary); text-align: center; }
+
+        .card { 
+            background: var(--white); padding: 15px; border-radius: 20px; 
+            box-shadow: 0 5px 0px var(--accent); margin-bottom: 15px; border: 2px solid var(--accent);
+        }
+
+        .input-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.8rem; margin-bottom: 4px; font-weight: bold; color: #AAA; }
         
-        .note-display { white-space: pre-wrap; word-break: break-all; display: block; line-height: 1.3; }
-
-        @keyframes highlight-fade {
-            0% { background-color: #fef08a; transform: scale(1.02); }
-            100% { background-color: white; transform: scale(1); }
-        }
-        .highlight-target { animation: highlight-fade 2s ease-out; z-index: 10; }
-
-        /* 全裝置統一使用卡片式佈局 - 針對手機版面進行清晰度優化 */
-        thead { display: none; }
-        tr { 
-            display: block; margin-bottom: 1.25rem; border-radius: 12px; background: white;
-            padding: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #cbd5e1;
-            transition: all 0.3s ease;
-        }
-        /* 增加儲存格的上下空間，並加深基礎文字顏色 */
-        td { display: block; width: 100%; padding: 0.35rem 0 !important; border: none !important; text-align: left; color: #334155; }
-        
-        /* 客戶名稱加大加粗，增加對比 */
-        td[data-label="客戶"] { font-weight: 800; font-size: 1.2rem; color: #0f172a; padding-bottom: 0.3rem !important; }
-        /* 金額帳目增加明顯分隔線與粗體 */
-        td[data-label="金額帳目"] { 
-            padding-top: 0.75rem !important; margin-top: 0.5rem;
-            border-top: 2px dashed #cbd5e1 !important; color: #1e293b; font-size: 0.9rem; font-weight: 700;
-        }
-        td.action-cell {
-            border-top: 1px solid #e2e8f0 !important; margin-top: 0.75rem;
-            padding-top: 0.75rem !important; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
+        input, select { 
+            width: 100%; padding: 10px; border: 2px solid #F5F5F5; 
+            border-radius: 12px; font-size: 1rem; color: var(--text); background: #FAFAFA;
+            -webkit-appearance: none;
         }
 
-        /* 預約時間增加底線做為頭部資訊區隔 */
-        .time-display { font-size: 0.85rem; color: #475569; font-weight: 600; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem !important; margin-bottom: 0.25rem; }
+        .flex-row { display: flex; align-items: center; gap: 8px; }
 
-        @media (min-width: 1024px) {
-            .desktop-half-width { max-width: 50% !important; margin-left: auto; margin-right: auto; }
+        .side-btn { 
+            border: none; border-radius: 12px; 
+            width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; cursor: pointer; flex-shrink: 0;
         }
+        .refresh-btn { background: var(--secondary); box-shadow: 0 3px 0px #8DD3B8; }
+        .clear-input-btn { background: #EEE; color: #999; box-shadow: 0 3px 0px #DDD; font-size: 1.3rem; }
+        .side-btn:active { transform: translateY(2px); box-shadow: none; }
 
-        /* 小幫手統計浮窗樣式 */
-        #assistantSummaryModal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 100; width: 90%; max-width: 350px;
+        .save-btn { 
+            width: 100%; background: var(--primary); color: white; border: none; 
+            padding: 14px; border-radius: 15px; font-weight: bold; font-size: 1.1rem; 
+            box-shadow: 0 4px 0px #E57373; margin-top: 5px;
         }
+        .save-btn:active { transform: translateY(3px); box-shadow: none; }
 
-        /* Lucide 圖示統一微調 */
-        .lucide { width: 14px; height: 14px; stroke-width: 2; display: inline-block; vertical-align: -2px; }
-        .btn-icon { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
+        /* 迷你鍵盤樣式 */
+        .calc-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin: 10px 0 15px 0;
+            background: #F9F9F9;
+            padding: 8px;
+            border-radius: 15px;
+            border: 1px solid #EEE;
+        }
+        .calc-btn {
+            background: var(--white);
+            border: 1px solid #EEE;
+            padding: 10px 0;
+            border-radius: 10px;
+            font-weight: bold;
+            color: var(--text);
+            text-align: center;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 2px 0px #EEE;
+        }
+        .calc-btn:active { background: var(--accent); transform: translateY(1px); box-shadow: none; }
+        .calc-btn.op { color: var(--primary); background: #FFF5F5; }
+
+        /* 歷史紀錄區塊標題 */
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 5px 10px 5px; }
+        .history-title { font-size: 1rem; font-weight: bold; color: #AAA; }
+        .clear-all-btn { background: transparent; border: 1px solid #CCC; color: #AAA; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; }
+
+        /* 歷史紀錄項目的按鈕前置 */
+        .history-item { padding: 12px 5px; border-bottom: 1px dashed var(--accent); }
+        .item-main { display: flex; align-items: flex-start; gap: 10px; }
+        .action-group { display: flex; gap: 5px; flex-shrink: 0; }
+        .icon-btn { 
+            width: 28px; height: 28px; border-radius: 8px; border: none; 
+            display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+        }
+        .btn-edit-icon { background: #E1F5FE; color: #03A9F4; }
+        .btn-del-icon { background: #FFF0F0; color: var(--primary); }
+
+        .item-info { flex: 1; min-width: 0; }
+        .item-title { font-size: 0.95rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .item-sub { font-size: 0.7rem; color: #BBB; margin-top: 2px; }
+        .item-price-group { text-align: right; flex-shrink: 0; }
+        .item-price { font-size: 1.05rem; font-weight: 900; color: var(--primary); }
+        .item-original { font-size: 0.7rem; color: #CCC; }
+
+        .edit-mode input { margin-bottom: 6px; padding: 6px; font-size: 0.85rem; border: 1px solid var(--accent); border-radius: 8px; }
+
+        .total-bar { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--white); 
+            padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; 
+            border-top: 2px solid var(--accent); border-radius: 20px 20px 0 0; z-index: 1000;
+        }
     </style>
 </head>
-<body class="bg-[#faf9f6] min-h-screen text-slate-700">
+<body>
 
-    <section id="authPage" class="fixed inset-0 z-[100] bg-slate-100 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-sm text-center">
-            <div class="w-16 h-16 bg-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <i data-lucide="lock" class="text-white w-8 h-8"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">系統登入</h2>
-            <p class="text-slate-400 text-sm mb-8">請使用授權的 Google 帳號進行登入</p>
-            
-            <button onclick="handleLogin()" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-4 rounded-xl border border-slate-200 shadow-sm transition-all active:scale-95 mb-4">
-                <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_128dp.png" class="w-5 h-5">
-                Google 帳號登入
-            </button>
-            <p id="authError" class="text-rose-500 text-xs font-bold hidden whitespace-pre-wrap"></p>
+    <div class="app-header">✈️ 換匯計算機</div>
+
+    <div class="card">
+        <div class="input-group">
+            <label>選擇幣別</label>
+            <select id="currencySelect" onchange="changeCurrBySelect()">
+                <option value="JPY" data-rate="0.1977">日圓 JPY</option>
+                <option value="USD" data-rate="32.5">美金 USD</option>
+                <option value="KRW" data-rate="0.024">韓元 KRW</option>
+            </select>
         </div>
-    </section>
 
-    <div id="mainApp" class="hidden">
-        <nav class="bg-slate-600 text-white py-2 px-4 shadow-md sticky top-0 z-50">
-            <div class="container mx-auto flex justify-between items-center">
-                <h1 class="text-lg font-bold tracking-widest">冷氣清洗紀錄</h1>
-                <div class="flex space-x-2">
-                    <button onclick="showPage('listPage')" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="list" class="btn-icon"></i>清單
-                    </button>
-                    <button onclick="prepareNewForm()" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="pen-line" class="btn-icon"></i>填寫
-                    </button>
-                    <button onclick="handleLogout()" class="flex items-center px-3 py-1.5 bg-slate-700 hover:bg-rose-600 border border-slate-500 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="log-out" class="btn-icon"></i>登出
-                    </button>
-                </div>
+        <div class="input-group">
+            <label>手動匯率</label>
+            <div class="flex-row">
+                <input type="number" id="rate" step="0.0001" oninput="manualRateInput()" style="flex: 1;">
+                <button class="side-btn refresh-btn" onclick="fetchRate()">🔄</button>
             </div>
-        </nav>
-
-        <div class="container mx-auto px-1.5 md:px-4 py-6">
-            
-            <section id="formPage" class="hidden max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
-                <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                    <i data-lucide="clipboard-list" class="w-6 h-6"></i> 新增紀錄
-                </h2>
-                <form id="recordForm" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">預約日期時間</label>
-                            <input type="datetime-local" id="bookingTime" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">客戶姓名</label>
-                            <input type="text" id="customerName" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">連絡電話</label>
-                            <input type="tel" id="phone" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">施工地址</label>
-                            <input type="text" id="address" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">冷氣台數</label>
-                            <input type="number" id="acCount" value="0" min="0" onfocus="this.select()" oninput="handleAcCountChange()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">洗衣機</label>
-                            <input type="number" id="wmCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">水塔</label>
-                            <input type="number" id="wtCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                    </div>
-
-                    <div id="acBrandSection" class="hidden space-y-2 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-emerald-600 uppercase tracking-wider"><i data-lucide="snowflake" class="lucide mr-1"></i> 冷氣明細</label>
-                            <button type="button" onclick="addAcDetailRow()" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded shadow-sm">+ 增加明細</button>
-                        </div>
-                        <div id="acDetailsContainer" class="space-y-2"></div>
-                    </div>
-
-                    <div class="space-y-2 bg-rose-50/30 p-4 rounded-xl border border-rose-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-rose-600 uppercase tracking-wider"><i data-lucide="users" class="lucide mr-1"></i> 小幫手明細</label>
-                            <button type="button" onclick="addAssistantRow()" class="text-[10px] bg-rose-500 text-white px-2 py-1 rounded shadow-sm">+ 增加小幫手</button>
-                        </div>
-                        <div id="assistantDetailsContainer" class="space-y-2"></div>
-                        <div id="quickAssistantTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-rose-100/50"></div>
-                    </div>
-
-                    <div class="space-y-2 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-indigo-600 uppercase tracking-wider"><i data-lucide="forward" class="lucide mr-1"></i> PASS 案件設定</label>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="text" id="passFrom" list="passNamesList" placeholder="輸入 PASS 來源對象名稱" class="flex-1 rounded-lg p-2 border border-indigo-100 text-sm" oninput="updateQuickPassTags()">
-                        </div>
-                        <div id="quickPassTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-indigo-100/50"></div>
-                    </div>
-
-                    <datalist id="assistantNamesList"></datalist>
-                    <datalist id="passNamesList"></datalist>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required onfocus="this.select()" oninput="calcFormNet()" class="w-full border-slate-200 rounded-xl p-3 border font-bold"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手總支出</label><input type="number" id="assistantPay" value="0" readonly class="w-full bg-slate-50 border-slate-200 rounded-xl p-3 border font-bold text-rose-500"></div>
-                        <div><label class="block text-xs font-bold text-emerald-600 uppercase mb-1">預估淨利</label><input type="text" id="formNetProfit" value="$0" readonly class="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 border font-bold text-emerald-700"></div>
-                    </div>
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
-                    
-                    <div class="flex gap-3">
-                        <button type="button" onclick="showPage('listPage')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-xl transition-all active:scale-[0.98] border border-slate-200/50">返回清單</button>
-                        <button type="submit" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
-                    </div>
-                </form>
-            </section>
-
-            <section id="listPage" class="desktop-half-width">
-                
-                <div class="bg-slate-700 p-4 rounded-2xl shadow-sm border-l-4 border-slate-400 text-white flex items-center mb-4 relative">
-                    <div class="flex flex-col text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-4 border-r border-slate-600 pr-3 text-center leading-tight">
-                        <span>全</span><span>部</span><span>年</span><span>份</span><span>總</span><span>累</span><span>計</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="grid grid-cols-3 gap-2 text-center border-b border-slate-600 pb-2 mb-2">
-                            <div><p class="text-[10px] text-slate-400">冷氣</p><p class="text-xl font-bold" id="allAc">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">洗衣機</p><p class="text-xl font-bold" id="allWm">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">水塔</p><p class="text-xl font-bold" id="allWt">0</p></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 text-center items-end">
-                            <div><p class="text-[10px] text-slate-400 mb-1">總收入</p><p class="text-sm font-bold leading-tight" id="allRev">$0</p></div>
-                            <div class="relative group">
-                                <p class="text-[10px] text-slate-400 mb-1">小幫手</p>
-                                <button onclick="showAllAssistantDetails()" class="text-sm font-bold text-rose-300 underline decoration-rose-300/40 leading-tight p-0 inline-block bg-transparent border-none" id="allExp">$0</button>
-                            </div>
-                            <div><p class="text-[10px] text-emerald-300 mb-1">淨實收</p><p class="text-sm font-bold text-emerald-300 leading-tight" id="allNet">$0</p></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="assistantSummaryOverlay" onclick="toggleAssistantModal()" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90]"></div>
-                <div id="assistantSummaryModal" class="hidden bg-white rounded-2xl shadow-2xl p-5 border border-slate-200">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                            <i data-lucide="handshake" class="w-4 h-4"></i> <span id="assistantModalTitle">小幫手薪資總計 (全期)</span>
-                        </h4>
-                        <button onclick="toggleAssistantModal()" class="text-slate-400 text-xl hover:text-slate-600">&times;</button>
-                    </div>
-                    <div id="assistantSummaryList" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
-                    <div class="mt-4 pt-3 border-t text-[10px] text-slate-400 text-center">
-                        點擊背景或叉叉可關閉
-                    </div>
-                </div>
-
-                <div class="space-y-3 mb-4">
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-400">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="yearTitle">年度統計</h3>
-                                <div class="text-[10px] text-slate-400">年度數量: <span class="text-slate-700 font-bold" id="yCounts">冷0 / 洗0 / 水0</span></div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                                <div><p class="text-[10px] text-slate-400 mb-1">年度總營收</p><p class="text-lg font-bold text-slate-800" id="yRev">$0</p></div>
-                                <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><button onclick="showYearAssistantDetails()" class="text-lg font-bold text-rose-400 underline decoration-rose-400/40 leading-tight p-0 inline-block bg-transparent border-none" id="yExp">$0</button></div>
-                                <div><p class="text-[10px] text-emerald-600 font-bold mb-1">年度淨利</p><p class="text-lg font-bold text-emerald-700" id="yNet">$0</p></div>
-                            </div>
-
-                            <div id="passYearSummarySection" class="mt-3 pt-3 border-t border-indigo-100 bg-indigo-50/20 -mx-5 px-3 hidden">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (年度)
-                                    </h3>
-                                    <span class="text-[10px] text-indigo-400 font-bold" id="passYearTotal">總額 $0</span>
-                                </div>
-                                <div id="passYearSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-emerald-50/40 p-5 rounded-2xl shadow-sm border-l-4 border-emerald-500">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-emerald-600 text-[10px] font-bold uppercase tracking-widest" id="monthTitle">本月統計</h3>
-                                <div class="text-[10px] text-emerald-600/70">月度數量: <span class="text-emerald-800 font-bold" id="mCounts">冷0 / 洗0 / 水0</span></div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月總營收</p><p class="text-lg font-bold text-emerald-900" id="mRev">$0</p></div>
-                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月支出</p><button onclick="showMonthAssistantDetails()" class="text-lg font-bold text-rose-500 underline decoration-rose-500/40 leading-tight p-0 inline-block bg-transparent border-none" id="mExp">$0</button></div>
-                                <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-lg font-bold text-emerald-700" id="mNet">$0</p></div>
-                            </div>
-                            
-                            <div id="passSummarySection" class="mt-3 pt-3 border-t border-emerald-100 bg-white/40 -mx-5 px-3 hidden">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-emerald-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (月度)
-                                    </h3>
-                                    <span class="text-[10px] text-emerald-600 font-bold" id="passMonthTotal">總額 $0</span>
-                                </div>
-                                <div id="passSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
-                            </div>
-                        </div>
-
-                        <div id="unpaidSection" class="border-t border-amber-200 mt-4 pt-4 -mx-5 px-5 pb-2 hidden">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="text-amber-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                    <i data-lucide="alert-circle" class="w-3 h-3"></i> 本月待收款明細 (點擊姓名跳轉)
-                                </h3>
-                                <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
-                            </div>
-                            <div id="unpaidList" class="space-y-1 text-[11px] text-amber-900"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
-                    <div class="flex flex-col md:flex-row gap-3">
-                        <div class="flex-[3] relative">
-                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                                <i data-lucide="search" class="w-4 h-4"></i>
-                            </div>
-                            <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址、機型、PASS..." class="w-full bg-slate-50 border-none rounded-xl p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-slate-100">
-                        </div>
-                        <div class="flex-[3] flex items-center gap-1">
-                            <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                            <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
-                            <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                            <button onclick="clearMonthFilter()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none" title="清除年月篩選"><i data-lucide="calendar-x" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <select id="typeFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">全部品項</option><option value="ac">冷氣</option><option value="wm">洗衣機</option><option value="wt">水塔</option></select>
-                        <select id="statusFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">施工進度</option><option value="completed">已完成</option><option value="pending">待處理</option></select>
-                        <select id="paymentFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">帳務狀態</option><option value="paid">已收款</option><option value="unpaid">待收款</option></select>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto"><table class="min-w-full text-sm"><tbody id="recordList" class="divide-y divide-slate-100"></tbody></table></div>
-            </section>
         </div>
+
+        <div class="input-group">
+            <label>金額 (<span id="currLabel">JPY</span>)</label>
+            <div class="flex-row">
+                <input type="number" id="foreign" placeholder="0" oninput="calculate()" style="flex: 1;">
+                <button class="side-btn clear-input-btn" onclick="resetForm()">✕</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>折合台幣 (TWD) - 亦可反推</label>
+            <input type="number" id="twd" placeholder="0" oninput="calculateReverse()">
+        </div>
+
+        <div class="calc-container">
+            <div class="calc-btn" onclick="inputNum('7')">7</div>
+            <div class="calc-btn" onclick="inputNum('8')">8</div>
+            <div class="calc-btn" onclick="inputNum('9')">9</div>
+            <div class="calc-btn op" onclick="backspace()">⌫</div>
+            <div class="calc-btn" onclick="inputNum('4')">4</div>
+            <div class="calc-btn" onclick="inputNum('5')">5</div>
+            <div class="calc-btn" onclick="inputNum('6')">6</div>
+            <div class="calc-btn op" onclick="clearActiveInput()">C</div>
+            <div class="calc-btn" onclick="inputNum('1')">1</div>
+            <div class="calc-btn" onclick="inputNum('2')">2</div>
+            <div class="calc-btn" onclick="inputNum('3')">3</div>
+            <div class="calc-btn" onclick="inputNum('.')">.</div>
+            <div class="calc-btn" style="grid-column: span 3;" onclick="inputNum('0')">0</div>
+            <div class="calc-btn op" onclick="inputNum('00')">00</div>
+        </div>
+
+        <div class="flex-row" style="margin-bottom: 10px;">
+            <div style="flex: 1;"><label>品名</label><input type="text" id="note" placeholder="備註"></div>
+            <div style="flex: 1;"><label>地點</label><input type="text" id="locName" placeholder="地點"></div>
+        </div>
+
+        <button class="save-btn" onclick="save()">把這筆記下來！ ✍️</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <div class="history-header">
+        <span class="history-title">消費紀錄</span>
+        <button class="clear-all-btn" onclick="clearAllHistory()">清空全部</button>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTyt_nIV1h_MFRhQoT9PHFMXhus1jQVL4",
-            projectId: "ac-records-b8c40",
-            authDomain: "ac-records-b8c40.firebaseapp.com",
-            storageBucket: "ac-records-b8c40.firebasestorage.app",
-            messagingSenderId: "471993362594",
-            appId: "1:471993362594:web:1be7e72af1021760c64ffb"
-        };
+    <div id="historyList"></div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        
-        const recordsCol = collection(db, "cleaningRecords");
-        let allRecords = [];
+    <div class="total-bar">
+        <span style="font-weight: bold; color: #AAA; font-size: 0.85rem;">累積花費</span>
+        <span id="totalSum" style="font-size: 1.3rem; font-weight: 900; color: var(--primary);">0</span>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'exchange_final_v1';
+        let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let currentCurrency = localStorage.getItem('last_curr') || 'JPY';
         let editingId = null;
-        let knownAssistantNames = []; 
-        let knownPassNames = [];
-        let snapshotUnsubscribe = null;
+        let activeInputId = 'foreign'; // 預設輸入目標
 
-        // 篩選快取，供支出浮窗使用
-        let currentYearRecords = [];
-        let currentMonthRecords = [];
+        document.getElementById('locName').value = localStorage.getItem('last_loc') || '';
+        document.getElementById('currencySelect').value = currentCurrency;
+        document.getElementById('currLabel').innerText = currentCurrency;
+        const savedRate = localStorage.getItem('manual_rate_' + currentCurrency);
+        document.getElementById('rate').value = savedRate || 0.1977;
 
-        // 授權清單
-        const allowedEmails = ['eroraror@gmail.com', 'graceyiyo@gmail.com'];
-
-        // 初始化圖示
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
-
-        // 登入狀態監聽
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if (allowedEmails.includes(user.email.toLowerCase())) {
-                    document.getElementById('authPage').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('authError').classList.add('hidden');
-                    startDataSubscription();
-                } else {
-                    document.getElementById('authError').innerText = "⚠️ 您沒有存取權限，請換個帳號試試。";
-                    document.getElementById('authError').classList.remove('hidden');
-                    signOut(auth);
-                }
-            } else {
-                document.getElementById('authPage').classList.remove('hidden');
-                document.getElementById('mainApp').classList.add('hidden');
-                if (snapshotUnsubscribe) {
-                    snapshotUnsubscribe();
-                    snapshotUnsubscribe = null;
-                }
-            }
-            lucide.createIcons();
-        });
-
-        window.handleLogin = async () => {
-            const errorEl = document.getElementById('authError');
-            errorEl.classList.add('hidden');
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Login failed", error);
-                errorEl.innerText = `⚠️ 登入失敗！\n錯誤代碼: ${error.code}\n請檢查 Firebase Console 是否啟動 Google 登入並加入授權網域。`;
-                errorEl.classList.remove('hidden');
-            }
-        };
-
-        window.handleLogout = () => {
-            if (confirm('確定要登出嗎？')) {
-                signOut(auth);
-            }
-        };
-
-        function startDataSubscription() {
-            if (snapshotUnsubscribe) return;
-            snapshotUnsubscribe = onSnapshot(recordsCol, (snap) => {
-                allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                updateDatalists();
-                filterRecords();
-            });
+        // 初始化焦點監聽
+        window.onload = function() {
+            const fInput = document.getElementById('foreign');
+            const tInput = document.getElementById('twd');
+            
+            fInput.addEventListener('focus', () => activeInputId = 'foreign');
+            tInput.addEventListener('focus', () => activeInputId = 'twd');
         }
 
-        document.getElementById('monthFilter').value = new Date().toISOString().substring(0, 7);
+        // 鍵盤輸入邏輯
+        function inputNum(n) {
+            const target = document.getElementById(activeInputId);
+            target.value += n;
+            if (activeInputId === 'foreign') calculate();
+            else calculateReverse();
+        }
 
-        window.showPage = (id) => {
-            document.getElementById('formPage').classList.toggle('hidden', id !== 'formPage');
-            document.getElementById('listPage').classList.toggle('hidden', id !== 'listPage');
-            lucide.createIcons(); 
-        };
+        function backspace() {
+            const target = document.getElementById(activeInputId);
+            target.value = target.value.slice(0, -1);
+            if (activeInputId === 'foreign') calculate();
+            else calculateReverse();
+        }
 
-        window.prepareNewForm = () => {
-            editingId = null;
-            document.getElementById('recordForm').reset();
-            document.getElementById('acDetailsContainer').innerHTML = '';
-            document.getElementById('assistantDetailsContainer').innerHTML = '';
-            document.getElementById('passFrom').value = '';
-            document.getElementById('formNetProfit').value = '$0';
-            toggleAcBrand();
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-            showPage('formPage');
-        };
+        function clearActiveInput() {
+            const target = document.getElementById(activeInputId);
+            target.value = '';
+            if (activeInputId === 'foreign') calculate();
+            else calculateReverse();
+        }
 
-        window.handleAcCountChange = () => {
-            const count = parseInt(document.getElementById('acCount').value) || 0;
-            toggleAcBrand();
-            const container = document.getElementById('acDetailsContainer');
-            if (count > 0 && container.children.length === 0) addAcDetailRow(count);
-        };
+        function calculate() {
+            const r = document.getElementById('rate').value || 0;
+            const f = document.getElementById('foreign').value || 0;
+            document.getElementById('twd').value = f > 0 ? Math.round(r * f) : "";
+        }
 
-        window.toggleAcBrand = () => {
-            document.getElementById('acBrandSection').classList.toggle('hidden', document.getElementById('acCount').value <= 0);
-            lucide.createIcons();
-        };
+        function calculateReverse() {
+            const r = document.getElementById('rate').value || 0;
+            const t = document.getElementById('twd').value || 0;
+            if (r > 0) document.getElementById('foreign').value = t > 0 ? (t / r).toFixed(2) : "";
+        }
 
-        window.addAcDetailRow = (val = "") => {
-            const container = document.getElementById('acDetailsContainer');
-            const totalTarget = parseInt(document.getElementById('acCount').value) || 0;
-            if (val === "" && totalTarget > 0) {
-                let currentFilled = 0;
-                document.querySelectorAll('.ac-qty-input').forEach(input => currentFilled += (parseInt(input.value) || 0));
-                val = Math.max(0, totalTarget - currentFilled);
-            }
-            const div = document.createElement('div');
-            div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
-            div.innerHTML = `
-                <div class="col-span-5"><input type="text" placeholder="廠牌" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
-                <div class="col-span-3"><input type="number" value="${val}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div>
-                <div class="col-span-3"><input type="number" placeholder="單價" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
-                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>
-            `;
-            container.appendChild(div);
-        };
+        function resetForm() {
+            document.getElementById('note').value = '';
+            document.getElementById('foreign').value = '';
+            document.getElementById('twd').value = '';
+            document.getElementById('locName').value = '';
+            localStorage.removeItem('last_loc');
+        }
 
-        window.calcTotalFromDetails = () => {
-            let total = 0;
-            document.querySelectorAll('.ac-detail-row').forEach(row => {
-                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
-                const price = parseInt(row.querySelector('.ac-price-input').value) || 0;
-                total += (qty * price);
-            });
-            if (total > 0) {
-                document.getElementById('totalAmount').value = total;
-                calcFormNet();
-            }
-        };
+        function manualRateInput() {
+            localStorage.setItem('manual_rate_' + currentCurrency, document.getElementById('rate').value);
+            calculate();
+        }
 
-        window.addAssistantRow = (name = "", amount = "") => {
-            const container = document.getElementById('assistantDetailsContainer');
-            const div = document.createElement('div');
-            div.className = "grid grid-cols-12 gap-2 items-center assistant-detail-row mb-2";
-            div.innerHTML = `
-                <div class="col-span-6"><input type="text" value="${name}" list="assistantNamesList" placeholder="名字" class="as-name-input w-full rounded-lg p-2 border border-rose-100 text-sm" oninput="updateQuickAssistantTags()"></div>
-                <div class="col-span-5"><input type="number" value="${amount}" onfocus="this.select()" oninput="calcAssistantTotal()" class="as-amount-input w-full rounded-lg p-2 border border-rose-100 text-sm font-bold text-rose-600"></div>
-                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcAssistantTotal(); updateQuickAssistantTags();" class="text-rose-400 font-bold text-lg">&times;</button></div>
-            `;
-            container.appendChild(div);
-            updateQuickAssistantTags();
-            calcAssistantTotal();
-        };
+        function changeCurrBySelect() {
+            const select = document.getElementById('currencySelect');
+            currentCurrency = select.value;
+            localStorage.setItem('last_curr', currentCurrency);
+            document.getElementById('currLabel').innerText = currentCurrency;
+            const r = localStorage.getItem('manual_rate_' + currentCurrency);
+            document.getElementById('rate').value = r || select.options[select.selectedIndex].getAttribute('data-rate');
+            calculate();
+        }
 
-        window.calcAssistantTotal = () => {
-            let total = 0;
-            document.querySelectorAll('.as-amount-input').forEach(input => total += (parseInt(input.value) || 0));
-            document.getElementById('assistantPay').value = total;
-            calcFormNet();
-        };
+        async function fetchRate() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.innerText = "⏳";
+            try {
+                const res = await fetch(`https://open.er-api.com/v6/latest/TWD`);
+                const data = await res.json();
+                const finalRate = (1 / data.rates[currentCurrency]).toFixed(4);
+                document.getElementById('rate').value = finalRate;
+                localStorage.setItem('manual_rate_' + currentCurrency, finalRate);
+                calculate();
+            } catch (e) { alert("網路異常"); }
+            btn.innerText = "🔄";
+        }
 
-        window.calcFormNet = () => {
-            const rev = parseInt(document.getElementById('totalAmount').value) || 0;
-            const exp = parseInt(document.getElementById('assistantPay').value) || 0;
-            document.getElementById('formNetProfit').value = `$${(rev - exp).toLocaleString()}`;
-        };
-
-        window.updateQuickAssistantTags = () => {
-            const container = document.getElementById('quickAssistantTags');
-            const currentNamesInForm = Array.from(document.querySelectorAll('.as-name-input')).map(input => input.value.trim());
-            const availableNames = knownAssistantNames.filter(name => !currentNamesInForm.includes(name));
-            if (availableNames.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-rose-300">無更多常用名字</span>';
-                return;
-            }
-            container.innerHTML = availableNames.map(name => `
-                <button type="button" onclick="addAssistantRow('${name}')" class="px-2 py-1 bg-white border border-rose-200 text-rose-600 rounded text-[10px] hover:bg-rose-50 transition-colors font-medium">+ ${name}</button>
-            `).join('');
-        };
-
-        window.updateQuickPassTags = () => {
-            const container = document.getElementById('quickPassTags');
-            const currentName = document.getElementById('passFrom').value.trim();
-            const availableNames = knownPassNames.filter(name => name !== currentName);
-            if (availableNames.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-indigo-300">尚無常用對象</span>';
-                return;
-            }
-            container.innerHTML = availableNames.map(name => `
-                <button type="button" onclick="document.getElementById('passFrom').value='${name}'; updateQuickPassTags();" class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded text-[10px] hover:bg-indigo-50 transition-colors font-medium">${name}</button>
-            `).join('');
-        };
-
-        window.toggleDone = async (id, currentStatus) => {
-            await updateDoc(doc(db, "cleaningRecords", id), { status: currentStatus === 'completed' ? 'pending' : 'completed' });
-        };
-
-        window.togglePayment = async (id, currentPayment) => {
-            await updateDoc(doc(db, "cleaningRecords", id), { payment: currentPayment === 'paid' ? 'unpaid' : 'paid' });
-        };
-
-        document.getElementById('recordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const totalAc = parseInt(document.getElementById('acCount').value) || 0;
-            let acDetailTotal = 0; let acDetailsArray = [];
-            document.querySelectorAll('.ac-detail-row').forEach(row => {
-                const brand = row.querySelector('.ac-brand-input').value.trim();
-                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
-                const price = row.querySelector('.ac-price-input').value;
-                acDetailTotal += qty;
-                if (brand || qty > 0) acDetailsArray.push(`${brand || '機型未填'}-${qty}台${price ? `*${price}元` : ''}`);
-            });
-            if (totalAc > 0 && acDetailTotal !== totalAc) { alert(`⚠️ 明細台數不符！`); return; }
-
-            let assistantArray = [];
-            document.querySelectorAll('.assistant-detail-row').forEach(row => {
-                const n = row.querySelector('.as-name-input').value.trim();
-                const a = row.querySelector('.as-amount-input').value;
-                if (n && a) assistantArray.push(`${n}:${a}`);
-            });
-
+        function save() {
+            const fAmount = document.getElementById('foreign').value;
+            if (!fAmount) return;
             const record = {
-                bookingTime: document.getElementById('bookingTime').value,
-                customerName: document.getElementById('customerName').value,
-                phone: document.getElementById('phone').value || "",
-                address: document.getElementById('address').value || "",
-                acCount: totalAc, acBrand: acDetailsArray.join('+'),
-                assistantDetail: assistantArray.join(','),
-                passFrom: document.getElementById('passFrom').value.trim(),
-                wmCount: parseInt(document.getElementById('wmCount').value) || 0,
-                wtCount: parseInt(document.getElementById('wtCount').value) || 0,
-                totalAmount: parseInt(document.getElementById('totalAmount').value) || 0,
-                assistantPay: parseInt(document.getElementById('assistantPay').value) || 0,
-                note: document.getElementById('note').value || ''
+                id: Date.now(),
+                note: document.getElementById('note').value || '小東西',
+                f: fAmount,
+                rate: document.getElementById('rate').value,
+                curr: currentCurrency,
+                t: document.getElementById('twd').value || Math.round(document.getElementById('rate').value * fAmount),
+                time: new Date().toISOString().slice(0, 16),
+                loc: document.getElementById('locName').value
             };
+            history.unshift(record);
+            syncData();
+            document.getElementById('note').value = '';
+            document.getElementById('foreign').value = '';
+            document.getElementById('twd').value = '';
+        }
 
-            try {
-                if (editingId) {
-                    const original = allRecords.find(r => r.id === editingId);
-                    record.status = original.status; record.payment = original.payment;
-                    await updateDoc(doc(db, "cleaningRecords", editingId), record);
-                    editingId = null;
+        function clearAllHistory() {
+            if (confirm("確定要清空『全部』的消費紀錄嗎？這沒辦法復原喔！")) {
+                history = [];
+                syncData();
+            }
+        }
+
+        function syncData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            render();
+        }
+
+        function toggleEdit(id) { editingId = (editingId === id) ? null : id; render(); }
+
+        function saveEdit(id) {
+            const index = history.findIndex(h => h.id === id);
+            const newF = document.getElementById(`edit-f-${id}`).value;
+            history[index].note = document.getElementById(`edit-note-${id}`).value;
+            history[index].loc = document.getElementById(`edit-loc-${id}`).value;
+            history[index].time = document.getElementById(`edit-time-${id}`).value;
+            history[index].f = newF;
+            history[index].t = Math.round(newF * history[index].rate);
+            editingId = null;
+            syncData();
+        }
+
+        function deleteItem(id) {
+            if (confirm("要刪除這筆嗎？")) {
+                history = history.filter(h => h.id !== id);
+                syncData();
+            }
+        }
+
+        function render() {
+            const list = document.getElementById('historyList');
+            let sum = 0;
+            list.innerHTML = history.map(h => {
+                sum += parseInt(h.t);
+                if (editingId === h.id) {
+                    return `<div class="history-item edit-mode">
+                        <input type="text" id="edit-note-${h.id}" value="${h.note}">
+                        <input type="text" id="edit-loc-${h.id}" value="${h.loc}" placeholder="補填地點">
+                        <input type="number" id="edit-f-${h.id}" value="${h.f}">
+                        <input type="datetime-local" id="edit-time-${h.id}" value="${h.time}">
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <button class="mini-btn" style="background:var(--secondary); border:none; padding:5px 10px; border-radius:5px;" onclick="saveEdit(${h.id})">存</button>
+                            <button class="mini-btn" style="background:#EEE; border:none; padding:5px 10px; border-radius:5px;" onclick="toggleEdit(null)">取消</button>
+                        </div>
+                    </div>`;
                 } else {
-                    record.status = 'pending'; record.payment = 'unpaid';
-                    await addDoc(recordsCol, record);
-                }
-                prepareNewForm();
-                showPage('listPage');
-            } catch (err) { alert('儲存失敗'); }
-        });
-
-        function updateDatalists() {
-            const asNames = new Set();
-            const psNames = new Set();
-            allRecords.forEach(r => { 
-                if (r.assistantDetail) {
-                    r.assistantDetail.split(',').forEach(s => {
-                        const name = s.split(':')[0];
-                        if (name) asNames.add(name);
-                    });
-                } 
-                if (r.passFrom) psNames.add(r.passFrom);
-            });
-            knownAssistantNames = Array.from(asNames).sort();
-            knownPassNames = Array.from(psNames).sort();
-            document.getElementById('assistantNamesList').innerHTML = knownAssistantNames.map(n => `<option value="${n}">`).join('');
-            document.getElementById('passNamesList').innerHTML = knownPassNames.map(n => `<option value="${n}">`).join('');
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-        }
-
-        window.toggleAssistantModal = (title = "小幫手薪資總計 (全期)", records = allRecords) => {
-            const modal = document.getElementById('assistantSummaryModal');
-            const overlay = document.getElementById('assistantSummaryOverlay');
-            const titleEl = document.getElementById('assistantModalTitle');
-            const isHidden = modal.classList.contains('hidden');
-            if (isHidden) {
-                titleEl.innerText = title;
-                renderAssistantSummary(records);
-                modal.classList.remove('hidden');
-                overlay.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-                overlay.classList.add('hidden');
-            }
-            lucide.createIcons();
-        };
-
-        // 三個快速開啟浮窗的入口
-        window.showAllAssistantDetails = () => {
-            toggleAssistantModal("小幫手薪資總計 (全期)", allRecords);
-        };
-        window.showYearAssistantDetails = () => {
-            const title = document.getElementById('yearTitle').innerText;
-            toggleAssistantModal(`${title} 小幫手薪資`, currentYearRecords);
-        };
-        window.showMonthAssistantDetails = () => {
-            const title = document.getElementById('monthTitle').innerText;
-            toggleAssistantModal(`${title} 小幫手薪資`, currentMonthRecords);
-        };
-
-        function renderAssistantSummary(records) {
-            const summary = {};
-            let unclassified = 0;
-            records.forEach(r => {
-                const totalPay = parseInt(r.assistantPay) || 0;
-                if (totalPay <= 0) return;
-                if (r.assistantDetail) {
-                    const details = r.assistantDetail.split(',');
-                    details.forEach(detail => {
-                        const [name, amount] = detail.split(':');
-                        const amt = parseInt(amount) || 0;
-                        if (name) { summary[name] = (summary[name] || 0) + amt; } 
-                        else { unclassified += amt; }
-                    });
-                } else { unclassified += totalPay; }
-            });
-            const container = document.getElementById('assistantSummaryList');
-            let html = "";
-            const sortedNames = Object.keys(summary).sort((a, b) => summary[b] - summary[a]);
-            sortedNames.forEach(name => {
-                html += `
-                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <span class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-slate-400"></i>${name}</span>
-                    <span class="font-black text-rose-500">$${summary[name].toLocaleString()}</span>
-                </div>`;
-            });
-            if (unclassified > 0) {
-                html += `
-                <div class="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-100">
-                    <span class="font-bold text-amber-700 flex items-center gap-2"><i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>未分類 / 舊紀錄</span>
-                    <span class="font-black text-amber-600">$${unclassified.toLocaleString()}</span>
-                </div>`;
-            }
-            if (html === "") html = "<p class='text-center text-slate-400 py-4'>該期間尚無小幫手支出紀錄</p>";
-            container.innerHTML = html;
-        }
-
-        window.copyText = (text, btn) => {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="text-emerald-500 w-[10px] h-[10px]"></i>';
-                lucide.createIcons();
-                setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 1500);
-            });
-        };
-
-        window.clearMonthFilter = () => {
-            document.getElementById('monthFilter').value = "";
-            filterRecords();
-        };
-
-        window.filterRecords = () => {
-            const kw = document.getElementById('searchKeyword').value.toLowerCase();
-            const mon = document.getElementById('monthFilter').value;
-            const type = document.getElementById('typeFilter').value;
-            const status = document.getElementById('statusFilter').value;
-            const payment = document.getElementById('paymentFilter').value;
-
-            // 統計數據變數 (僅受時間過濾影響，不受關鍵字影響)
-            let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
-            let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
-            let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
-            let mUnpaidDetails = []; 
-            let mPassSummary = {}; 
-            let yPassSummary = {}; 
-            
-            // 重置篩選快取
-            currentYearRecords = [];
-            currentMonthRecords = [];
-
-            const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
-            const filterMonthName = mon ? mon.split('-')[1] : "全部";
-            document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
-            document.getElementById('monthTitle').innerText = mon ? `${filterMonthName} 月份統計` : "全期統計";
-
-            allRecords.forEach(r => {
-                // 全部累積計算
-                aAc += (r.acCount || 0); aWm += (r.wmCount || 0); aWt += (r.wtCount || 0);
-                aRev += (r.totalAmount || 0); aExp += (r.assistantPay || 0);
-
-                const iY = r.bookingTime.split('-')[0];
-                const iM = r.bookingTime.substring(0, 7);
-                const iQty = (r.acCount || 0) + (r.wmCount || 0) + (r.wtCount || 0);
-
-                // 年度統計計算 (不受列表篩選影響)
-                if (iY === filterYear) { 
-                    currentYearRecords.push(r);
-                    yRev += r.totalAmount; yExp += r.assistantPay; yAc += (r.acCount || 0); yWm += (r.wmCount || 0); yWt += (r.wtCount || 0); 
-                    if (r.passFrom) {
-                        yPassSummary[r.passFrom] = (yPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        yPassSummary[r.passFrom].qty += iQty;
-                        yPassSummary[r.passFrom].rev += r.totalAmount;
-                        yPassSummary[r.passFrom].exp += r.assistantPay;
-                    }
-                }
-
-                // 月度統計計算 (不受列表篩選影響)
-                if (!mon || iM === mon) { 
-                    currentMonthRecords.push(r);
-                    mRev += r.totalAmount; mExp += r.assistantPay; mAc += (r.acCount || 0); mWm += (r.wmCount || 0); mWt += (r.wtCount || 0);
-                    if (r.payment === 'unpaid') mUnpaidDetails.push({ id: r.id, name: r.customerName, amount: r.totalAmount });
-                    if (r.passFrom) {
-                        mPassSummary[r.passFrom] = (mPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        mPassSummary[r.passFrom].qty += iQty;
-                        mPassSummary[r.passFrom].rev += r.totalAmount;
-                        mPassSummary[r.passFrom].exp += r.assistantPay;
-                    }
-                }
-            });
-
-            // 列表資料過濾 (受所有篩選器影響)
-            const baseFiltered = allRecords.filter(i => {
-                const iM = i.bookingTime.substring(0, 7);
-                const searchStr = `${i.customerName} ${i.address} ${i.acBrand} ${i.assistantDetail || ''} ${i.passFrom || ''} ${i.note}`.toLowerCase();
-                
-                const matchSearch = searchStr.includes(kw);
-                const matchMonth = (!mon || iM === mon);
-                const matchType = (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0));
-                const matchStatus = (status === 'all' || i.status === status);
-                const matchPayment = (payment === 'all' || i.payment === payment);
-
-                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
-            });
-
-            // 渲染年度 PASS 統計
-            const passYearSortedKeys = Object.keys(yPassSummary).sort((a,b) => yPassSummary[b].rev - yPassSummary[a].rev);
-            if (passYearSortedKeys.length > 0) {
-                document.getElementById('passYearSummarySection').classList.remove('hidden');
-                let passYearTotalAmt = 0;
-                document.getElementById('passYearSummaryList').innerHTML = passYearSortedKeys.map(k => {
-                    passYearTotalAmt += yPassSummary[k].rev;
-                    const net = yPassSummary[k].rev - yPassSummary[k].exp;
-                    return `
-                    <div class="flex items-center justify-between bg-white py-3 px-2.5 rounded-xl border border-indigo-100 gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-indigo-600 font-bold whitespace-nowrap">${k}</span>
-                            <span class="text-[11px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-400 font-bold whitespace-nowrap">${yPassSummary[k].qty}台</span>
-                        </div>
-                        <div class="text-[11px] flex items-center gap-3 text-slate-500 whitespace-nowrap">
-                            <span>收:$${yPassSummary[k].rev.toLocaleString()}</span>
-                            <span>支:$${yPassSummary[k].exp.toLocaleString()}</span>
-                            <span class="font-bold text-indigo-700 bg-indigo-50/50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
+                    return `<div class="history-item">
+                        <div class="item-main">
+                            <div class="action-group">
+                                <button class="icon-btn btn-edit-icon" onclick="toggleEdit(${h.id})">✏️</button>
+                                <button class="icon-btn btn-del-icon" onclick="deleteItem(${h.id})">✕</button>
+                            </div>
+                            <div class="item-info">
+                                <div class="item-title">${h.note}${h.loc ? `<span style="font-size:0.7rem; color:#CCC; font-weight:normal;"> @ ${h.loc}</span>` : ''}</div>
+                                <div class="item-sub">${h.time.replace('T', ' ')}</div>
+                            </div>
+                            <div class="item-price-group">
+                                <div class="item-price">$${parseInt(h.t).toLocaleString()}</div>
+                                <div class="item-original">${h.f} ${h.curr}</div>
+                            </div>
                         </div>
                     </div>`;
-                }).join('');
-                document.getElementById('passYearTotal').innerText = `總額 $${passYearTotalAmt.toLocaleString()}`;
-            } else { document.getElementById('passYearSummarySection').classList.add('hidden'); }
-
-            // 渲染月度 PASS 統計
-            const passSortedKeys = Object.keys(mPassSummary).sort((a,b) => mPassSummary[b].rev - mPassSummary[a].rev);
-            if (passSortedKeys.length > 0) {
-                document.getElementById('passSummarySection').classList.remove('hidden');
-                let passTotalAmt = 0;
-                document.getElementById('passSummaryList').innerHTML = passSortedKeys.map(k => {
-                    passTotalAmt += mPassSummary[k].rev;
-                    const net = mPassSummary[k].rev - mPassSummary[k].exp;
-                    return `
-                    <div class="flex items-center justify-between bg-white py-3 px-2.5 rounded-xl border border-emerald-100 gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-emerald-700 font-bold whitespace-nowrap">${k}</span>
-                            <span class="text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded text-emerald-500 font-bold whitespace-nowrap">${mPassSummary[k].qty}台</span>
-                        </div>
-                        <div class="text-[11px] flex items-center gap-3 text-emerald-800/70 whitespace-nowrap">
-                            <span>收:$${mPassSummary[k].rev.toLocaleString()}</span>
-                            <span>支:$${mPassSummary[k].exp.toLocaleString()}</span>
-                            <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-                document.getElementById('passMonthTotal').innerText = `總額 $${passTotalAmt.toLocaleString()}`;
-            } else { document.getElementById('passSummarySection').classList.add('hidden'); }
-
-            if (mUnpaidDetails.length > 0) {
-                document.getElementById('unpaidSection').classList.remove('hidden');
-                document.getElementById('unpaidList').innerHTML = mUnpaidDetails.map(item => `<div class="flex justify-between py-1"><button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-medium">• ${item.name}</button><span class="font-bold">$${item.amount.toLocaleString()}</span></div>`).join('');
-            } else { document.getElementById('unpaidSection').classList.add('hidden'); }
-
-            document.getElementById('allAc').innerText = aAc; document.getElementById('allWm').innerText = aWm; document.getElementById('allWt').innerText = aWt;
-            document.getElementById('allRev').innerText = `$${aRev.toLocaleString()}`; document.getElementById('allExp').innerText = `$${aExp.toLocaleString()}`; document.getElementById('allNet').innerText = `$${(aRev - aExp).toLocaleString()}`;
-            document.getElementById('mRev').innerText = `$${mRev.toLocaleString()}`; document.getElementById('mExp').innerText = `$${mExp.toLocaleString()}`; document.getElementById('mNet').innerText = `$${(mRev - mExp).toLocaleString()}`;
-            document.getElementById('mCounts').innerText = `冷${mAc} / 洗${mWm} / 水${mWt}`;
-            document.getElementById('yRev').innerText = `$${yRev.toLocaleString()}`; document.getElementById('yExp').innerText = `$${yExp.toLocaleString()}`; document.getElementById('yNet').innerText = `$${(yRev - yExp).toLocaleString()}`;
-            document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
-
-            renderRecords(baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime)));
-            lucide.createIcons();
-        };
-
-        function renderRecords(data) {
-            const list = document.getElementById('recordList');
-            list.innerHTML = data.map(i => {
-                let services = [];
-                const acTitle = `冷氣${i.acCount}台`;
-                if(i.acCount > 0) services.push(i.acBrand ? `${acTitle}：${i.acBrand}` : acTitle);
-                if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
-                if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
-
-                let asDisplay = "";
-                if (i.assistantDetail) {
-                    const parts = i.assistantDetail.split(',').map(s => { const [n, a] = s.split(':'); return `${n}${a}元`; });
-                    asDisplay = `小幫手：${parts.join('+')}`;
                 }
-
-                let isComp = i.status === 'completed';
-                let isPaid = i.payment === 'paid';
-
-                return `
-                <tr id="rec-${i.id}" class="${isComp ? 'completed-row' : ''}">
-                    <td data-label="預約時間" class="px-6 py-4 time-display flex justify-between items-center">
-                        <span>${i.bookingTime.replace('T',' ')}</span>
-                        ${i.passFrom ? `<span class="text-indigo-500 font-bold flex items-center gap-1"><i data-lucide="forward" class="w-3 h-3"></i>PASS: ${i.passFrom}</span>` : '<span></span>'}
-                    </td>
-                    <td data-label="客戶" class="px-6 py-4 flex items-center gap-2">
-                        <span class="font-bold text-slate-900">${i.customerName}</span>
-                        ${i.phone ? `<span class="text-[12px] text-slate-400 font-normal flex items-center gap-0.5"><i data-lucide="phone" class="w-3 h-3"></i>${i.phone}</span>` : ''}
-                    </td>
-                    <td class="px-6 py-1 text-slate-500 text-xs flex items-center gap-1.5">
-                        ${i.address ? `
-                            <span class="flex items-center gap-0.5"><i data-lucide="map-pin" class="w-3 h-3"></i>${i.address}</span>
-                            <button onclick="copyText('${i.address}', this)" class="bg-slate-100 p-1 rounded-md hover:bg-slate-200 transition-colors">
-                                <i data-lucide="copy" class="w-2.5 h-2.5"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                    <td data-label="服務明細" class="px-6 py-2 text-slate-600">
-                        <div class="leading-tight">${services.join('、')}</div>
-                        ${i.note ? `<div class="text-[11px] text-slate-400 note-display mt-0.5">備註: ${i.note}</div>` : ''}
-                        ${asDisplay ? `<div class="text-[11px] text-rose-500 font-medium mt-0.5">${asDisplay}</div>` : ''}
-                    </td>
-                    <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
-                        收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700 font-bold">淨 ${(i.totalAmount - i.assistantPay).toLocaleString()}</span>
-                    </td>
-                    <td class="px-6 py-4 action-cell">
-                        <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="${isComp ? 'check-circle' : 'circle'}" class="w-3 h-3"></i>
-                            <span>${isComp ? '已完成' : '未完成'}</span>
-                        </button>
-                        <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="${isPaid ? 'banknote' : 'clock'}" class="w-3 h-3"></i>
-                            <span>${isPaid ? '已收款' : '待收款'}</span>
-                        </button>
-                        <button onclick="downloadRec('${i.id}')" class="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100 text-[10px] font-bold" title="截圖">
-                            <i data-lucide="image" class="w-3 h-3"></i>
-                        </button>
-                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="修改">
-                            <i data-lucide="edit-2" class="w-3 h-3"></i>
-                        </button>
-                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="刪除">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i>
-                        </button>
-                    </td>
-                </tr>`;
             }).join('');
-            lucide.createIcons();
+            document.getElementById('totalSum').innerText = `TWD $${sum.toLocaleString()}`;
         }
-
-        window.scrollToRecord = (id) => {
-            const e = document.getElementById(`rec-${id}`);
-            if (e) { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); e.classList.add('highlight-target'); setTimeout(() => e.classList.remove('highlight-target'), 2000); }
-        };
-
-        window.editRec = (id) => {
-            const r = allRecords.find(x => x.id === id);
-            if(!r) return;
-            editingId = id;
-            document.getElementById('bookingTime').value = r.bookingTime;
-            document.getElementById('customerName').value = r.customerName;
-            document.getElementById('phone').value = r.phone || "";
-            document.getElementById('address').value = r.address || "";
-            document.getElementById('acCount').value = r.acCount;
-            document.getElementById('wmCount').value = r.wmCount;
-            document.getElementById('wtCount').value = r.wtCount;
-            document.getElementById('totalAmount').value = r.totalAmount;
-            document.getElementById('assistantPay').value = r.assistantPay;
-            document.getElementById('note').value = r.note;
-            document.getElementById('passFrom').value = r.passFrom || "";
-            
-            const acContainer = document.getElementById('acDetailsContainer');
-            acContainer.innerHTML = '';
-            if (r.acBrand) {
-                r.acBrand.split('+').forEach(part => {
-                    const m = part.match(/(.*)-(.*)台(?:\*(.*)元)?/);
-                    if (m) {
-                        const div = document.createElement('div');
-                        div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
-                        div.innerHTML = `<div class="col-span-5"><input type="text" value="${m[1]}" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-3"><input type="number" value="${m[2]}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div><div class="col-span-3"><input type="number" value="${m[3]||''}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>`;
-                        acContainer.appendChild(div);
-                    }
-                });
-            }
-            const asContainer = document.getElementById('assistantDetailsContainer');
-            asContainer.innerHTML = '';
-            if (r.assistantDetail) {
-                r.assistantDetail.split(',').forEach(s => { const [name, amt] = s.split(':'); addAssistantRow(name, amt); });
-            }
-            toggleAcBrand();
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-            calcFormNet();
-            showPage('formPage');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.changeMonth = (o) => { const i = document.getElementById('monthFilter'); if (!i.value) i.value = new Date().toISOString().substring(0, 7); let [y, m] = i.value.split('-').map(Number); let d = new Date(y, m - 1); d.setMonth(d.getMonth() + o); i.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; filterRecords(); };
-        window.quickFilterUnpaid = () => { document.getElementById('paymentFilter').value = 'unpaid'; filterRecords(); };
-        window.deleteRec = async (id) => { if(confirm('確定要刪除嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
-
-        // 截圖自動下載優化功能
-        window.downloadRec = (id) => {
-            const el = document.getElementById(`rec-${id}`);
-            const actionCell = el.querySelector('.action-cell');
-            const contentTds = el.querySelectorAll('td:not(.action-cell)');
-            
-            // 1. 暫時隱藏按鈕區域，並強制將卡片底色設為純白
-            actionCell.style.display = 'none';
-            el.style.setProperty('background-color', '#ffffff', 'important');
-            
-            // 將內容文字向上偏移 10px
-            contentTds.forEach(td => {
-                td.style.setProperty('position', 'relative', 'important');
-                td.style.setProperty('top', '-10px', 'important');
-            });
-            
-            // 2. 執行截圖
-            html2canvas(el, {
-                scale: 2, // 提高畫質
-                backgroundColor: "#ffffff", // 確保 canvas 外框也是白色
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // 3. 還原按鈕區域、卡片底色與文字位移
-                actionCell.style.display = 'flex';
-                el.style.removeProperty('background-color');
-                contentTds.forEach(td => {
-                    td.style.removeProperty('position');
-                    td.style.removeProperty('top');
-                });
-                
-                // 4. 將畫布轉換為 Blob 以進行「真正的」靜默下載
-                canvas.toBlob((blob) => {
-                    const name = el.querySelector('[data-label="客戶"] span').innerText;
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
-                    
-                    // 必須插入 DOM 才能在某些瀏覽器中穩定觸發 click
-                    document.body.appendChild(link);
-                    link.click();
-                    
-                    // 下載後清理
-                    setTimeout(() => {
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                }, 'image/png');
-            });
-        };
+        render();
     </script>
 </body>
 </html>
