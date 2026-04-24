@@ -136,14 +136,13 @@
         <div class="input-group">
             <label>金額 (<span id="currLabel">JPY</span>)</label>
             <div class="flex-row">
-                <input type="number" id="foreign" placeholder="0" oninput="calculate()" style="flex: 1;">
-                <button class="side-btn clear-input-btn" onclick="resetForm()">✕</button>
+                <input type="number" id="foreign" placeholder="0" oninput="calculate()" inputmode="none" style="flex: 1;">
             </div>
         </div>
 
         <div class="input-group">
             <label>折合台幣 (TWD) - 亦可反推</label>
-            <input type="number" id="twd" placeholder="0" oninput="calculateReverse()">
+            <input type="number" id="twd" placeholder="0" oninput="calculateReverse()" inputmode="none">
         </div>
 
         <div class="calc-container">
