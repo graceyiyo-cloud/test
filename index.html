@@ -377,14 +377,14 @@
                                 <div class="item-sub">${h.time.replace('T', ' ')}</div>
                             </div>
                             <div class="item-price-group">
-                                <div class="item-price">$${parseInt(h.t).toLocaleString()}</div>
-                                <div class="item-original">${h.f} ${h.curr}</div>
+                                <div class="item-price">NTD ${parseInt(h.t).toLocaleString()}</div>
+                                <div class="item-original">${h.curr} ${h.f}</div>
                             </div>
                         </div>
                     </div>`;
                 }
             }).join('');
-            document.getElementById('totalSum').innerText = `TWD $${sum.toLocaleString()}`;
+            document.getElementById('totalSum').innerText = `NTD ${sum.toLocaleString()}`;
         }
         render();
     </script>
