@@ -356,9 +356,9 @@
                 sum += parseInt(h.t);
                 if (editingId === h.id) {
                     return `<div class="history-item edit-mode">
-                        <input type="text" id="edit-note-${h.id}" value="${h.note}">
-                        <input type="text" id="edit-loc-${h.id}" value="${h.loc}">
-                        <input type="number" id="edit-f-${h.id}" value="${h.f}">
+                        <input type="text" id="edit-note-${h.id}" value="${h.note}" placeholder="請輸入備註/品名">
+                        <input type="text" id="edit-loc-${h.id}" value="${h.loc}" placeholder="請輸入地點">
+                        <input type="number" id="edit-f-${h.id}" value="${h.f}" step="any" placeholder="請輸入金額">
                         <input type="datetime-local" id="edit-time-${h.id}" value="${h.time}">
                         <div style="display:flex; gap:5px; margin-top:5px;">
                             <button class="mini-btn" style="background:var(--secondary); border:none; padding:5px 10px; border-radius:5px;" onclick="saveEdit(${h.id})">存</button>
