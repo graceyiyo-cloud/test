@@ -19,12 +19,14 @@
         html { font-size: 110%; }
 
         * { box-sizing: border-box; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px 15px 80px 15px; overflow-x: hidden; }
+        /* 縮減左右邊距讓整體離邊界更近 */
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 5px 8px 80px 8px; overflow-x: hidden; }
 
         .app-header { font-size: 1.3rem; font-weight: 900; margin: 10px 0; color: var(--primary); text-align: center; }
 
+        /* 縮減卡片內距 */
         .card { 
-            background: var(--white); padding: 15px; border-radius: 8px; 
+            background: var(--white); padding: 10px; border-radius: 8px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid var(--accent);
         }
 
@@ -63,7 +65,7 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin: 10px 0 15px 0;
-            background: #F8F9FA; /* 專業淺灰底 */
+            background: #F8F9FA; 
             padding: 10px;
             border-radius: 8px;
             border: 1px solid var(--accent);
@@ -75,7 +77,7 @@
             justify-content: center;
             border-radius: 6px;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 1.3rem; /* 加大計算機數字與按鈕字體 */
             cursor: pointer;
             transition: transform 0.1s;
             border: 1px solid rgba(0, 0, 0, 0.15);
@@ -88,11 +90,11 @@
         .btn-top { background: var(--secondary); color: var(--text); box-shadow: 0 2px 0px #D1D5DB; }
         .btn-zero { grid-column: span 2; justify-content: center; }
 
-        /* 歷史紀錄相關 */
-        .history-header { display: flex; justify-content: space-between; align-items: center; margin: 20px 5px 10px 5px; }
+        /* 歷史紀錄相關：配合邊界縮減左右邊距 */
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0; }
         .history-title { font-size: 1rem; font-weight: bold; color: #6B7280; }
         .clear-all-btn { background: transparent; border: 1px solid #9CA3AF; color: #6B7280; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
-        .history-item { padding: 12px 5px; border-bottom: 1px dashed var(--accent); }
+        .history-item { padding: 12px 0; border-bottom: 1px dashed var(--accent); }
         .item-main { display: flex; align-items: flex-start; gap: 10px; }
         .action-group { display: flex; gap: 5px; flex-shrink: 0; }
         .icon-btn { width: 28px; height: 28px; border-radius: 4px; border: none; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
@@ -119,36 +121,38 @@
     <div class="app-header">✈️ 換匯計算機</div>
 
     <div class="card">
-        <div class="input-group">
-            <label>選擇幣別</label>
-            <select id="currencySelect" onchange="changeCurrBySelect()">
-                <option value="JPY" data-rate="0.1977">日圓 JPY</option>
-                <option value="USD" data-rate="32.5">美金 USD</option>
-                <option value="KRW" data-rate="0.024">韓元 KRW</option>
-                <option value="HKD" data-rate="4.15">港幣 HKD</option>
-                <option value="THB" data-rate="0.91">泰銖 THB</option>
-                <option value="EUR" data-rate="35.5">歐元 EUR</option>
-                <option value="AUD" data-rate="21.5">澳幣 AUD</option>
-                <option value="GBP" data-rate="41.5">英鎊 GBP</option>
-            </select>
-        </div>
+        <div class="flex-row" style="align-items: flex-end; margin-bottom: 10px; gap: 8px;">
+            <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                <label>選擇幣別</label>
+                <select id="currencySelect" onchange="changeCurrBySelect()">
+                    <option value="JPY" data-rate="0.1977">日圓 JPY</option>
+                    <option value="USD" data-rate="32.5">美金 USD</option>
+                    <option value="KRW" data-rate="0.024">韓元 KRW</option>
+                    <option value="HKD" data-rate="4.15">港幣 HKD</option>
+                    <option value="THB" data-rate="0.91">泰銖 THB</option>
+                    <option value="EUR" data-rate="35.5">歐元 EUR</option>
+                    <option value="AUD" data-rate="21.5">澳幣 AUD</option>
+                    <option value="GBP" data-rate="41.5">英鎊 GBP</option>
+                </select>
+            </div>
 
-        <div class="input-group">
-            <label>手動匯率</label>
-            <div class="flex-row">
-                <input type="number" id="rate" step="0.0001" oninput="manualRateInput()" style="flex: 1;">
-                <button class="side-btn refresh-btn" onclick="fetchRate()">🔄</button>
+            <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                <label>手動匯率</label>
+                <div class="flex-row">
+                    <input type="number" id="rate" step="0.0001" oninput="manualRateInput()" style="flex: 1;">
+                    <button class="side-btn refresh-btn" onclick="fetchRate()">🔄</button>
+                </div>
             </div>
         </div>
 
         <div class="input-group">
             <label>金額 (<span id="currLabel">JPY</span>)</label>
-            <input type="text" id="foreign" placeholder="0" class="active-input" readonly>
+            <input type="text" id="foreign" placeholder="0" class="active-input" readonly style="font-size: 1.5rem; font-weight: bold;">
         </div>
 
         <div class="input-group">
             <label>折合台幣 (TWD)</label>
-            <input type="text" id="twd" placeholder="0" readonly>
+            <input type="text" id="twd" placeholder="0" readonly style="font-size: 1.5rem; font-weight: bold;">
         </div>
 
         <div class="calc-container">
