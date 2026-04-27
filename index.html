@@ -16,6 +16,8 @@
             --text: #1F2937; --accent: #D1D5DB; --white: #FFFFFF;
         }
 
+        html { font-size: 110%; }
+
         * { box-sizing: border-box; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px 15px 80px 15px; overflow-x: hidden; }
 
@@ -76,6 +78,7 @@
             font-size: 1rem;
             cursor: pointer;
             transition: transform 0.1s;
+            border: 1px solid rgba(0, 0, 0, 0.15);
         }
         .calc-btn:active { transform: translateY(2px); box-shadow: none !important; }
         
