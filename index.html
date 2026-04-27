@@ -12,8 +12,12 @@
     
     <style>
         :root { 
-            --bg: #F0F2F5; --primary: #2563EB; --secondary: #E5E7EB; 
-            --text: #1F2937; --accent: #D1D5DB; --white: #FFFFFF;
+            --bg: #F4F8F9; /* 輕柔海風藍白 */
+            --primary: #48A9A6; /* 渡假海洋藍綠 */
+            --secondary: #FFD166; /* 陽光沙灘黃 */
+            --text: #424B4B; /* 柔和深灰 */
+            --accent: #D4E4E1; /* 邊框柔和色 */
+            --white: #FFFFFF;
         }
 
         html { font-size: 110%; }
@@ -31,22 +35,22 @@
         }
 
         .input-group { margin-bottom: 10px; }
-        label { display: block; font-size: 0.8rem; margin-bottom: 4px; font-weight: bold; color: #6B7280; }
+        label { display: block; font-size: 0.8rem; margin-bottom: 4px; font-weight: bold; color: #7A8B8B; }
         
         input, select { 
             width: 100%; padding: 10px; border: 1px solid var(--accent); 
-            border-radius: 6px; font-size: 1rem; color: var(--text); background: #F9FAFB;
+            border-radius: 6px; font-size: 1rem; color: var(--text); background: #FAFCFC;
             -webkit-appearance: none;
             outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
 
-        /* 外幣專屬配色 (企業藍) */
-        #foreign { color: var(--primary); background: #F0F4FF; }
-        .active-input { border-color: var(--primary) !important; background: #FFF !important; box-shadow: inset 0 0 4px rgba(37,99,235,0.2) !important; }
+        /* 外幣專屬配色 (海洋藍綠) */
+        #foreign { color: var(--primary); background: #EAF5F5; }
+        .active-input { border-color: var(--primary) !important; background: #FFF !important; box-shadow: inset 0 0 4px rgba(72,169,166,0.2) !important; }
 
-        /* 台幣專屬配色 (沉穩金融綠) */
-        #twd { color: #059669; background: #F2FBF5; border-color: #A7F3D0; }
-        .active-input-twd { border-color: #059669 !important; background: #FFF !important; box-shadow: inset 0 0 4px rgba(5,150,105,0.2) !important; }
+        /* 台幣專屬配色 (日落陶土橘) */
+        #twd { color: #E07A5F; background: #FDF5F2; border-color: #F4D5C9; }
+        .active-input-twd { border-color: #E07A5F !important; background: #FFF !important; box-shadow: inset 0 0 4px rgba(224,122,95,0.2) !important; }
 
         .flex-row { display: flex; align-items: center; gap: 8px; }
 
@@ -55,23 +59,23 @@
             width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
             font-size: 1.1rem; cursor: pointer; flex-shrink: 0;
         }
-        .refresh-btn { background: var(--secondary); box-shadow: 0 3px 0px #D1D5DB; }
+        .refresh-btn { background: var(--secondary); box-shadow: 0 3px 0px #E5B443; }
         .side-btn:active { transform: translateY(2px); box-shadow: none; }
 
         .save-btn { 
             width: 100%; background: var(--primary); color: white; border: none; 
             padding: 14px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; 
-            box-shadow: 0 4px 0px #1D4ED8; margin-top: 5px;
+            box-shadow: 0 4px 0px #358582; margin-top: 5px;
         }
         .save-btn:active { transform: translateY(3px); box-shadow: none; }
 
-        /* 迷你計算機介面 - 專業配色 */
+        /* 迷你計算機介面 - 旅行輕鬆風格 */
         .calc-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin: 10px 0 15px 0;
-            background: #F8F9FA; 
+            background: #FAFDFC; 
             padding: 10px;
             border-radius: 8px;
             border: 1px solid var(--accent);
@@ -90,28 +94,28 @@
         }
         .calc-btn:active { transform: translateY(2px); box-shadow: none !important; }
         
-        /* 專業配色分類 */
-        .btn-num { background: var(--white); color: var(--text); box-shadow: 0 2px 0px #D1D5DB; }
-        .btn-op { background: var(--primary); color: white; box-shadow: 0 2px 0px #1D4ED8; }
-        .btn-top { background: var(--secondary); color: var(--text); box-shadow: 0 2px 0px #D1D5DB; }
+        /* 輕鬆配色分類 */
+        .btn-num { background: var(--white); color: var(--text); box-shadow: 0 2px 0px var(--accent); }
+        .btn-op { background: var(--primary); color: white; box-shadow: 0 2px 0px #358582; }
+        .btn-top { background: var(--secondary); color: var(--text); box-shadow: 0 2px 0px #E5B443; }
         .btn-zero { grid-column: span 2; justify-content: center; }
 
         /* 歷史紀錄相關：配合邊界縮減左右邊距 */
         .history-header { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px 0; }
-        .history-title { font-size: 1rem; font-weight: bold; color: #6B7280; }
-        .clear-all-btn { background: transparent; border: 1px solid #9CA3AF; color: #6B7280; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
+        .history-title { font-size: 1rem; font-weight: bold; color: #7A8B8B; }
+        .clear-all-btn { background: transparent; border: 1px solid #B0C4C4; color: #7A8B8B; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
         .history-item { padding: 12px 0; border-bottom: 1px dashed var(--accent); }
         .item-main { display: flex; align-items: flex-start; gap: 10px; }
         .action-group { display: flex; gap: 5px; flex-shrink: 0; }
         .icon-btn { width: 28px; height: 28px; border-radius: 4px; border: none; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
-        .btn-edit-icon { background: #F3F4F6; color: #4B5563; }
-        .btn-del-icon { background: #FEF2F2; color: #EF4444; }
+        .btn-edit-icon { background: #FFF8E7; color: #D4A373; }
+        .btn-del-icon { background: #FDF5F2; color: #E07A5F; }
         .item-info { flex: 1; min-width: 0; }
         .item-title { font-size: 0.95rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .item-sub { font-size: 0.7rem; color: #9CA3AF; margin-top: 2px; }
+        .item-sub { font-size: 0.7rem; color: #A4B5B5; margin-top: 2px; }
         .item-price-group { text-align: right; flex-shrink: 0; }
         .item-price { font-size: 1.05rem; font-weight: 900; color: var(--primary); }
-        .item-original { font-size: 0.7rem; color: #9CA3AF; }
+        .item-original { font-size: 0.7rem; color: #A4B5B5; }
         .edit-mode input { margin-bottom: 6px; padding: 6px; font-size: 0.85rem; border: 1px solid var(--accent); border-radius: 4px; }
 
         .total-bar { 
@@ -203,7 +207,7 @@
     <div id="historyList"></div>
 
     <div class="total-bar">
-        <span style="font-weight: bold; color: #6B7280; font-size: 0.85rem;">累積花費</span>
+        <span style="font-weight: bold; color: #7A8B8B; font-size: 0.85rem;">累積花費</span>
         <span id="totalSum" style="font-size: 1.3rem; font-weight: 900; color: var(--primary);">0</span>
     </div>
 
@@ -392,7 +396,7 @@
                                 <button class="icon-btn btn-del-icon" onclick="deleteItem(${h.id})">✕</button>
                             </div>
                             <div class="item-info">
-                                <div class="item-title">${h.note}${h.loc ? `<span style="font-size:0.7rem; color:#9CA3AF; font-weight:normal;"> @ ${h.loc}</span>` : ''}</div>
+                                <div class="item-title">${h.note}${h.loc ? `<span style="font-size:0.7rem; color:#A4B5B5; font-weight:normal;"> @ ${h.loc}</span>` : ''}</div>
                                 <div class="item-sub">${h.time.replace('T', ' ')}</div>
                             </div>
                             <div class="item-price-group">
