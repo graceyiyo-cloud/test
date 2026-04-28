@@ -23,13 +23,13 @@
         html { font-size: 110%; }
         body { 
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; 
-            background-color: #ffffff !important; /* 用戶要求底圖改為白色 */
+            background-color: #ffffff !important;
         }
         .hidden { display: none; }
-        /* 提升已完成狀態的視覺對比度，依用戶要求不要左邊的線 */
+        /* 恢復已完成狀態的視覺對比度與左側灰藍色線條 */
         .completed-row { 
             background-color: #f1f5f9 !important; 
-            border-left: none !important; /* 不要左邊那條線 */
+            border-left: 5px solid #64748b !important; 
             opacity: 0.95; 
         }
         
@@ -44,32 +44,33 @@
         /* 全裝置統一使用卡片式佈局 - 針對手機版面進行清晰度優化 */
         thead { display: none; }
         tr { 
-            display: block; margin-bottom: 0.5rem; /* 客戶卡片間距近一點 */
+            display: block; margin-bottom: 0.5rem; 
             border-radius: 12px; background: white;
-            padding: 1rem; /* 卡片 padding 緊湊設定 */
+            padding: 1rem; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #cbd5e1;
             transition: all 0.3s ease;
         }
         /* 增加儲存格的上下空間，並加深基礎文字顏色 */
         td { 
             display: block; width: 100%; 
-            padding: 0.15rem 0 !important; /* 資訊行距近一點，精確匹配圖一 */
+            padding: 0.15rem 0 !important; 
             border: none !important; text-align: left; color: #334155; 
         }
         
         /* 客戶名稱加大加粗，增加對比 */
         td[data-label="客戶"] { 
             font-weight: 800; font-size: 1.2rem; color: #0f172a; 
-            padding-bottom: 0.1rem !important; /* 名字跟金額間距縮小 */
+            padding-bottom: 0.1rem !important; 
         }
-        /* 金額帳目增加明顯分隔線與粗體 */
+        /* 金額帳目增加明顯分隔線與粗體，並增加與上方文字的距離 */
         td[data-label="金額帳目"] { 
-            padding-top: 0.5rem !important; margin-top: 0.25rem;
+            padding-top: 0.75rem !important; 
+            margin-top: 0.75rem; 
             border-top: 2px dashed #cbd5e1 !important; color: #1e293b; font-size: 0.9rem; font-weight: 700;
         }
         td.action-cell {
             border-top: 1px solid #e2e8f0 !important; 
-            margin-top: 0.5rem; /* 按鈕區跟金額間距縮小 */
+            margin-top: 0.5rem; 
             padding-top: 0.5rem !important; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
         }
 
@@ -77,7 +78,7 @@
         .time-display { 
             font-size: 0.85rem; color: #475569; font-weight: 600; 
             border-bottom: 1px solid #f1f5f9; 
-            padding-bottom: 0.25rem !important; /* 時間跟名字間距縮小，精確匹配圖一 */
+            padding-bottom: 0.25rem !important; 
             margin-bottom: 0.1rem; 
         }
 
@@ -970,14 +971,19 @@
             const actionCell = el.querySelector('.action-cell');
             const contentTds = el.querySelectorAll('td:not(.action-cell)');
             
-            // 1. 暫時隱藏按鈕區域，並強制將卡片底色設為純白
-            actionCell.style.display = 'none';
-            el.style.setProperty('background-color', '#ffffff', 'important');
+            // 尋找要隱藏的特定圖示與按鈕 (電話、地點、複製按鈕)
+            const iconsToHide = el.querySelectorAll('i[data-lucide="phone"], i[data-lucide="map-pin"], button[onclick^="copyText"]');
             
-            // 將內容文字向上偏移 20px (依前次建議)
+            // 1. 隱藏按鈕區、圖示，處理底色與邊框
+            actionCell.style.display = 'none';
+            iconsToHide.forEach(icon => icon.style.display = 'none');
+            el.style.setProperty('background-color', '#ffffff', 'important');
+            el.style.setProperty('border-left', 'none', 'important'); // 截圖時隱藏左側線條
+            
+            // 將內容文字向上偏移 10px (依需求改回 -10px)
             contentTds.forEach(td => {
                 td.style.setProperty('position', 'relative', 'important');
-                td.style.setProperty('top', '-20px', 'important');
+                td.style.setProperty('top', '-10px', 'important');
             });
             
             // 2. 執行截圖
@@ -987,15 +993,17 @@
                 useCORS: true,
                 logging: false
             }).then(canvas => {
-                // 3. 還原按鈕區域、卡片底色與文字位移
+                // 3. 還原所有修改的樣式
                 actionCell.style.display = 'flex';
+                iconsToHide.forEach(icon => icon.style.removeProperty('display'));
                 el.style.removeProperty('background-color');
+                el.style.removeProperty('border-left');
                 contentTds.forEach(td => {
                     td.style.removeProperty('position');
                     td.style.removeProperty('top');
                 });
                 
-                // 4. 將畫布轉換為 Blob 以進行「真正的」靜默下載
+                // 4. 將畫布轉換為 Blob 以進行靜默下載
                 canvas.toBlob((blob) => {
                     const name = el.querySelector('[data-label="客戶"] span').innerText;
                     const url = URL.createObjectURL(blob);
@@ -1003,11 +1011,9 @@
                     link.href = url;
                     link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
                     
-                    // 必須插入 DOM 才能在某些瀏覽器中穩定觸發 click
                     document.body.appendChild(link);
                     link.click();
                     
-                    // 下載後清理
                     setTimeout(() => {
                         document.body.removeChild(link);
                         URL.revokeObjectURL(url);
