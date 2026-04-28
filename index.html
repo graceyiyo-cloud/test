@@ -970,6 +970,7 @@
             const el = document.getElementById(`rec-${id}`);
             const actionCell = el.querySelector('.action-cell');
             const contentTds = el.querySelectorAll('td:not(.action-cell)');
+            const customerTd = el.querySelector('td[data-label="客戶"]'); // 鎖定客戶名稱欄位
             
             // 使用渲染後的 SVG 類名 (.lucide-phone, .lucide-map-pin) 才能確實抓到圖示
             const iconsToHide = el.querySelectorAll('.lucide-phone, .lucide-map-pin, button[onclick^="copyText"]');
@@ -985,6 +986,11 @@
                 td.style.setProperty('position', 'relative', 'important');
                 td.style.setProperty('top', '-10px', 'important');
             });
+
+            // 特別針對客戶名稱賦予向上拉近的負間距，這會自然將底下所有元素一併往上帶
+            if (customerTd) {
+                customerTd.style.setProperty('margin-top', '-10px', 'important');
+            }
             
             // 2. 執行截圖
             html2canvas(el, {
@@ -1002,6 +1008,9 @@
                     td.style.removeProperty('position');
                     td.style.removeProperty('top');
                 });
+                if (customerTd) {
+                    customerTd.style.removeProperty('margin-top');
+                }
                 
                 // 4. 將畫布轉換為 Blob 以進行靜默下載
                 canvas.toBlob((blob) => {
