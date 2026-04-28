@@ -288,7 +288,7 @@
                                 </h3>
                                 <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
                             </div>
-                            <div id="unpaidList" class="space-y-1 text-[11px] text-amber-900"></div>
+                            <div id="unpaidList" class="space-y-1.5 text-amber-900"></div>
                         </div>
                     </div>
                 </div>
@@ -809,7 +809,7 @@
 
             if (mUnpaidDetails.length > 0) {
                 document.getElementById('unpaidSection').classList.remove('hidden');
-                document.getElementById('unpaidList').innerHTML = mUnpaidDetails.map(item => `<div class="flex justify-between py-1"><button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-medium">• ${item.name}</button><span class="font-bold">$${item.amount.toLocaleString()}</span></div>`).join('');
+                document.getElementById('unpaidList').innerHTML = mUnpaidDetails.map(item => `<div class="flex justify-between py-1.5 items-center"><button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-bold text-[14px]">• ${item.name}</button><span class="font-bold text-[15px]">$${item.amount.toLocaleString()}</span></div>`).join('');
             } else { document.getElementById('unpaidSection').classList.add('hidden'); }
 
             document.getElementById('allAc').innerText = aAc; document.getElementById('allWm').innerText = aWm; document.getElementById('allWt').innerText = aWt;
