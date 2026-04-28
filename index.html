@@ -971,8 +971,8 @@
             const actionCell = el.querySelector('.action-cell');
             const contentTds = el.querySelectorAll('td:not(.action-cell)');
             
-            // 尋找要隱藏的特定圖示與按鈕 (電話、地點、複製按鈕)
-            const iconsToHide = el.querySelectorAll('i[data-lucide="phone"], i[data-lucide="map-pin"], button[onclick^="copyText"]');
+            // 使用渲染後的 SVG 類名 (.lucide-phone, .lucide-map-pin) 才能確實抓到圖示
+            const iconsToHide = el.querySelectorAll('.lucide-phone, .lucide-map-pin, button[onclick^="copyText"]');
             
             // 1. 隱藏按鈕區、圖示，處理底色與邊框
             actionCell.style.display = 'none';
@@ -980,7 +980,7 @@
             el.style.setProperty('background-color', '#ffffff', 'important');
             el.style.setProperty('border-left', 'none', 'important'); // 截圖時隱藏左側線條
             
-            // 將內容文字向上偏移 10px (依需求改回 -10px)
+            // 將內容文字向上偏移改為 -10px
             contentTds.forEach(td => {
                 td.style.setProperty('position', 'relative', 'important');
                 td.style.setProperty('top', '-10px', 'important');
