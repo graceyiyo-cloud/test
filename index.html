@@ -1,1035 +1,1010 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>冷氣清洗紀錄</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0D1117">
+  <title>換匯計算機</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0D1117;
+      --card: #161B22;
+      --card2: #1C2128;
+      --card3: #21262D;
+      --border: #30363D;
+      --accent: #00D4AA;
+      --accent-dim: rgba(0,212,170,0.12);
+      --accent-glow: rgba(0,212,170,0.25);
+      --danger: #FF6B6B;
+      --danger-dim: rgba(255,107,107,0.12);
+      --warn: #F0A500;
+      --text: #F0F6FC;
+      --text-2: #8B949E;
+      --text-3: #484F58;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
 
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="冷氣紀錄">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#475569">
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
 
-    <link rel="apple-touch-icon" href="./icon.png">
-    
-    <link rel="manifest" href='data:application/manifest+json,{"name":"冷氣清洗紀錄","short_name":"冷氣紀錄","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#475569","icons":[{"src":"./icon.png","sizes":"512x512","type":"image/png"}]}'>
+    html, body {
+      height: 100%;
+      height: 100dvh;
+    }
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        /* 整體字體加大約 10% */
-        html { font-size: 110%; }
-        body { 
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; 
-            background-color: #ffffff !important;
-        }
-        .hidden { display: none; }
-        /* 恢復已完成狀態的視覺對比度與左側灰藍色線條 */
-        .completed-row { 
-            background-color: #f1f5f9 !important; 
-            border-left: 5px solid #64748b !important; 
-            opacity: 0.95; 
-        }
-        
-        .note-display { white-space: pre-wrap; word-break: break-all; display: block; line-height: 1.3; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      max-width: 430px;
+      margin: 0 auto;
+      position: relative;
+    }
 
-        @keyframes highlight-fade {
-            0% { background-color: #fef08a; transform: scale(1.02); }
-            100% { background-color: white; transform: scale(1); }
-        }
-        .highlight-target { animation: highlight-fade 2s ease-out; z-index: 10; }
+    /* ─── HEADER ─── */
+    .header {
+      padding: 14px 18px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--card);
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #0099CC);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; }
+    .header-title em { font-style: normal; color: var(--accent); }
+    .update-badge {
+      font-size: 10px;
+      color: var(--text-2);
+      background: var(--card2);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
 
-        /* 全裝置統一使用卡片式佈局 - 針對手機版面進行清晰度優化 */
-        thead { display: none; }
-        tr { 
-            display: block; margin-bottom: 0.5rem; 
-            border-radius: 12px; background: white;
-            padding: 1rem; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #cbd5e1;
-            transition: all 0.3s ease;
-        }
-        /* 增加儲存格的上下空間，並加深基礎文字顏色 */
-        td { 
-            display: block; width: 100%; 
-            padding: 0.15rem 0 !important; 
-            border: none !important; text-align: left; color: #334155; 
-        }
-        
-        /* 客戶名稱加大加粗，增加對比 */
-        td[data-label="客戶"] { 
-            font-weight: 800; font-size: 1.2rem; color: #0f172a; 
-            padding-bottom: 0.1rem !important; 
-        }
-        /* 金額帳目增加明顯分隔線與粗體，並增加與上方文字的距離 */
-        td[data-label="金額帳目"] { 
-            padding-top: 0.75rem !important; 
-            margin-top: 0.75rem; 
-            border-top: 2px dashed #cbd5e1 !important; color: #1e293b; font-size: 0.9rem; font-weight: 700;
-        }
-        td.action-cell {
-            border-top: 1px solid #e2e8f0 !important; 
-            margin-top: 0.5rem; 
-            padding-top: 0.5rem !important; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
-        }
+    /* ─── TAB CONTENT ─── */
+    .tab-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+    .page { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+    .page.active { display: flex; }
 
-        /* 預約時間增加底線做為頭部資訊區隔 */
-        .time-display { 
-            font-size: 0.85rem; color: #475569; font-weight: 600; 
-            border-bottom: 1px solid #f1f5f9; 
-            padding-bottom: 0.25rem !important; 
-            margin-bottom: 0.1rem; 
-        }
+    /* ─── CURRENCY CHIPS ─── */
+    .currency-scroll {
+      padding: 12px 14px;
+      overflow-x: auto;
+      display: flex;
+      gap: 7px;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--card);
+    }
+    .currency-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 7px 12px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--card2);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .chip.active { border-color: var(--accent); background: var(--accent-dim); }
+    .chip .flag { font-size: 18px; line-height: 1.2; }
+    .chip .code { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+    .chip .name { font-size: 9px; color: var(--text-2); }
 
-        @media (min-width: 1024px) {
-            .desktop-half-width { max-width: 50% !important; margin-left: auto; margin-right: auto; }
-        }
+    /* ─── RATE BAR ─── */
+    .rate-bar {
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .rate-label { font-size: 11px; color: var(--text-2); white-space: nowrap; letter-spacing: 0.3px; }
+    .rate-input {
+      flex: 1;
+      background: var(--card3);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+      outline: none;
+      text-align: right;
+      min-width: 0;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .rate-input:focus { border-color: var(--accent); }
+    .rate-unit { font-size: 11px; color: var(--text-2); white-space: nowrap; }
+    .refresh-btn {
+      background: none; border: none;
+      color: var(--text-2);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 2px;
+      border-radius: 6px;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    .refresh-btn:active { color: var(--accent); }
+    .spinning { animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* 小幫手統計浮窗樣式 */
-        #assistantSummaryModal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 100; width: 90%; max-width: 350px;
-        }
+    /* ─── AMOUNT FIELDS ─── */
+    .amounts {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .amount-field {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 13px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+    .amount-field.active-field { border-color: var(--accent); background: var(--accent-dim); }
+    .amount-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-2); margin-bottom: 2px;
+    }
+    .amount-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .amount-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: -1px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .amount-value.dim { color: var(--text-3); }
+    .amount-currency { font-size: 12px; font-weight: 700; color: var(--text-2); }
+    .cursor-indicator {
+      display: none;
+      width: 2px; height: 20px;
+      background: var(--accent);
+      border-radius: 1px;
+      animation: blink 1s step-end infinite;
+      flex-shrink: 0;
+    }
+    .active-field .cursor-indicator { display: block; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        /* Lucide 圖示統一微調 */
-        .lucide { width: 14px; height: 14px; stroke-width: 2; display: inline-block; vertical-align: -2px; }
-        .btn-icon { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
-    </style>
+    /* ─── NUMPAD ─── */
+    .numpad {
+      padding: 6px 12px 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .np {
+      background: var(--card);
+      border: none;
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 500;
+      height: 54px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, transform 0.08s;
+      position: relative; overflow: hidden;
+    }
+    .np:active { background: var(--card3); transform: scale(0.95); }
+    .np.np-func { background: var(--card2); color: var(--text-2); font-size: 16px; }
+    .np.np-func:active { background: var(--card3); }
+    .np.np-add {
+      grid-column: span 2;
+      background: var(--accent);
+      color: #0A0E14;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+    .np.np-add:active { background: #00B894; transform: scale(0.97); }
+
+    /* ─── BOTTOM NAV ─── */
+    .bottom-nav {
+      display: flex;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      flex-shrink: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .nav-btn {
+      flex: 1;
+      background: none; border: none;
+      color: var(--text-3);
+      padding: 10px 8px 12px;
+      cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      transition: color 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; }
+    .nav-btn span { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
+
+    /* ─── RECORDS PAGE ─── */
+    .records-toolbar {
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--card);
+    }
+    .records-title { font-size: 15px; font-weight: 700; }
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.3px;
+    }
+    .clear-btn:active { background: var(--danger-dim); }
+
+    .records-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      overscroll-behavior: contain;
+    }
+    .records-list::-webkit-scrollbar { width: 3px; }
+    .records-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .rec-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 11px 13px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+    .rec-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px;
+      margin-bottom: 5px;
+    }
+    .rec-desc { font-size: 14px; font-weight: 600; line-height: 1.3; flex: 1; }
+    .rec-actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .rec-action {
+      background: none; border: none;
+      padding: 3px 6px; border-radius: 7px;
+      font-size: 14px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .rec-action:active { background: var(--card2); }
+    .rec-meta {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      font-size: 10px; color: var(--text-2);
+      margin-bottom: 7px;
+    }
+    .rec-amounts { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .rec-foreign { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
+    .rec-arrow { color: var(--text-3); font-size: 12px; }
+    .rec-twd { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; color: var(--accent); }
+
+    .records-total {
+      margin: 6px 14px 10px;
+      padding: 13px 16px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-glow);
+      border-radius: 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .total-label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+    .total-count { font-size: 10px; color: var(--text-3); }
+    .total-amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px; font-weight: 700; color: var(--accent);
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--text-3); gap: 10px; padding: 20px;
+    }
+    .empty-icon { font-size: 48px; opacity: 0.4; }
+    .empty-state p { font-size: 13px; text-align: center; }
+
+    /* ─── BOTTOM SHEET ─── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .sheet {
+      background: var(--card);
+      border-radius: 22px 22px 0 0;
+      padding: 8px 20px 28px;
+      width: 100%;
+      max-height: 90dvh;
+      overflow-y: auto;
+      transform: translateY(40px);
+      transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    }
+    .overlay.show .sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px auto 16px;
+    }
+    .sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+    .sheet-field { margin-bottom: 13px; }
+    .sheet-lbl { font-size: 10px; color: var(--text-2); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
+    .sheet-inp {
+      width: 100%;
+      background: var(--card2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .sheet-inp:focus { border-color: var(--accent); }
+    .amount-preview {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text-2);
+    }
+    .amount-preview strong { color: var(--accent); }
+    .sheet-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .sh-cancel {
+      flex: 1;
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text-2);
+      font-size: 15px; font-weight: 500; padding: 13px;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+    }
+    .sh-confirm {
+      flex: 2;
+      background: var(--accent); border: none;
+      border-radius: 12px; color: #0A0E14;
+      font-size: 15px; font-weight: 700; padding: 13px;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+    }
+    .sh-confirm:active { background: #00B894; }
+    .sh-cancel:active { background: var(--card3); }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--card3); border: 1px solid var(--border);
+      color: var(--text); padding: 9px 18px;
+      border-radius: 20px; font-size: 13px;
+      z-index: 999; opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── COLOR CODED CURRENCY TAG ─── */
+    .rec-currency-tag {
+      display: inline-block;
+      font-size: 9px; font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-glow);
+    }
+  </style>
 </head>
-<body class="bg-[#faf9f6] min-h-screen text-slate-700">
+<body>
 
-    <section id="authPage" class="fixed inset-0 z-[100] bg-slate-100 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-sm text-center">
-            <div class="w-16 h-16 bg-slate-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <i data-lucide="lock" class="text-white w-8 h-8"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">系統登入</h2>
-            <p class="text-slate-400 text-sm mb-8">請使用授權的 Google 帳號進行登入</p>
-            
-            <button onclick="handleLogin()" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-4 rounded-xl border border-slate-200 shadow-sm transition-all active:scale-95 mb-4">
-                <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_128dp.png" class="w-5 h-5">
-                Google 帳號登入
-            </button>
-            <p id="authError" class="text-rose-500 text-xs font-bold hidden whitespace-pre-wrap"></p>
-        </div>
-    </section>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">💱</div>
+    <div class="header-title">換<em>匯</em>計算機</div>
+  </div>
+  <div class="update-badge" id="updateBadge">匯率更新中…</div>
+</div>
 
-    <div id="mainApp" class="hidden">
-        <nav class="bg-slate-600 text-white py-2 px-4 shadow-md sticky top-0 z-50">
-            <div class="container mx-auto flex justify-between items-center">
-                <h1 class="text-lg font-bold tracking-widest">冷氣清洗紀錄</h1>
-                <div class="flex space-x-2">
-                    <button onclick="showPage('listPage')" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="list" class="btn-icon"></i>清單
-                    </button>
-                    <button onclick="prepareNewForm()" class="flex items-center px-3 py-1.5 bg-slate-500 hover:bg-slate-400 border border-slate-400/50 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="pen-line" class="btn-icon"></i>填寫
-                    </button>
-                    <button onclick="handleLogout()" class="flex items-center px-3 py-1.5 bg-slate-700 hover:bg-rose-600 border border-slate-500 rounded-lg transition-all text-[0.8rem] font-medium active:scale-95 whitespace-nowrap">
-                        <i data-lucide="log-out" class="btn-icon"></i>登出
-                    </button>
-                </div>
-            </div>
-        </nav>
+<!-- TAB CONTENT -->
+<div class="tab-content">
 
-        <div class="container mx-auto px-1.5 md:px-4 py-6">
-            
-            <section id="formPage" class="hidden max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
-                <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                    <i data-lucide="clipboard-list" class="w-6 h-6"></i> 新增紀錄
-                </h2>
-                <form id="recordForm" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">預約日期時間</label>
-                            <input type="datetime-local" id="bookingTime" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">客戶姓名</label>
-                            <input type="text" id="customerName" required class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">連絡電話</label>
-                            <input type="tel" id="phone" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">施工地址</label>
-                            <input type="text" id="address" class="block w-full border-slate-200 rounded-xl p-3 border text-sm outline-none">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">冷氣台數</label>
-                            <input type="number" id="acCount" value="0" min="0" onfocus="this.select()" oninput="handleAcCountChange()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">洗衣機</label>
-                            <input type="number" id="wmCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">水塔</label>
-                            <input type="number" id="wtCount" value="0" min="0" onfocus="this.select()" class="w-full rounded-lg p-2 border border-slate-200 text-sm font-bold">
-                        </div>
-                    </div>
+  <!-- ══ CALC PAGE ══ -->
+  <div class="page active" id="page-calc">
 
-                    <div id="acBrandSection" class="hidden space-y-2 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-emerald-600 uppercase tracking-wider"><i data-lucide="snowflake" class="lucide mr-1"></i> 冷氣明細</label>
-                            <button type="button" onclick="addAcDetailRow()" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded shadow-sm">+ 增加明細</button>
-                        </div>
-                        <div id="acDetailsContainer" class="space-y-2"></div>
-                    </div>
+    <!-- Currency Chips -->
+    <div class="currency-scroll" id="chipScroll"></div>
 
-                    <div class="space-y-2 bg-rose-50/30 p-4 rounded-xl border border-rose-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-rose-600 uppercase tracking-wider"><i data-lucide="users" class="lucide mr-1"></i> 小幫手明細</label>
-                            <button type="button" onclick="addAssistantRow()" class="text-[10px] bg-rose-500 text-white px-2 py-1 rounded shadow-sm">+ 增加小幫手</button>
-                        </div>
-                        <div id="assistantDetailsContainer" class="space-y-2"></div>
-                        <div id="quickAssistantTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-rose-100/50"></div>
-                    </div>
-
-                    <div class="space-y-2 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block text-xs font-bold text-indigo-600 uppercase tracking-wider"><i data-lucide="forward" class="lucide mr-1"></i> PASS 案件設定</label>
-                        </div>
-                        <div class="flex gap-2">
-                            <input type="text" id="passFrom" list="passNamesList" placeholder="輸入 PASS 來源對象名稱" class="flex-1 rounded-lg p-2 border border-indigo-100 text-sm" oninput="updateQuickPassTags()">
-                        </div>
-                        <div id="quickPassTags" class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-indigo-100/50"></div>
-                    </div>
-
-                    <datalist id="assistantNamesList"></datalist>
-                    <datalist id="passNamesList"></datalist>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">總收費</label><input type="number" id="totalAmount" required onfocus="this.select()" oninput="calcFormNet()" class="w-full border-slate-200 rounded-xl p-3 border font-bold"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">小幫手總支出</label><input type="number" id="assistantPay" value="0" readonly class="w-full bg-slate-50 border-slate-200 rounded-xl p-3 border font-bold text-rose-500"></div>
-                        <div><label class="block text-xs font-bold text-emerald-600 uppercase mb-1">預估淨利</label><input type="text" id="formNetProfit" value="$0" readonly class="w-full bg-emerald-50 border-emerald-100 rounded-xl p-3 border font-bold text-emerald-700"></div>
-                    </div>
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">其他備註</label><textarea id="note" rows="3" class="w-full border-slate-200 rounded-xl p-3 border text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none"></textarea></div>
-                    
-                    <div class="flex gap-3">
-                        <button type="button" onclick="showPage('listPage')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-xl transition-all active:scale-[0.98] border border-slate-200/50">返回清單</button>
-                        <button type="submit" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-[0.98]">確認儲存紀錄</button>
-                    </div>
-                </form>
-            </section>
-
-            <section id="listPage" class="desktop-half-width">
-                
-                <div class="bg-slate-700 p-4 rounded-2xl shadow-sm border-l-4 border-slate-400 text-white flex items-center mb-4 relative">
-                    <div class="flex flex-col text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-4 border-r border-slate-600 pr-3 text-center leading-tight">
-                        <span>全</span><span>部</span><span>年</span><span>份</span><span>總</span><span>累</span><span>計</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="grid grid-cols-3 gap-2 text-center border-b border-slate-600 pb-2 mb-2">
-                            <div><p class="text-[10px] text-slate-400">冷氣</p><p class="text-xl font-bold" id="allAc">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">洗衣機</p><p class="text-xl font-bold" id="allWm">0</p></div>
-                            <div><p class="text-[10px] text-slate-400">水塔</p><p class="text-xl font-bold" id="allWt">0</p></div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 text-center items-end">
-                            <div><p class="text-[10px] text-slate-400 mb-1">總收入</p><p class="text-sm font-bold leading-tight" id="allRev">$0</p></div>
-                            <div class="relative group">
-                                <p class="text-[10px] text-slate-400 mb-1">小幫手</p>
-                                <button onclick="showAllAssistantDetails()" class="text-sm font-bold text-rose-300 underline decoration-rose-300/40 leading-tight p-0 inline-block bg-transparent border-none" id="allExp">$0</button>
-                            </div>
-                            <div><p class="text-[10px] text-emerald-300 mb-1">淨實收</p><p class="text-sm font-bold text-emerald-300 leading-tight" id="allNet">$0</p></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="assistantSummaryOverlay" onclick="toggleAssistantModal()" class="hidden fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[90]"></div>
-                <div id="assistantSummaryModal" class="hidden bg-white rounded-2xl shadow-2xl p-5 border border-slate-200">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                            <i data-lucide="handshake" class="w-4 h-4"></i> <span id="assistantModalTitle">小幫手薪資總計 (全期)</span>
-                        </h4>
-                        <button onclick="toggleAssistantModal()" class="text-slate-400 text-xl hover:text-slate-600">&times;</button>
-                    </div>
-                    <div id="assistantSummaryList" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
-                    <div class="mt-4 pt-3 border-t text-[10px] text-slate-400 text-center">
-                        點擊背景或叉叉可關閉
-                    </div>
-                </div>
-
-                <div class="space-y-3 mb-4">
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-slate-400">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest" id="yearTitle">年度統計</h3>
-                                <div class="text-[10px] text-slate-400">年度數量: <span class="text-slate-700 font-bold" id="yCounts">冷0 / 洗0 / 水0</span></div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                                <div><p class="text-[10px] text-slate-400 mb-1">年度總營收</p><p class="text-lg font-bold text-slate-800" id="yRev">$0</p></div>
-                                <div><p class="text-[10px] text-slate-400 mb-1">年度支出</p><button onclick="showYearAssistantDetails()" class="text-lg font-bold text-rose-400 underline decoration-rose-400/40 leading-tight p-0 inline-block bg-transparent border-none" id="yExp">$0</button></div>
-                                <div><p class="text-[10px] text-emerald-300 font-bold mb-1">年度淨利</p><p class="text-lg font-bold text-emerald-700" id="yNet">$0</p></div>
-                            </div>
-
-                            <div id="passYearSummarySection" class="mt-3 pt-3 border-t border-indigo-100 bg-indigo-50/20 -mx-5 px-3 hidden">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (年度)
-                                    </h3>
-                                    <span class="text-[10px] text-indigo-400 font-bold" id="passYearTotal">總額 $0</span>
-                                </div>
-                                <div id="passYearSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-emerald-50/40 p-5 rounded-2xl shadow-sm border-l-4 border-emerald-500">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-emerald-600 text-[10px] font-bold uppercase tracking-widest" id="monthTitle">本月統計</h3>
-                                <div class="text-[10px] text-emerald-600/70">月度數量: <span class="text-emerald-800 font-bold" id="mCounts">冷0 / 洗0 / 水0</span></div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月總營收</p><p class="text-lg font-bold text-emerald-900" id="mRev">$0</p></div>
-                                <div><p class="text-[10px] text-emerald-600/70 mb-1">本月支出</p><button onclick="showMonthAssistantDetails()" class="text-lg font-bold text-rose-500 underline decoration-rose-500/40 leading-tight p-0 inline-block bg-transparent border-none" id="mExp">$0</button></div>
-                                <div><p class="text-[10px] text-emerald-600 font-bold mb-1">本月淨利</p><p class="text-lg font-bold text-emerald-700" id="mNet">$0</p></div>
-                            </div>
-                            
-                            <div id="passSummarySection" class="mt-3 pt-3 border-t border-emerald-100 bg-white/40 -mx-5 px-3 hidden">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-emerald-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <i data-lucide="forward" class="w-3 h-3"></i> PASS 來源統計 (月度)
-                                    </h3>
-                                    <span class="text-[10px] text-emerald-600 font-bold" id="passMonthTotal">總額 $0</span>
-                                </div>
-                                <div id="passSummaryList" class="grid grid-cols-1 gap-2 pb-2"></div>
-                            </div>
-                        </div>
-
-                        <div id="unpaidSection" class="border-t border-amber-200 mt-4 pt-4 -mx-5 px-5 pb-2 hidden">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="text-amber-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                                    <i data-lucide="alert-circle" class="w-3 h-3"></i> 本月待收款明細 (點擊姓名跳轉)
-                                </h3>
-                                <button onclick="quickFilterUnpaid()" class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md hover:bg-amber-200 transition-colors font-bold">查看全部待收</button>
-                            </div>
-                            <div id="unpaidList" class="space-y-1.5 text-amber-900"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
-                    <div class="flex flex-col md:flex-row gap-3">
-                        <div class="flex-[3] relative">
-                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                                <i data-lucide="search" class="w-4 h-4"></i>
-                            </div>
-                            <input type="text" id="searchKeyword" oninput="filterRecords()" placeholder="搜尋姓名、地址、機型、PASS..." class="w-full bg-slate-50 border-none rounded-xl p-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-slate-100">
-                        </div>
-                        <div class="flex-[3] flex items-center gap-1">
-                            <button onclick="changeMonth(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                            <input type="month" id="monthFilter" onchange="filterRecords()" class="flex-1 bg-slate-50 border-none rounded-xl p-2 text-sm outline-none text-center font-medium h-[42px]">
-                            <button onclick="changeMonth(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                            <button onclick="clearMonthFilter()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl transition-all leading-none" title="清除年月篩選"><i data-lucide="calendar-x" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <select id="typeFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">全部品項</option><option value="ac">冷氣</option><option value="wm">洗衣機</option><option value="wt">水塔</option></select>
-                        <select id="statusFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">施工進度</option><option value="completed">已完成</option><option value="pending">待處理</option></select>
-                        <select id="paymentFilter" onchange="filterRecords()" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] outline-none"><option value="all">帳務狀態</option><option value="paid">已收款</option><option value="unpaid">待收款</option></select>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto"><table class="min-w-full text-sm"><tbody id="recordList" class="divide-y divide-slate-100"></tbody></table></div>
-            </section>
-        </div>
+    <!-- Rate Bar -->
+    <div class="rate-bar">
+      <span class="rate-label">即期匯率</span>
+      <input type="number" class="rate-input" id="rateInput" step="0.0001" placeholder="—">
+      <span class="rate-unit" id="rateUnit">TWD/USD</span>
+      <button class="refresh-btn" id="refreshBtn" onclick="fetchRate()">↻</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <!-- Amount Fields -->
+    <div class="amounts">
+      <div class="amount-field active-field" id="foreignField" onclick="setActive('foreign')">
+        <div class="amount-label">外幣金額 <span id="foreignCurrLabel">USD</span></div>
+        <div class="amount-row">
+          <div class="amount-value dim" id="foreignDisplay">0</div>
+          <div class="cursor-indicator"></div>
+          <div class="amount-currency" id="foreignCurrTag">USD</div>
+        </div>
+      </div>
+      <div class="amount-field" id="twdField" onclick="setActive('twd')">
+        <div class="amount-label">台幣金額 TWD</div>
+        <div class="amount-row">
+          <div class="amount-value dim" id="twdDisplay">NT$0</div>
+          <div class="cursor-indicator"></div>
+          <div class="amount-currency">TWD</div>
+        </div>
+      </div>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTyt_nIV1h_MFRhQoT9PHFMXhus1jQVL4",
-            projectId: "ac-records-b8c40",
-            authDomain: "ac-records-b8c40.firebaseapp.com",
-            storageBucket: "ac-records-b8c40.firebasestorage.app",
-            messagingSenderId: "471993362594",
-            appId: "1:471993362594:web:1be7e72af1021760c64ffb"
-        };
+    <!-- Numpad -->
+    <div class="numpad">
+      <button class="np" ontouchstart="" onclick="pad('7')">7</button>
+      <button class="np" ontouchstart="" onclick="pad('8')">8</button>
+      <button class="np" ontouchstart="" onclick="pad('9')">9</button>
+      <button class="np" ontouchstart="" onclick="pad('4')">4</button>
+      <button class="np" ontouchstart="" onclick="pad('5')">5</button>
+      <button class="np" ontouchstart="" onclick="pad('6')">6</button>
+      <button class="np" ontouchstart="" onclick="pad('1')">1</button>
+      <button class="np" ontouchstart="" onclick="pad('2')">2</button>
+      <button class="np" ontouchstart="" onclick="pad('3')">3</button>
+      <button class="np" ontouchstart="" onclick="pad('.')">·</button>
+      <button class="np" ontouchstart="" onclick="pad('0')">0</button>
+      <button class="np np-func" ontouchstart="" onclick="backspace()">⌫</button>
+      <button class="np np-func" ontouchstart="" onclick="clearAll()" style="font-size:13px;">清除</button>
+      <button class="np np-add" ontouchstart="" onclick="openSheet()">＋ 加入紀錄</button>
+    </div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        
-        const recordsCol = collection(db, "cleaningRecords");
-        let allRecords = [];
-        let editingId = null;
-        let knownAssistantNames = []; 
-        let knownPassNames = [];
-        let snapshotUnsubscribe = null;
+  </div>
 
-        // 篩選快取，供支出浮窗使用
-        let currentYearRecords = [];
-        let currentMonthRecords = [];
+  <!-- ══ RECORDS PAGE ══ -->
+  <div class="page" id="page-records">
+    <div class="records-toolbar">
+      <div class="records-title">費用紀錄</div>
+      <button class="clear-btn" onclick="clearAllRecords()">全部清除</button>
+    </div>
+    <div class="records-list" id="recordsList"></div>
+    <div class="records-total">
+      <div>
+        <div class="total-label">📊 總計台幣</div>
+        <div class="total-count" id="totalCount">共 0 筆</div>
+      </div>
+      <div class="total-amount" id="totalAmount">NT$0</div>
+    </div>
+  </div>
 
-        // 授權清單
-        const allowedEmails = ['eroraror@gmail.com', 'graceyiyo@gmail.com'];
+</div>
 
-        // 初始化圖示
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-calc" onclick="switchTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <path d="M9 9h.01M12 9h.01M15 9h.01M9 12h.01M12 12h.01M15 12h.01M9 15h.01M12 15h3"/>
+    </svg>
+    <span>換算</span>
+  </button>
+  <button class="nav-btn" id="nav-records" onclick="switchTab('records')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <line x1="10" y1="9" x2="8" y2="9"/>
+    </svg>
+    <span>紀錄</span>
+  </button>
+</div>
 
-        // 登入狀態監聽
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if (allowedEmails.includes(user.email.toLowerCase())) {
-                    document.getElementById('authPage').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('authError').classList.add('hidden');
-                    startDataSubscription();
-                } else {
-                    document.getElementById('authError').innerText = "⚠️ 您沒有存取權限，請換個帳號試試。";
-                    document.getElementById('authError').classList.remove('hidden');
-                    signOut(auth);
-                }
-            } else {
-                document.getElementById('authPage').classList.remove('hidden');
-                document.getElementById('mainApp').classList.add('hidden');
-                if (snapshotUnsubscribe) {
-                    snapshotUnsubscribe();
-                    snapshotUnsubscribe = null;
-                }
-            }
-            lucide.createIcons();
-        });
+<!-- ADD/EDIT SHEET -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">新增費用紀錄</div>
+    <div class="sheet-field">
+      <div class="sheet-lbl">費用說明 *</div>
+      <input class="sheet-inp" id="inpDesc" type="text" placeholder="例：午餐、計程車、伴手禮…">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-lbl">日期</div>
+      <input class="sheet-inp" id="inpDate" type="date">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-lbl">地點（選填）</div>
+      <input class="sheet-inp" id="inpLoc" type="text" placeholder="例：東京、首爾、曼谷…">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-lbl">金額</div>
+      <div class="amount-preview" id="previewAmt">—</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="sh-cancel" onclick="closeSheet()">取消</button>
+      <button class="sh-confirm" id="confirmBtn" onclick="confirmRecord()">確認記錄</button>
+    </div>
+  </div>
+</div>
 
-        window.handleLogin = async () => {
-            const errorEl = document.getElementById('authError');
-            errorEl.classList.add('hidden');
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Login failed", error);
-                errorEl.innerText = `⚠️ 登入失敗！\n錯誤代碼: ${error.code}\n請檢查 Firebase Console 是否啟動 Google 登入並加入授權網域。`;
-                errorEl.classList.remove('hidden');
-            }
-        };
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-        window.handleLogout = () => {
-            if (confirm('確定要登出嗎？')) {
-                signOut(auth);
-            }
-        };
+<script>
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const CURRENCIES = [
+  { code:'USD', name:'美元', flag:'🇺🇸', sym:'$',    decimals:2 },
+  { code:'JPY', name:'日圓', flag:'🇯🇵', sym:'¥',    decimals:0 },
+  { code:'EUR', name:'歐元', flag:'🇪🇺', sym:'€',    decimals:2 },
+  { code:'KRW', name:'韓圓', flag:'🇰🇷', sym:'₩',    decimals:0 },
+  { code:'GBP', name:'英鎊', flag:'🇬🇧', sym:'£',    decimals:2 },
+  { code:'HKD', name:'港幣', flag:'🇭🇰', sym:'HK$',  decimals:2 },
+  { code:'CNY', name:'人民幣',flag:'🇨🇳',sym:'¥',    decimals:2 },
+  { code:'SGD', name:'新幣', flag:'🇸🇬', sym:'S$',   decimals:2 },
+  { code:'AUD', name:'澳幣', flag:'🇦🇺', sym:'A$',   decimals:2 },
+  { code:'THB', name:'泰銖', flag:'🇹🇭', sym:'฿',    decimals:2 },
+  { code:'MYR', name:'馬幣', flag:'🇲🇾', sym:'RM',   decimals:2 },
+  { code:'VND', name:'越南盾',flag:'🇻🇳',sym:'₫',    decimals:0 },
+];
 
-        function startDataSubscription() {
-            if (snapshotUnsubscribe) return;
-            snapshotUnsubscribe = onSnapshot(recordsCol, (snap) => {
-                allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                updateDatalists();
-                filterRecords();
-            });
-        }
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let s = {
+  currency: localStorage.getItem('last_currency') || 'USD',
+  rate: null,
+  foreignStr: '0',
+  twdStr: '0',
+  active: 'foreign',   // 'foreign' | 'twd'
+  editId: null,
+};
 
-        document.getElementById('monthFilter').value = new Date().toISOString().substring(0, 7);
+let records = JSON.parse(localStorage.getItem('ex_records') || '[]');
 
-        window.showPage = (id) => {
-            document.getElementById('formPage').classList.toggle('hidden', id !== 'formPage');
-            document.getElementById('listPage').classList.toggle('hidden', id !== 'listPage');
-            lucide.createIcons(); 
-        };
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+function init() {
+  buildChips();
+  fetchRate();
+  renderRecords();
+  document.getElementById('inpDate').value = todayStr();
+}
 
-        window.prepareNewForm = () => {
-            editingId = null;
-            document.getElementById('recordForm').reset();
-            document.getElementById('acDetailsContainer').innerHTML = '';
-            document.getElementById('assistantDetailsContainer').innerHTML = '';
-            document.getElementById('passFrom').value = '';
-            document.getElementById('formNetProfit').value = '$0';
-            toggleAcBrand();
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-            showPage('formPage');
-        };
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+}
 
-        window.handleAcCountChange = () => {
-            const count = parseInt(document.getElementById('acCount').value) || 0;
-            toggleAcBrand();
-            const container = document.getElementById('acDetailsContainer');
-            if (count > 0 && container.children.length === 0) addAcDetailRow(count);
-        };
+function currObj() { return CURRENCIES.find(c => c.code === s.currency); }
 
-        window.toggleAcBrand = () => {
-            document.getElementById('acBrandSection').classList.toggle('hidden', document.getElementById('acCount').value <= 0);
-            lucide.createIcons();
-        };
+// ═══════════════════════════════════════════
+//  CURRENCY CHIPS
+// ═══════════════════════════════════════════
+function buildChips() {
+  const wrap = document.getElementById('chipScroll');
+  wrap.innerHTML = CURRENCIES.map(c => `
+    <div class="chip ${c.code === s.currency ? 'active' : ''}" onclick="pickCurrency('${c.code}')">
+      <span class="flag">${c.flag}</span>
+      <span class="code">${c.code}</span>
+      <span class="name">${c.name}</span>
+    </div>
+  `).join('');
 
-        window.addAcDetailRow = (val = "") => {
-            const container = document.getElementById('acDetailsContainer');
-            const totalTarget = parseInt(document.getElementById('acCount').value) || 0;
-            if (val === "" && totalTarget > 0) {
-                let currentFilled = 0;
-                document.querySelectorAll('.ac-qty-input').forEach(input => currentFilled += (parseInt(input.value) || 0));
-                val = Math.max(0, totalTarget - currentFilled);
-            }
-            const div = document.createElement('div');
-            div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
-            div.innerHTML = `
-                <div class="col-span-5"><input type="text" placeholder="廠牌" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
-                <div class="col-span-3"><input type="number" value="${val}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div>
-                <div class="col-span-3"><input type="number" placeholder="單價" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div>
-                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>
-            `;
-            container.appendChild(div);
-        };
+  // Scroll active chip into view
+  setTimeout(() => {
+    const activeChip = wrap.querySelector('.chip.active');
+    if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, 50);
+}
 
-        window.calcTotalFromDetails = () => {
-            let total = 0;
-            document.querySelectorAll('.ac-detail-row').forEach(row => {
-                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
-                const price = parseInt(row.querySelector('.ac-price-input').value) || 0;
-                total += (qty * price);
-            });
-            if (total > 0) {
-                document.getElementById('totalAmount').value = total;
-                calcFormNet();
-            }
-        };
+function pickCurrency(code) {
+  s.currency = code;
+  s.foreignStr = '0';
+  s.twdStr = '0';
+  s.rate = null;
+  localStorage.setItem('last_currency', code);
+  buildChips();
+  updateDisplays();
+  fetchRate();
+}
 
-        window.addAssistantRow = (name = "", amount = "") => {
-            const container = document.getElementById('assistantDetailsContainer');
-            const div = document.createElement('div');
-            div.className = "grid grid-cols-12 gap-2 items-center assistant-detail-row mb-2";
-            div.innerHTML = `
-                <div class="col-span-6"><input type="text" value="${name}" list="assistantNamesList" placeholder="名字" class="as-name-input w-full rounded-lg p-2 border border-rose-100 text-sm" oninput="updateQuickAssistantTags()"></div>
-                <div class="col-span-5"><input type="number" value="${amount}" onfocus="this.select()" oninput="calcAssistantTotal()" class="as-amount-input w-full rounded-lg p-2 border border-rose-100 text-sm font-bold text-rose-600"></div>
-                <div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcAssistantTotal(); updateQuickAssistantTags();" class="text-rose-400 font-bold text-lg">&times;</button></div>
-            `;
-            container.appendChild(div);
-            updateQuickAssistantTags();
-            calcAssistantTotal();
-        };
+// ═══════════════════════════════════════════
+//  EXCHANGE RATE
+// ═══════════════════════════════════════════
+async function fetchRate() {
+  const btn = document.getElementById('refreshBtn');
+  btn.innerHTML = '<span class="spinning">↻</span>';
+  document.getElementById('updateBadge').textContent = '更新中…';
+  try {
+    const res = await fetch(`https://open.er-api.com/v6/latest/${s.currency}`);
+    const data = await res.json();
+    if (data.result === 'success' && data.rates && data.rates.TWD) {
+      s.rate = data.rates.TWD;
+      document.getElementById('rateInput').value = s.rate.toFixed(4);
+      document.getElementById('rateUnit').textContent = `TWD / ${s.currency}`;
+      const t = new Date();
+      const hh = t.getHours().toString().padStart(2,'0');
+      const mm = t.getMinutes().toString().padStart(2,'0');
+      document.getElementById('updateBadge').textContent = `${hh}:${mm} 已更新`;
+      recompute();
+    } else {
+      throw new Error('no TWD rate');
+    }
+  } catch(e) {
+    document.getElementById('updateBadge').textContent = '更新失敗';
+    document.getElementById('rateInput').placeholder = '請手動輸入';
+  } finally {
+    btn.innerHTML = '↻';
+  }
+}
 
-        window.calcAssistantTotal = () => {
-            let total = 0;
-            document.querySelectorAll('.as-amount-input').forEach(input => total += (parseInt(input.value) || 0));
-            document.getElementById('assistantPay').value = total;
-            calcFormNet();
-        };
+document.getElementById('rateInput').addEventListener('input', function() {
+  s.rate = parseFloat(this.value) || null;
+  recompute();
+});
 
-        window.calcFormNet = () => {
-            const rev = parseInt(document.getElementById('totalAmount').value) || 0;
-            const exp = parseInt(document.getElementById('assistantPay').value) || 0;
-            document.getElementById('formNetProfit').value = `$${(rev - exp).toLocaleString()}`;
-        };
+// ═══════════════════════════════════════════
+//  NUMPAD
+// ═══════════════════════════════════════════
+function setActive(field) {
+  s.active = field;
+  document.getElementById('foreignField').classList.toggle('active-field', field === 'foreign');
+  document.getElementById('twdField').classList.toggle('active-field', field === 'twd');
+}
 
-        window.updateQuickAssistantTags = () => {
-            const container = document.getElementById('quickAssistantTags');
-            const currentNamesInForm = Array.from(document.querySelectorAll('.as-name-input')).map(input => input.value.trim());
-            const availableNames = knownAssistantNames.filter(name => !currentNamesInForm.includes(name));
-            if (availableNames.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-rose-300">無更多常用名字</span>';
-                return;
-            }
-            container.innerHTML = availableNames.map(name => `
-                <button type="button" onclick="addAssistantRow('${name}')" class="px-2 py-1 bg-white border border-rose-200 text-rose-600 rounded text-[10px] hover:bg-rose-50 transition-colors font-medium">+ ${name}</button>
-            `).join('');
-        };
+function pad(ch) {
+  let val = s.active === 'foreign' ? s.foreignStr : s.twdStr;
 
-        window.updateQuickPassTags = () => {
-            const container = document.getElementById('quickPassTags');
-            const currentName = document.getElementById('passFrom').value.trim();
-            const availableNames = knownPassNames.filter(name => name !== currentName);
-            if (availableNames.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-indigo-300">尚無常用對象</span>';
-                return;
-            }
-            container.innerHTML = availableNames.map(name => `
-                <button type="button" onclick="document.getElementById('passFrom').value='${name}'; updateQuickPassTags();" class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded text-[10px] hover:bg-indigo-50 transition-colors font-medium">${name}</button>
-            `).join('');
-        };
+  if (ch === '.') {
+    if (val.includes('.')) return;
+    if (val === '0') { val = '0'; }
+    val += '.';
+  } else if (ch === '0') {
+    if (val === '0') return;
+    val += '0';
+  } else {
+    if (val === '0') val = '';
+    val += ch;
+  }
 
-        window.toggleDone = async (id, currentStatus) => {
-            await updateDoc(doc(db, "cleaningRecords", id), { status: currentStatus === 'completed' ? 'pending' : 'completed' });
-        };
+  // Reasonable max length
+  if (val.replace('.', '').length > 12) return;
 
-        window.togglePayment = async (id, currentPayment) => {
-            await updateDoc(doc(db, "cleaningRecords", id), { payment: currentPayment === 'paid' ? 'unpaid' : 'paid' });
-        };
+  if (s.active === 'foreign') s.foreignStr = val;
+  else s.twdStr = val;
 
-        document.getElementById('recordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const totalAc = parseInt(document.getElementById('acCount').value) || 0;
-            let acDetailTotal = 0; let acDetailsArray = [];
-            document.querySelectorAll('.ac-detail-row').forEach(row => {
-                const brand = row.querySelector('.ac-brand-input').value.trim();
-                const qty = parseInt(row.querySelector('.ac-qty-input').value) || 0;
-                const price = row.querySelector('.ac-price-input').value;
-                acDetailTotal += qty;
-                if (brand || qty > 0) acDetailsArray.push(`${brand || '機型未填'}-${qty}台${price ? `*${price}元` : ''}`);
-            });
-            if (totalAc > 0 && acDetailTotal !== totalAc) { alert(`⚠️ 明細台數不符！`); return; }
+  recompute();
+}
 
-            let assistantArray = [];
-            document.querySelectorAll('.assistant-detail-row').forEach(row => {
-                const n = row.querySelector('.as-name-input').value.trim();
-                const a = row.querySelector('.as-amount-input').value;
-                if (n && a) assistantArray.push(`${n}:${a}`);
-            });
+function backspace() {
+  let val = s.active === 'foreign' ? s.foreignStr : s.twdStr;
+  val = val.length <= 1 ? '0' : val.slice(0, -1);
+  if (val.endsWith('.')) val = val.slice(0, -1) || '0';
+  if (s.active === 'foreign') s.foreignStr = val;
+  else s.twdStr = val;
+  recompute();
+}
 
-            const record = {
-                bookingTime: document.getElementById('bookingTime').value,
-                customerName: document.getElementById('customerName').value,
-                phone: document.getElementById('phone').value || "",
-                address: document.getElementById('address').value || "",
-                acCount: totalAc, acBrand: acDetailsArray.join('+'),
-                assistantDetail: assistantArray.join(','),
-                passFrom: document.getElementById('passFrom').value.trim(),
-                wmCount: parseInt(document.getElementById('wmCount').value) || 0,
-                wtCount: parseInt(document.getElementById('wtCount').value) || 0,
-                totalAmount: parseInt(document.getElementById('totalAmount').value) || 0,
-                assistantPay: parseInt(document.getElementById('assistantPay').value) || 0,
-                note: document.getElementById('note').value || ''
-            };
+function clearAll() {
+  s.foreignStr = '0';
+  s.twdStr = '0';
+  updateDisplays();
+}
 
-            try {
-                if (editingId) {
-                    const original = allRecords.find(r => r.id === editingId);
-                    record.status = original.status; record.payment = original.payment;
-                    await updateDoc(doc(db, "cleaningRecords", editingId), record);
-                    editingId = null;
-                } else {
-                    record.status = 'pending'; record.payment = 'unpaid';
-                    await addDoc(recordsCol, record);
-                }
-                prepareNewForm();
-                showPage('listPage');
-            } catch (err) { alert('儲存失敗'); }
-        });
+// ═══════════════════════════════════════════
+//  COMPUTE
+// ═══════════════════════════════════════════
+function recompute() {
+  if (!s.rate) { updateDisplays(); return; }
+  if (s.active === 'foreign') {
+    const f = parseFloat(s.foreignStr) || 0;
+    const twd = f * s.rate;
+    s.twdStr = twd === 0 ? '0' : twd.toFixed(2);
+  } else {
+    const t = parseFloat(s.twdStr) || 0;
+    const foreign = t / s.rate;
+    const c = currObj();
+    s.foreignStr = foreign === 0 ? '0' : foreign.toFixed(c.decimals === 0 ? 2 : c.decimals);
+  }
+  updateDisplays();
+}
 
-        function updateDatalists() {
-            const asNames = new Set();
-            const psNames = new Set();
-            allRecords.forEach(r => { 
-                if (r.assistantDetail) {
-                    r.assistantDetail.split(',').forEach(s => {
-                        const name = s.split(':')[0];
-                        if (name) asNames.add(name);
-                    });
-                } 
-                if (r.passFrom) psNames.add(r.passFrom);
-            });
-            knownAssistantNames = Array.from(asNames).sort();
-            knownPassNames = Array.from(psNames).sort();
-            document.getElementById('assistantNamesList').innerHTML = knownAssistantNames.map(n => `<option value="${n}">`).join('');
-            document.getElementById('passNamesList').innerHTML = knownPassNames.map(n => `<option value="${n}">`).join('');
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-        }
+// ═══════════════════════════════════════════
+//  DISPLAY
+// ═══════════════════════════════════════════
+function updateDisplays() {
+  const c = currObj();
+  document.getElementById('foreignCurrLabel').textContent = s.currency;
+  document.getElementById('foreignCurrTag').textContent = s.currency;
 
-        window.toggleAssistantModal = (title = "小幫手薪資總計 (全期)", records = allRecords) => {
-            const modal = document.getElementById('assistantSummaryModal');
-            const overlay = document.getElementById('assistantSummaryOverlay');
-            const titleEl = document.getElementById('assistantModalTitle');
-            const isHidden = modal.classList.contains('hidden');
-            if (isHidden) {
-                titleEl.innerText = title;
-                renderAssistantSummary(records);
-                modal.classList.remove('hidden');
-                overlay.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-                overlay.classList.add('hidden');
-            }
-            lucide.createIcons();
-        };
+  const fv = parseFloat(s.foreignStr) || 0;
+  const fDisp = document.getElementById('foreignDisplay');
+  fDisp.textContent = fmtNum(s.foreignStr, c);
+  fDisp.classList.toggle('dim', fv === 0 && !s.foreignStr.endsWith('.'));
 
-        // 三個快速開啟浮窗的入口
-        window.showAllAssistantDetails = () => {
-            toggleAssistantModal("小幫手薪資總計 (全期)", allRecords);
-        };
-        window.showYearAssistantDetails = () => {
-            const title = document.getElementById('yearTitle').innerText;
-            toggleAssistantModal(`${title} 小幫手薪資`, currentYearRecords);
-        };
-        window.showMonthAssistantDetails = () => {
-            const title = document.getElementById('monthTitle').innerText;
-            toggleAssistantModal(`${title} 小幫手薪資`, currentMonthRecords);
-        };
+  const tv = parseFloat(s.twdStr) || 0;
+  const tDisp = document.getElementById('twdDisplay');
+  tDisp.textContent = 'NT$' + fmtNum(s.twdStr, { decimals: 0 });
+  tDisp.classList.toggle('dim', tv === 0 && !s.twdStr.endsWith('.'));
+}
 
-        function renderAssistantSummary(records) {
-            const summary = {};
-            let unclassified = 0;
-            records.forEach(r => {
-                const totalPay = parseInt(r.assistantPay) || 0;
-                if (totalPay <= 0) return;
-                if (r.assistantDetail) {
-                    const details = r.assistantDetail.split(',');
-                    details.forEach(detail => {
-                        const [name, amount] = detail.split(':');
-                        const amt = parseInt(amount) || 0;
-                        if (name) { summary[name] = (summary[name] || 0) + amt; } 
-                        else { unclassified += amt; }
-                    });
-                } else { unclassified += totalPay; }
-            });
-            const container = document.getElementById('assistantSummaryList');
-            let html = "";
-            const sortedNames = Object.keys(summary).sort((a, b) => summary[b] - summary[a]);
-            sortedNames.forEach(name => {
-                html += `
-                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <span class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-slate-400"></i>${name}</span>
-                    <span class="font-black text-rose-500">$${summary[name].toLocaleString()}</span>
-                </div>`;
-            });
-            if (unclassified > 0) {
-                html += `
-                <div class="flex justify-between items-center bg-amber-50 p-3 rounded-xl border border-amber-100">
-                    <span class="font-bold text-amber-700 flex items-center gap-2"><i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>未分類 / 舊紀錄</span>
-                    <span class="font-black text-amber-600">$${unclassified.toLocaleString()}</span>
-                </div>`;
-            }
-            if (html === "") html = "<p class='text-center text-slate-400 py-4'>該期間尚無小幫手支出紀錄</p>";
-            container.innerHTML = html;
-        }
+function fmtNum(str, curr) {
+  if (str === '0' || str === '') return '0';
+  if (str.endsWith('.')) {
+    const n = parseInt(str) || 0;
+    return n.toLocaleString() + '.';
+  }
+  const dotIdx = str.indexOf('.');
+  if (dotIdx !== -1) {
+    const intPart = parseInt(str.slice(0, dotIdx)) || 0;
+    const decPart = str.slice(dotIdx + 1);
+    return intPart.toLocaleString() + '.' + decPart;
+  }
+  const n = parseFloat(str) || 0;
+  if (curr.decimals === 0) return Math.round(n).toLocaleString();
+  return n.toLocaleString('en', { maximumFractionDigits: 4, minimumFractionDigits: 0 });
+}
 
-        window.copyText = (text, btn) => {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="text-emerald-500 w-[10px] h-[10px]"></i>';
-                lucide.createIcons();
-                setTimeout(() => { btn.innerHTML = originalHTML; lucide.createIcons(); }, 1500);
-            });
-        };
+// ═══════════════════════════════════════════
+//  TAB NAV
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'records') renderRecords();
+}
 
-        window.clearMonthFilter = () => {
-            document.getElementById('monthFilter').value = "";
-            filterRecords();
-        };
+// ═══════════════════════════════════════════
+//  ADD RECORD SHEET
+// ═══════════════════════════════════════════
+function openSheet() {
+  const fv = parseFloat(s.foreignStr) || 0;
+  if (fv === 0) { showToast('請先輸入外幣金額'); return; }
+  if (!s.rate) { showToast('請先取得或輸入匯率'); return; }
 
-        window.filterRecords = () => {
-            const kw = document.getElementById('searchKeyword').value.toLowerCase();
-            const mon = document.getElementById('monthFilter').value;
-            const type = document.getElementById('typeFilter').value;
-            const status = document.getElementById('statusFilter').value;
-            const payment = document.getElementById('paymentFilter').value;
+  s.editId = null;
+  document.getElementById('sheetTitle').textContent = '新增費用紀錄';
+  document.getElementById('inpDesc').value = '';
+  document.getElementById('inpDate').value = todayStr();
+  document.getElementById('inpLoc').value = '';
+  document.getElementById('confirmBtn').textContent = '確認記錄';
 
-            // 統計數據變數 (僅受時間過濾影響，不受關鍵字影響)
-            let mRev = 0, mExp = 0, mAc = 0, mWm = 0, mWt = 0;
-            let yRev = 0, yExp = 0, yAc = 0, yWm = 0, yWt = 0;
-            let aAc = 0, aWm = 0, aWt = 0, aRev = 0, aExp = 0;
-            let mUnpaidDetails = []; 
-            let mPassSummary = {}; 
-            let yPassSummary = {}; 
-            
-            // 重置篩選快取
-            currentYearRecords = [];
-            currentMonthRecords = [];
+  const c = currObj();
+  const twd = parseFloat(s.twdStr) || 0;
+  document.getElementById('previewAmt').innerHTML =
+    `<strong>${c.sym}${fmtNum(s.foreignStr, c)} ${s.currency}</strong>&nbsp;＝&nbsp;<strong>NT$${Math.round(twd).toLocaleString()}</strong>`;
 
-            const filterYear = mon ? mon.split('-')[0] : new Date().getFullYear().toString();
-            const filterMonthName = mon ? mon.split('-')[1] : "全部";
-            document.getElementById('yearTitle').innerText = `${filterYear} 年度統計`;
-            document.getElementById('monthTitle').innerText = mon ? `${filterMonthName} 月份統計` : "全期統計";
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(() => document.getElementById('inpDesc').focus(), 300);
+}
 
-            allRecords.forEach(r => {
-                // 全部累積計算
-                aAc += (r.acCount || 0); aWm += (r.wmCount || 0); aWt += (r.wtCount || 0);
-                aRev += (r.totalAmount || 0); aExp += (r.assistantPay || 0);
+function closeSheet() {
+  document.getElementById('overlay').classList.remove('show');
+}
 
-                const iY = r.bookingTime.split('-')[0];
-                const iM = r.bookingTime.substring(0, 7);
-                const iQty = (r.acCount || 0) + (r.wmCount || 0) + (r.wtCount || 0);
+function confirmRecord() {
+  const desc = document.getElementById('inpDesc').value.trim();
+  if (!desc) { document.getElementById('inpDesc').focus(); showToast('請輸入費用說明'); return; }
 
-                // 年度統計計算 (不受列表篩選影響)
-                if (iY === filterYear) { 
-                    currentYearRecords.push(r);
-                    yRev += r.totalAmount; yExp += r.assistantPay; yAc += (r.acCount || 0); yWm += (r.wmCount || 0); yWt += (r.wtCount || 0); 
-                    if (r.passFrom) {
-                        yPassSummary[r.passFrom] = (yPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        yPassSummary[r.passFrom].qty += iQty;
-                        yPassSummary[r.passFrom].rev += r.totalAmount;
-                        yPassSummary[r.passFrom].exp += r.assistantPay;
-                    }
-                }
+  const date = document.getElementById('inpDate').value || todayStr();
+  const loc = document.getElementById('inpLoc').value.trim();
 
-                // 月度統計計算 (不受列表篩選影響)
-                if (!mon || iM === mon) { 
-                    currentMonthRecords.push(r);
-                    mRev += r.totalAmount; mExp += r.assistantPay; mAc += (r.acCount || 0); mWm += (r.wmCount || 0); mWt += (r.wtCount || 0);
-                    if (r.payment === 'unpaid') mUnpaidDetails.push({ id: r.id, name: r.customerName, amount: r.totalAmount });
-                    if (r.passFrom) {
-                        mPassSummary[r.passFrom] = (mPassSummary[r.passFrom] || { qty: 0, rev: 0, exp: 0 });
-                        mPassSummary[r.passFrom].qty += iQty;
-                        mPassSummary[r.passFrom].rev += r.totalAmount;
-                        mPassSummary[r.passFrom].exp += r.assistantPay;
-                    }
-                }
-            });
+  if (s.editId !== null) {
+    const idx = records.findIndex(r => r.id === s.editId);
+    if (idx !== -1) {
+      records[idx] = { ...records[idx], description: desc, date, location: loc };
+    }
+    showToast('已更新紀錄 ✓');
+  } else {
+    const c = currObj();
+    records.unshift({
+      id: Date.now(),
+      date,
+      description: desc,
+      location: loc,
+      currency: s.currency,
+      currSym: c.sym,
+      currDec: c.decimals,
+      foreignAmount: parseFloat(s.foreignStr),
+      rate: s.rate,
+      twdAmount: parseFloat(s.twdStr) || 0,
+    });
+    showToast('已記錄 ✓');
+  }
 
-            // 列表資料過濾 (受所有篩選器影響)
-            const baseFiltered = allRecords.filter(i => {
-                const iM = i.bookingTime.substring(0, 7);
-                const searchStr = `${i.customerName} ${i.address} ${i.acBrand} ${i.assistantDetail || ''} ${i.passFrom || ''} ${i.note}`.toLowerCase();
-                
-                const matchSearch = searchStr.includes(kw);
-                const matchMonth = (!mon || iM === mon);
-                const matchType = (type === 'all' || (type === 'ac' && i.acCount > 0) || (type === 'wm' && i.wmCount > 0) || (type === 'wt' && i.wtCount > 0));
-                const matchStatus = (status === 'all' || i.status === status);
-                const matchPayment = (payment === 'all' || i.payment === payment);
+  saveRecords();
+  closeSheet();
+  switchTab('records');
+}
 
-                return matchSearch && matchMonth && matchType && matchStatus && matchPayment;
-            });
+// ═══════════════════════════════════════════
+//  RECORDS CRUD
+// ═══════════════════════════════════════════
+function saveRecords() { localStorage.setItem('ex_records', JSON.stringify(records)); }
 
-            // 渲染年度 PASS 統計
-            const passYearSortedKeys = Object.keys(yPassSummary).sort((a,b) => yPassSummary[b].rev - yPassSummary[a].rev);
-            if (passYearSortedKeys.length > 0) {
-                document.getElementById('passYearSummarySection').classList.remove('hidden');
-                let passYearTotalAmt = 0;
-                document.getElementById('passYearSummaryList').innerHTML = passYearSortedKeys.map(k => {
-                    passYearTotalAmt += yPassSummary[k].rev;
-                    const net = yPassSummary[k].rev - yPassSummary[k].exp;
-                    return `
-                    <div class="flex items-center justify-between bg-white py-3 px-2.5 rounded-xl border border-indigo-100 gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-indigo-600 font-bold whitespace-nowrap">${k}</span>
-                            <span class="text-[11px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-400 font-bold whitespace-nowrap">${yPassSummary[k].qty}台</span>
-                        </div>
-                        <div class="text-[11px] flex items-center gap-3 text-slate-500 whitespace-nowrap">
-                            <span>收:$${yPassSummary[k].rev.toLocaleString()}</span>
-                            <span>支:$${yPassSummary[k].exp.toLocaleString()}</span>
-                            <span class="font-bold text-indigo-700 bg-indigo-50/50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-                document.getElementById('passYearTotal').innerText = `總額 $${passYearTotalAmt.toLocaleString()}`;
-            } else { document.getElementById('passYearSummarySection').classList.add('hidden'); }
+function renderRecords() {
+  const list = document.getElementById('recordsList');
 
-            // 渲染月度 PASS 統計
-            const passSortedKeys = Object.keys(mPassSummary).sort((a,b) => mPassSummary[b].rev - mPassSummary[a].rev);
-            if (passSortedKeys.length > 0) {
-                document.getElementById('passSummarySection').classList.remove('hidden');
-                let passTotalAmt = 0;
-                document.getElementById('passSummaryList').innerHTML = passSortedKeys.map(k => {
-                    passTotalAmt += mPassSummary[k].rev;
-                    const net = mPassSummary[k].rev - mPassSummary[k].exp;
-                    return `
-                    <div class="flex items-center justify-between bg-white py-3 px-2.5 rounded-xl border border-emerald-100 gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm text-emerald-700 font-bold whitespace-nowrap">${k}</span>
-                            <span class="text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded text-emerald-500 font-bold whitespace-nowrap">${mPassSummary[k].qty}台</span>
-                        </div>
-                        <div class="text-[11px] flex items-center gap-3 text-emerald-800/70 whitespace-nowrap">
-                            <span>收:$${mPassSummary[k].rev.toLocaleString()}</span>
-                            <span>支:$${mPassSummary[k].exp.toLocaleString()}</span>
-                            <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">淨:$${net.toLocaleString()}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-                document.getElementById('passMonthTotal').innerText = `總額 $${passTotalAmt.toLocaleString()}`;
-            } else { document.getElementById('passSummarySection').classList.add('hidden'); }
+  if (records.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>尚無費用紀錄<br>換算金額後點「加入紀錄」</p>
+      </div>`;
+  } else {
+    list.innerHTML = records.map(r => `
+      <div class="rec-card" id="r${r.id}">
+        <div class="rec-top">
+          <div class="rec-desc">${esc(r.description)}</div>
+          <div class="rec-actions">
+            <button class="rec-action" onclick="editRecord(${r.id})" title="修改">✏️</button>
+            <button class="rec-action" onclick="deleteRecord(${r.id})" title="刪除">🗑️</button>
+          </div>
+        </div>
+        <div class="rec-meta">
+          <span>📅 ${fmtDate(r.date)}</span>
+          ${r.location ? `<span>📍 ${esc(r.location)}</span>` : ''}
+          <span class="rec-currency-tag">${r.currency}</span>
+        </div>
+        <div class="rec-amounts">
+          <span class="rec-foreign">${r.currSym}${fmtForeign(r.foreignAmount, r.currDec)}</span>
+          <span class="rec-arrow">→</span>
+          <span class="rec-twd">NT$${Math.round(r.twdAmount).toLocaleString()}</span>
+        </div>
+      </div>
+    `).join('');
+  }
 
-            if (mUnpaidDetails.length > 0) {
-                document.getElementById('unpaidSection').classList.remove('hidden');
-                document.getElementById('unpaidList').innerHTML = mUnpaidDetails.map(item => `<div class="flex justify-between py-1.5 items-center"><button onclick="scrollToRecord('${item.id}')" class="text-left hover:underline decoration-amber-400 font-bold text-[14px]">• ${item.name}</button><span class="font-bold text-[15px]">$${item.amount.toLocaleString()}</span></div>`).join('');
-            } else { document.getElementById('unpaidSection').classList.add('hidden'); }
+  const total = records.reduce((s, r) => s + (r.twdAmount || 0), 0);
+  document.getElementById('totalAmount').textContent = 'NT$' + Math.round(total).toLocaleString();
+  document.getElementById('totalCount').textContent = `共 ${records.length} 筆`;
+}
 
-            document.getElementById('allAc').innerText = aAc; document.getElementById('allWm').innerText = aWm; document.getElementById('allWt').innerText = aWt;
-            document.getElementById('allRev').innerText = `$${aRev.toLocaleString()}`; document.getElementById('allExp').innerText = `$${aExp.toLocaleString()}`; document.getElementById('allNet').innerText = `$${(aRev - aExp).toLocaleString()}`;
-            document.getElementById('mRev').innerText = `$${mRev.toLocaleString()}`; document.getElementById('mExp').innerText = `$${mExp.toLocaleString()}`; document.getElementById('mNet').innerText = `$${(mRev - mExp).toLocaleString()}`;
-            document.getElementById('mCounts').innerText = `冷${mAc} / 洗${mWm} / 水${mWt}`;
-            document.getElementById('yRev').innerText = `$${yRev.toLocaleString()}`; document.getElementById('yExp').innerText = `$${yExp.toLocaleString()}`; document.getElementById('yNet').innerText = `$${(yRev - yExp).toLocaleString()}`;
-            document.getElementById('yCounts').innerText = `冷${yAc} / 洗${yWm} / 水${yWt}`;
+function fmtForeign(n, dec) {
+  if (dec === 0) return Math.round(n).toLocaleString();
+  return n.toLocaleString('en', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+}
 
-            renderRecords(baseFiltered.sort((a, b) => b.bookingTime.localeCompare(a.bookingTime)));
-            lucide.createIcons();
-        };
+function editRecord(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
 
-        function renderRecords(data) {
-            const list = document.getElementById('recordList');
-            list.innerHTML = data.map(i => {
-                let services = [];
-                const acTitle = `冷氣${i.acCount}台`;
-                if(i.acCount > 0) services.push(i.acBrand ? `${acTitle}：${i.acBrand}` : acTitle);
-                if(i.wmCount > 0) services.push(`洗衣機${i.wmCount}台`);
-                if(i.wtCount > 0) services.push(`水塔${i.wtCount}口`);
+  s.editId = id;
+  document.getElementById('sheetTitle').textContent = '修改費用紀錄';
+  document.getElementById('inpDesc').value = r.description;
+  document.getElementById('inpDate').value = r.date;
+  document.getElementById('inpLoc').value = r.location || '';
+  document.getElementById('confirmBtn').textContent = '儲存修改';
+  document.getElementById('previewAmt').innerHTML =
+    `<strong>${r.currSym}${fmtForeign(r.foreignAmount, r.currDec)} ${r.currency}</strong>&nbsp;＝&nbsp;<strong>NT$${Math.round(r.twdAmount).toLocaleString()}</strong>`;
 
-                let asDisplay = "";
-                if (i.assistantDetail) {
-                    const parts = i.assistantDetail.split(',').map(s => { const [n, a] = s.split(':'); return `${n}${a}元`; });
-                    asDisplay = `小幫手：${parts.join('+')}`;
-                }
+  document.getElementById('overlay').classList.add('show');
+  setTimeout(() => document.getElementById('inpDesc').focus(), 300);
+}
 
-                let isComp = i.status === 'completed';
-                let isPaid = i.payment === 'paid';
+function deleteRecord(id) {
+  if (!confirm('確定要刪除這筆紀錄嗎？')) return;
+  records = records.filter(r => r.id !== id);
+  saveRecords();
 
-                return `
-                <tr id="rec-${i.id}" class="${isComp ? 'completed-row' : ''}">
-                    <td data-label="預約時間" class="px-6 py-4 time-display flex justify-between items-center">
-                        <span>${i.bookingTime.replace('T',' ')}</span>
-                        ${i.passFrom ? `<span class="text-indigo-500 font-bold flex items-center gap-1"><i data-lucide="forward" class="w-3 h-3"></i>PASS: ${i.passFrom}</span>` : '<span></span>'}
-                    </td>
-                    <td data-label="客戶" class="px-6 py-4 flex items-center gap-2">
-                        <span class="font-bold text-slate-900">${i.customerName}</span>
-                        ${i.phone ? `<span class="text-[12px] text-slate-400 font-normal flex items-center gap-0.5"><i data-lucide="phone" class="w-3 h-3"></i>${i.phone}</span>` : ''}
-                    </td>
-                    <td class="px-6 py-1 text-slate-500 text-xs flex items-center gap-1.5">
-                        ${i.address ? `
-                            <span class="flex items-center gap-0.5"><i data-lucide="map-pin" class="w-3 h-3"></i>${i.address}</span>
-                            <button onclick="copyText('${i.address}', this)" class="bg-slate-100 p-1 rounded-md hover:bg-slate-200 transition-colors">
-                                <i data-lucide="copy" class="w-2.5 h-2.5"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                    <td data-label="服務明細" class="px-6 py-2 text-slate-600">
-                        <div class="leading-tight">${services.join('、')}</div>
-                        ${i.note ? `<div class="text-[11px] text-slate-400 note-display mt-0.5">備註: ${i.note}</div>` : ''}
-                        ${asDisplay ? `<div class="text-[11px] text-rose-500 font-medium mt-0.5">${asDisplay}</div>` : ''}
-                    </td>
-                    <td data-label="金額帳目" class="px-6 py-4 text-slate-600 font-medium">
-                        收 ${i.totalAmount.toLocaleString()} - 支 ${i.assistantPay.toLocaleString()} = <span class="text-emerald-700 font-bold">淨 ${(i.totalAmount - i.assistantPay).toLocaleString()}</span>
-                    </td>
-                    <td class="px-6 py-4 action-cell">
-                        <button onclick="toggleDone('${i.id}', '${i.status}')" class="flex items-center gap-1 ${isComp ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-emerald-700 bg-emerald-50 border-emerald-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="${isComp ? 'check-circle' : 'circle'}" class="w-3 h-3"></i>
-                            <span>${isComp ? '已完成' : '未完成'}</span>
-                        </button>
-                        <button onclick="togglePayment('${i.id}', '${i.payment}')" class="flex items-center gap-1 ${isPaid ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-700 bg-amber-50 border-amber-100'} px-2 py-1.5 rounded-lg border text-[10px] font-bold">
-                            <i data-lucide="${isPaid ? 'banknote' : 'clock'}" class="w-3 h-3"></i>
-                            <span>${isPaid ? '已收款' : '待收款'}</span>
-                        </button>
-                        <button onclick="downloadRec('${i.id}')" class="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100 text-[10px] font-bold" title="截圖">
-                            <i data-lucide="image" class="w-3 h-3"></i>
-                        </button>
-                        <button onclick="editRec('${i.id}')" class="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="修改">
-                            <i data-lucide="edit-2" class="w-3 h-3"></i>
-                        </button>
-                        <button onclick="deleteRec('${i.id}')" class="flex items-center gap-1 text-rose-400 bg-rose-50 px-2 py-1.5 rounded-lg border text-[10px] font-bold" title="刪除">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            }).join('');
-            lucide.createIcons();
-        }
+  // Animate out
+  const el = document.getElementById('r' + id);
+  if (el) {
+    el.style.transition = 'opacity 0.2s, transform 0.2s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(30px)';
+    setTimeout(() => renderRecords(), 200);
+  } else {
+    renderRecords();
+  }
+  showToast('已刪除');
+}
 
-        window.scrollToRecord = (id) => {
-            const e = document.getElementById(`rec-${id}`);
-            if (e) { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); e.classList.add('highlight-target'); setTimeout(() => e.classList.remove('highlight-target'), 2000); }
-        };
+function clearAllRecords() {
+  if (records.length === 0) { showToast('目前沒有紀錄'); return; }
+  if (!confirm(`確定要清除全部 ${records.length} 筆紀錄嗎？`)) return;
+  records = [];
+  saveRecords();
+  renderRecords();
+  showToast('已清除所有紀錄');
+}
 
-        window.editRec = (id) => {
-            const r = allRecords.find(x => x.id === id);
-            if(!r) return;
-            editingId = id;
-            document.getElementById('bookingTime').value = r.bookingTime;
-            document.getElementById('customerName').value = r.customerName;
-            document.getElementById('phone').value = r.phone || "";
-            document.getElementById('address').value = r.address || "";
-            document.getElementById('acCount').value = r.acCount;
-            document.getElementById('wmCount').value = r.wmCount;
-            document.getElementById('wtCount').value = r.wtCount;
-            document.getElementById('totalAmount').value = r.totalAmount;
-            document.getElementById('assistantPay').value = r.assistantPay;
-            document.getElementById('note').value = r.note;
-            document.getElementById('passFrom').value = r.passFrom || "";
-            
-            const acContainer = document.getElementById('acDetailsContainer');
-            acContainer.innerHTML = '';
-            if (r.acBrand) {
-                r.acBrand.split('+').forEach(part => {
-                    const m = part.match(/(.*)-(.*)台(?:\*(.*)元)?/);
-                    if (m) {
-                        const div = document.createElement('div');
-                        div.className = "grid grid-cols-12 gap-2 items-center ac-detail-row mb-2";
-                        div.innerHTML = `<div class="col-span-5"><input type="text" value="${m[1]}" class="ac-brand-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-3"><input type="number" value="${m[2]}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-qty-input w-full rounded-lg p-2 border border-emerald-100 text-sm font-bold"></div><div class="col-span-3"><input type="number" value="${m[3]||''}" onfocus="this.select()" oninput="calcTotalFromDetails()" class="ac-price-input w-full rounded-lg p-2 border border-emerald-100 text-sm"></div><div class="col-span-1 text-center"><button type="button" onclick="this.parentElement.parentElement.remove(); calcTotalFromDetails();" class="text-rose-400 font-bold text-lg">&times;</button></div>`;
-                        acContainer.appendChild(div);
-                    }
-                });
-            }
-            const asContainer = document.getElementById('assistantDetailsContainer');
-            asContainer.innerHTML = '';
-            if (r.assistantDetail) {
-                r.assistantDetail.split(',').forEach(s => { const [name, amt] = s.split(':'); addAssistantRow(name, amt); });
-            }
-            toggleAcBrand();
-            updateQuickAssistantTags();
-            updateQuickPassTags();
-            calcFormNet();
-            showPage('formPage');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+// ═══════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════
+function fmtDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${y}/${m}/${d}`;
+}
 
-        window.changeMonth = (o) => { const i = document.getElementById('monthFilter'); if (!i.value) i.value = new Date().toISOString().substring(0, 7); let [y, m] = i.value.split('-').map(Number); let d = new Date(y, m - 1); d.setMonth(d.getMonth() + o); i.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; filterRecords(); };
-        window.quickFilterUnpaid = () => { document.getElementById('paymentFilter').value = 'unpaid'; filterRecords(); };
-        window.deleteRec = async (id) => { if(confirm('確定要刪除嗎？')) await deleteDoc(doc(db, "cleaningRecords", id)); };
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-        // 截圖自動下載優化功能
-        window.downloadRec = (id) => {
-            const el = document.getElementById(`rec-${id}`);
-            const actionCell = el.querySelector('.action-cell');
-            const contentTds = el.querySelectorAll('td:not(.action-cell)');
-            const customerTd = el.querySelector('td[data-label="客戶"]'); // 鎖定客戶名稱欄位
-            
-            // 使用渲染後的 SVG 類名 (.lucide-phone, .lucide-map-pin) 才能確實抓到圖示
-            const iconsToHide = el.querySelectorAll('.lucide-phone, .lucide-map-pin, button[onclick^="copyText"]');
-            
-            // 1. 隱藏按鈕區、圖示，處理底色與邊框
-            actionCell.style.display = 'none';
-            iconsToHide.forEach(icon => icon.style.display = 'none');
-            el.style.setProperty('background-color', '#ffffff', 'important');
-            el.style.setProperty('border-left', 'none', 'important'); // 截圖時隱藏左側線條
-            
-            // 將內容文字向上偏移改為 -10px
-            contentTds.forEach(td => {
-                td.style.setProperty('position', 'relative', 'important');
-                td.style.setProperty('top', '-10px', 'important');
-            });
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
 
-            // 特別針對客戶名稱賦予向上拉近的負間距，這會自然將底下所有元素一併往上帶
-            if (customerTd) {
-                customerTd.style.setProperty('margin-top', '-10px', 'important');
-            }
-            
-            // 2. 執行截圖
-            html2canvas(el, {
-                scale: 2, // 提高畫質
-                backgroundColor: "#ffffff", // 確保 canvas 外框也是白色
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // 3. 還原所有修改的樣式
-                actionCell.style.display = 'flex';
-                iconsToHide.forEach(icon => icon.style.removeProperty('display'));
-                el.style.removeProperty('background-color');
-                el.style.removeProperty('border-left');
-                contentTds.forEach(td => {
-                    td.style.removeProperty('position');
-                    td.style.removeProperty('top');
-                });
-                if (customerTd) {
-                    customerTd.style.removeProperty('margin-top');
-                }
-                
-                // 4. 將畫布轉換為 Blob 以進行靜默下載
-                canvas.toBlob((blob) => {
-                    const name = el.querySelector('[data-label="客戶"] span').innerText;
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `清洗紀錄_${name}_${id.substring(0,4)}.png`;
-                    
-                    document.body.appendChild(link);
-                    link.click();
-                    
-                    setTimeout(() => {
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                    }, 100);
-                }, 'image/png');
-            });
-        };
-    </script>
+// Close sheet on backdrop tap
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSheet();
+});
+
+// ═══════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════
+init();
+updateDisplays();
+</script>
 </body>
 </html>
