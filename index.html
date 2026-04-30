@@ -1,1010 +1,1180 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0D1117">
-  <title>換匯計算機</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#7fb9b3" />
+  <title>即時換匯計算機</title>
   <style>
     :root {
-      --bg: #0D1117;
-      --card: #161B22;
-      --card2: #1C2128;
-      --card3: #21262D;
-      --border: #30363D;
-      --accent: #00D4AA;
-      --accent-dim: rgba(0,212,170,0.12);
-      --accent-glow: rgba(0,212,170,0.25);
-      --danger: #FF6B6B;
-      --danger-dim: rgba(255,107,107,0.12);
-      --warn: #F0A500;
-      --text: #F0F6FC;
-      --text-2: #8B949E;
-      --text-3: #484F58;
-      --radius: 16px;
-      --radius-sm: 10px;
+      --bg1: #f7faf7;
+      --bg2: #edf5f2;
+      --panel: rgba(255,255,255,0.86);
+      --panel-solid: #ffffff;
+      --text: #384544;
+      --muted: #7d8d8c;
+      --line: #d9e5e1;
+
+      --mint: #78b6b0;
+      --mint-deep: #4b9b97;
+      --mint-soft: #e8f4f2;
+
+      --yellow: #f0cb67;
+      --yellow-deep: #d8b34c;
+      --yellow-soft: #fff3c9;
+
+      --number: #f6f6f6;
+      --number-deep: #e1e1e1;
+      --danger: #ea7d7d;
+
+      --shadow-card: 0 18px 40px rgba(126, 159, 152, 0.16);
+      --shadow-soft: 0 8px 18px rgba(127, 185, 179, 0.12);
+
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     html, body {
-      height: 100%;
-      height: 100dvh;
-    }
-
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
+      margin: 0;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
       color: var(--text);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      max-width: 430px;
-      margin: 0 auto;
-      position: relative;
+      background:
+        radial-gradient(circle at top left, rgba(240, 203, 103, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(120, 182, 176, 0.18), transparent 30%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
     }
 
-    /* ─── HEADER ─── */
-    .header {
-      padding: 14px 18px 10px;
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(100%, 560px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 14px 30px;
+    }
+
+    .hero {
+      padding: 10px 6px 12px;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: 0.5px;
+      color: #435151;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      border-radius: 999px;
+      background: rgba(120, 182, 176, 0.18);
+      color: var(--mint-deep);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: var(--shadow-soft);
+      white-space: nowrap;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.75);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(12px);
+      padding: 18px;
+      margin: 14px 0;
+    }
+
+    .section-title {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      background: var(--card);
-    }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .header-logo {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent), #0099CC);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-    .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; }
-    .header-title em { font-style: normal; color: var(--accent); }
-    .update-badge {
-      font-size: 10px;
-      color: var(--text-2);
-      background: var(--card2);
-      border: 1px solid var(--border);
-      padding: 3px 8px;
-      border-radius: 20px;
-      white-space: nowrap;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    /* ─── TAB CONTENT ─── */
-    .tab-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-    .page { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-    .page.active { display: flex; }
-
-    /* ─── CURRENCY CHIPS ─── */
-    .currency-scroll {
-      padding: 12px 14px;
-      overflow-x: auto;
-      display: flex;
-      gap: 7px;
-      scrollbar-width: none;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      background: var(--card);
-    }
-    .currency-scroll::-webkit-scrollbar { display: none; }
-    .chip {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 7px 12px;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      background: var(--card2);
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .chip.active { border-color: var(--accent); background: var(--accent-dim); }
-    .chip .flag { font-size: 18px; line-height: 1.2; }
-    .chip .code { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
-    .chip .name { font-size: 9px; color: var(--text-2); }
-
-    /* ─── RATE BAR ─── */
-    .rate-bar {
-      padding: 9px 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--card2);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .rate-label { font-size: 11px; color: var(--text-2); white-space: nowrap; letter-spacing: 0.3px; }
-    .rate-input {
-      flex: 1;
-      background: var(--card3);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 5px 10px;
-      color: var(--accent);
-      font-size: 14px;
-      font-weight: 600;
-      font-family: 'DM Mono', monospace;
-      outline: none;
-      text-align: right;
-      min-width: 0;
-      -webkit-user-select: text;
-      user-select: text;
-    }
-    .rate-input:focus { border-color: var(--accent); }
-    .rate-unit { font-size: 11px; color: var(--text-2); white-space: nowrap; }
-    .refresh-btn {
-      background: none; border: none;
-      color: var(--text-2);
+    .section-title h2 {
+      margin: 0;
       font-size: 18px;
-      cursor: pointer;
-      padding: 4px 2px;
-      border-radius: 6px;
-      transition: color 0.2s;
-      line-height: 1;
+      color: #445050;
     }
-    .refresh-btn:active { color: var(--accent); }
-    .spinning { animation: spin 0.8s linear infinite; display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ─── AMOUNT FIELDS ─── */
-    .amounts {
-      padding: 10px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex-shrink: 0;
-      background: var(--bg);
+    .small-text {
+      font-size: 12px;
+      color: var(--muted);
     }
-    .amount-field {
-      background: var(--card);
-      border: 1.5px solid var(--border);
-      border-radius: 13px;
-      padding: 10px 14px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
+
+    .field {
+      margin-bottom: 13px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 14px 15px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.9);
+      color: var(--text);
+      outline: none;
+      transition: 0.18s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    input:focus, select:focus {
+      border-color: #98c7c2;
+      box-shadow: 0 0 0 4px rgba(120, 182, 176, 0.14);
+    }
+
+    input[readonly] {
+      background: #fbfcfc;
+    }
+
+    .rate-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .ghost-btn, .main-btn, .danger-btn, .mini-btn {
+      border-radius: 18px;
+      padding: 13px 14px;
+      font-weight: 800;
+      transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .ghost-btn:active, .main-btn:active, .danger-btn:active, .mini-btn:active,
+    .key:active, .swap-btn:active, .tab-btn:active {
+      transform: scale(0.97);
+    }
+
+    .main-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #8dc5bf 0%, var(--mint) 100%);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(120, 182, 176, 0.24);
+    }
+
+    .ghost-btn {
+      background: #eff8f6;
+      color: var(--mint-deep);
+      box-shadow: 0 6px 14px rgba(120, 182, 176, 0.10);
+    }
+
+    .danger-btn {
+      background: #fff2f2;
+      color: var(--danger);
+      box-shadow: 0 6px 14px rgba(234, 125, 125, 0.08);
+    }
+
+    .mini-btn {
+      padding: 10px 11px;
+      background: #edf8f6;
+      color: var(--mint-deep);
+    }
+
+    .amount-wrap {
       position: relative;
     }
-    .amount-field.active-field { border-color: var(--accent); background: var(--accent-dim); }
-    .amount-label {
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
-      color: var(--text-2); margin-bottom: 2px;
-    }
-    .amount-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .amount-value {
-      font-family: 'DM Mono', monospace;
+
+    .amount-input {
       font-size: 26px;
-      font-weight: 500;
-      letter-spacing: -1px;
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-weight: 900;
+      text-align: right;
+      letter-spacing: 0.5px;
+      min-height: 62px;
     }
-    .amount-value.dim { color: var(--text-3); }
-    .amount-currency { font-size: 12px; font-weight: 700; color: var(--text-2); }
-    .cursor-indicator {
-      display: none;
-      width: 2px; height: 20px;
-      background: var(--accent);
-      border-radius: 1px;
-      animation: blink 1s step-end infinite;
-      flex-shrink: 0;
-    }
-    .active-field .cursor-indicator { display: block; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    /* ─── NUMPAD ─── */
-    .numpad {
-      padding: 6px 12px 10px;
+    .expression-hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      min-height: 18px;
+    }
+
+    .swap-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      flex-shrink: 0;
-      background: var(--bg);
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0 14px;
     }
-    .np {
-      background: var(--card);
-      border: none;
-      border-radius: 12px;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+
+    .swap-line {
+      height: 1px;
+      background: var(--line);
+    }
+
+    .swap-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffffff 0%, #f5fbfa 100%);
+      color: var(--mint-deep);
       font-size: 20px;
-      font-weight: 500;
-      height: 54px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.1s, transform 0.08s;
-      position: relative; overflow: hidden;
+      box-shadow: 0 8px 18px rgba(120, 182, 176, 0.15);
     }
-    .np:active { background: var(--card3); transform: scale(0.95); }
-    .np.np-func { background: var(--card2); color: var(--text-2); font-size: 16px; }
-    .np.np-func:active { background: var(--card3); }
-    .np.np-add {
-      grid-column: span 2;
-      background: var(--accent);
-      color: #0A0E14;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: -0.2px;
-    }
-    .np.np-add:active { background: #00B894; transform: scale(0.97); }
 
-    /* ─── BOTTOM NAV ─── */
-    .bottom-nav {
-      display: flex;
-      border-top: 1px solid var(--border);
-      background: var(--card);
-      flex-shrink: 0;
-      padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-    .nav-btn {
-      flex: 1;
-      background: none; border: none;
-      color: var(--text-3);
-      padding: 10px 8px 12px;
-      cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      transition: color 0.2s;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .nav-btn.active { color: var(--accent); }
-    .nav-btn svg { width: 22px; height: 22px; }
-    .nav-btn span { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
-
-    /* ─── RECORDS PAGE ─── */
-    .records-toolbar {
-      padding: 12px 16px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      background: var(--card);
-    }
-    .records-title { font-size: 15px; font-weight: 700; }
-    .clear-btn {
-      background: none;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-      border-radius: 8px;
-      padding: 5px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      letter-spacing: 0.3px;
-    }
-    .clear-btn:active { background: var(--danger-dim); }
-
-    .records-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 14px;
-      display: flex;
-      flex-direction: column;
+    .calc-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
-      min-height: 0;
-      overscroll-behavior: contain;
-    }
-    .records-list::-webkit-scrollbar { width: 3px; }
-    .records-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .rec-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      padding: 11px 13px;
-      animation: fadeIn 0.2s ease;
-    }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-    .rec-top {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 8px;
-      margin-bottom: 5px;
-    }
-    .rec-desc { font-size: 14px; font-weight: 600; line-height: 1.3; flex: 1; }
-    .rec-actions { display: flex; gap: 2px; flex-shrink: 0; }
-    .rec-action {
-      background: none; border: none;
-      padding: 3px 6px; border-radius: 7px;
-      font-size: 14px; cursor: pointer;
-      transition: background 0.15s;
-    }
-    .rec-action:active { background: var(--card2); }
-    .rec-meta {
-      display: flex; flex-wrap: wrap; gap: 8px;
-      font-size: 10px; color: var(--text-2);
-      margin-bottom: 7px;
-    }
-    .rec-amounts { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-    .rec-foreign { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
-    .rec-arrow { color: var(--text-3); font-size: 12px; }
-    .rec-twd { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; color: var(--accent); }
-
-    .records-total {
-      margin: 6px 14px 10px;
-      padding: 13px 16px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent-glow);
-      border-radius: 13px;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-shrink: 0;
-    }
-    .total-label { font-size: 12px; color: var(--text-2); font-weight: 500; }
-    .total-count { font-size: 10px; color: var(--text-3); }
-    .total-amount {
-      font-family: 'DM Mono', monospace;
-      font-size: 20px; font-weight: 700; color: var(--accent);
+      margin-bottom: 12px;
     }
 
-    .empty-state {
-      flex: 1;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: var(--text-3); gap: 10px; padding: 20px;
+    .tab-btn {
+      border-radius: 999px;
+      padding: 11px;
+      background: #f4f7f7;
+      color: var(--muted);
+      font-weight: 800;
+      border: 1px solid transparent;
     }
-    .empty-icon { font-size: 48px; opacity: 0.4; }
-    .empty-state p { font-size: 13px; text-align: center; }
 
-    /* ─── BOTTOM SHEET ─── */
-    .overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(6px);
-      z-index: 200;
-      display: flex; align-items: flex-end;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s;
+    .tab-btn.active {
+      background: #e8f4f2;
+      color: var(--mint-deep);
+      border-color: #cae2df;
+      box-shadow: inset 0 -2px 0 rgba(120, 182, 176, 0.18);
     }
-    .overlay.show { opacity: 1; pointer-events: all; }
-    .sheet {
-      background: var(--card);
-      border-radius: 22px 22px 0 0;
-      padding: 8px 20px 28px;
-      width: 100%;
-      max-height: 90dvh;
-      overflow-y: auto;
-      transform: translateY(40px);
-      transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+
+    .calc-frame {
+      border-radius: 28px;
+      background: linear-gradient(180deg, #eef2f1 0%, #ecf2ef 100%);
+      border: 2px solid #d4dfdb;
+      padding: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
     }
-    .overlay.show .sheet { transform: translateY(0); }
-    .sheet-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 10px auto 16px;
+
+    .calculator {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      user-select: none;
     }
-    .sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
-    .sheet-field { margin-bottom: 13px; }
-    .sheet-lbl { font-size: 10px; color: var(--text-2); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 5px; }
-    .sheet-inp {
-      width: 100%;
-      background: var(--card2);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 11px 14px;
+
+    .key {
+      min-height: 74px;
+      border-radius: 18px;
+      font-size: 24px;
+      font-weight: 900;
+      color: #485252;
+      border: 2px solid rgba(0,0,0,0.06);
+      box-shadow: 0 7px 0 rgba(127, 185, 179, 0.22);
+      background: linear-gradient(180deg, #ffffff 0%, #f2f2f2 100%);
+    }
+
+    .key.num {
+      background: linear-gradient(180deg, #fbfbfb 0%, #f0f0f0 100%);
+    }
+
+    .key.top {
+      background: linear-gradient(180deg, #f6d678 0%, var(--yellow) 100%);
+      box-shadow: 0 7px 0 rgba(216, 179, 76, 0.38);
+    }
+
+    .key.op, .key.equal {
+      color: #ffffff;
+      background: linear-gradient(180deg, #63b7b2 0%, #56aaa7 100%);
+      box-shadow: 0 7px 0 rgba(74, 145, 142, 0.42);
+    }
+
+    .key.zero {
+      grid-column: span 2;
+    }
+
+    .record-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .record-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .total-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 15px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #f7fcfb 0%, #edf7f5 100%);
+      border: 1px solid #dce9e5;
+      margin-top: 12px;
+    }
+
+    .total-box .amount {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--mint-deep);
+    }
+
+    .record-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .record-item {
+      border: 1px solid #e2ece8;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.88);
+      padding: 14px;
+      box-shadow: 0 8px 18px rgba(120, 182, 176, 0.08);
+    }
+
+    .record-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .record-name {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .record-date {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .record-money {
+      margin-top: 10px;
+      display: grid;
+      gap: 5px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .record-money strong {
+      font-size: 18px;
       color: var(--text);
-      font-size: 15px;
-      font-family: 'DM Sans', sans-serif;
-      outline: none;
-      -webkit-user-select: text;
-      user-select: text;
     }
-    .sheet-inp:focus { border-color: var(--accent); }
-    .amount-preview {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 11px 14px;
-      font-family: 'DM Mono', monospace;
+
+    .record-location {
+      margin-top: 8px;
+      color: var(--muted);
       font-size: 13px;
-      color: var(--text-2);
     }
-    .amount-preview strong { color: var(--accent); }
-    .sheet-actions { display: flex; gap: 8px; margin-top: 16px; }
-    .sh-cancel {
+
+    .record-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .record-buttons button {
       flex: 1;
-      background: var(--card2); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--text-2);
-      font-size: 15px; font-weight: 500; padding: 13px;
-      cursor: pointer; font-family: 'DM Sans', sans-serif;
     }
-    .sh-confirm {
-      flex: 2;
-      background: var(--accent); border: none;
-      border-radius: 12px; color: #0A0E14;
-      font-size: 15px; font-weight: 700; padding: 13px;
-      cursor: pointer; font-family: 'DM Sans', sans-serif;
-    }
-    .sh-confirm:active { background: #00B894; }
-    .sh-cancel:active { background: var(--card3); }
 
-    /* ─── TOAST ─── */
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 18px 6px;
+      border-radius: 18px;
+      border: 1px dashed #d7e5e0;
+      background: rgba(255,255,255,0.7);
+    }
+
     .toast {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--card3); border: 1px solid var(--border);
-      color: var(--text); padding: 9px 18px;
-      border-radius: 20px; font-size: 13px;
-      z-index: 999; opacity: 0;
-      transition: opacity 0.2s, transform 0.2s;
-      white-space: nowrap;
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%) translateY(20px);
+      width: calc(100% - 30px);
+      max-width: 480px;
+      padding: 13px 15px;
+      border-radius: 18px;
+      background: rgba(56, 69, 68, 0.92);
+      color: #fff;
+      text-align: center;
+      opacity: 0;
       pointer-events: none;
+      transition: 0.22s ease;
+      z-index: 20;
+      font-size: 14px;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ─── COLOR CODED CURRENCY TAG ─── */
-    .rec-currency-tag {
-      display: inline-block;
-      font-size: 9px; font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 5px;
-      background: var(--accent-dim);
-      color: var(--accent);
-      border: 1px solid var(--accent-glow);
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .footer-note {
+      padding: 6px 10px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 420px) {
+      .app { padding: 16px 12px 28px; }
+      h1 { font-size: 28px; }
+      .card { padding: 16px; }
+      .key { min-height: 68px; font-size: 22px; }
+      .amount-input { font-size: 24px; }
+    }
+
+    @media (max-width: 360px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .rate-row { grid-template-columns: 1fr; }
+      .record-actions { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+  <main class="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>即時換匯<br>計算機</h1>
+          <div class="subtitle">手機使用友善，支援即時匯率、手動修改匯率、費用紀錄與本機保存。</div>
+        </div>
+        <div class="pill" id="rateStatus">準備更新</div>
+      </div>
+    </section>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-left">
-    <div class="header-logo">💱</div>
-    <div class="header-title">換<em>匯</em>計算機</div>
-  </div>
-  <div class="update-badge" id="updateBadge">匯率更新中…</div>
-</div>
+    <section class="card">
+      <div class="section-title">
+        <h2>匯率設定</h2>
+        <span class="small-text" id="lastUpdated">尚未更新</span>
+      </div>
 
-<!-- TAB CONTENT -->
-<div class="tab-content">
+      <div class="field">
+        <div class="label-row">
+          <label for="currencySelect">幣別</label>
+          <span>以 1 外幣 = 幾元台幣計算</span>
+        </div>
+        <select id="currencySelect"></select>
+      </div>
 
-  <!-- ══ CALC PAGE ══ -->
-  <div class="page active" id="page-calc">
+      <div class="rate-row">
+        <div class="field" style="margin-bottom:0;">
+          <div class="label-row">
+            <label for="rateInput">即期匯率 / 手動匯率</label>
+            <span id="manualHint">可自行修改</span>
+          </div>
+          <input id="rateInput" inputmode="decimal" type="number" step="0.0001" min="0" placeholder="例如 0.2200" />
+        </div>
+        <button class="ghost-btn" id="refreshRateBtn" type="button">更新</button>
+      </div>
+    </section>
 
-    <!-- Currency Chips -->
-    <div class="currency-scroll" id="chipScroll"></div>
+    <section class="card">
+      <div class="section-title">
+        <h2>金額換算</h2>
+        <span class="small-text">金額自動四捨五入為整數</span>
+      </div>
 
-    <!-- Rate Bar -->
-    <div class="rate-bar">
-      <span class="rate-label">即期匯率</span>
-      <input type="number" class="rate-input" id="rateInput" step="0.0001" placeholder="—">
-      <span class="rate-unit" id="rateUnit">TWD/USD</span>
-      <button class="refresh-btn" id="refreshBtn" onclick="fetchRate()">↻</button>
-    </div>
-
-    <!-- Amount Fields -->
-    <div class="amounts">
-      <div class="amount-field active-field" id="foreignField" onclick="setActive('foreign')">
-        <div class="amount-label">外幣金額 <span id="foreignCurrLabel">USD</span></div>
-        <div class="amount-row">
-          <div class="amount-value dim" id="foreignDisplay">0</div>
-          <div class="cursor-indicator"></div>
-          <div class="amount-currency" id="foreignCurrTag">USD</div>
+      <div class="field">
+        <div class="label-row">
+          <label for="foreignAmount">外幣金額</label>
+          <span id="foreignCodeLabel">JPY</span>
+        </div>
+        <div class="amount-wrap">
+          <input class="amount-input" id="foreignAmount" type="text" inputmode="none" readonly placeholder="0" />
+          <div class="expression-hint" id="foreignHint"></div>
         </div>
       </div>
-      <div class="amount-field" id="twdField" onclick="setActive('twd')">
-        <div class="amount-label">台幣金額 TWD</div>
-        <div class="amount-row">
-          <div class="amount-value dim" id="twdDisplay">NT$0</div>
-          <div class="cursor-indicator"></div>
-          <div class="amount-currency">TWD</div>
+
+      <div class="swap-row">
+        <div class="swap-line"></div>
+        <button class="swap-btn" id="swapFocusBtn" type="button" title="切換輸入欄位">⇅</button>
+        <div class="swap-line"></div>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="twdAmount">台幣金額</label>
+          <span>TWD</span>
+        </div>
+        <div class="amount-wrap">
+          <input class="amount-input" id="twdAmount" type="text" inputmode="none" readonly placeholder="0" />
+          <div class="expression-hint" id="twdHint"></div>
         </div>
       </div>
-    </div>
 
-    <!-- Numpad -->
-    <div class="numpad">
-      <button class="np" ontouchstart="" onclick="pad('7')">7</button>
-      <button class="np" ontouchstart="" onclick="pad('8')">8</button>
-      <button class="np" ontouchstart="" onclick="pad('9')">9</button>
-      <button class="np" ontouchstart="" onclick="pad('4')">4</button>
-      <button class="np" ontouchstart="" onclick="pad('5')">5</button>
-      <button class="np" ontouchstart="" onclick="pad('6')">6</button>
-      <button class="np" ontouchstart="" onclick="pad('1')">1</button>
-      <button class="np" ontouchstart="" onclick="pad('2')">2</button>
-      <button class="np" ontouchstart="" onclick="pad('3')">3</button>
-      <button class="np" ontouchstart="" onclick="pad('.')">·</button>
-      <button class="np" ontouchstart="" onclick="pad('0')">0</button>
-      <button class="np np-func" ontouchstart="" onclick="backspace()">⌫</button>
-      <button class="np np-func" ontouchstart="" onclick="clearAll()" style="font-size:13px;">清除</button>
-      <button class="np np-add" ontouchstart="" onclick="openSheet()">＋ 加入紀錄</button>
-    </div>
-
-  </div>
-
-  <!-- ══ RECORDS PAGE ══ -->
-  <div class="page" id="page-records">
-    <div class="records-toolbar">
-      <div class="records-title">費用紀錄</div>
-      <button class="clear-btn" onclick="clearAllRecords()">全部清除</button>
-    </div>
-    <div class="records-list" id="recordsList"></div>
-    <div class="records-total">
-      <div>
-        <div class="total-label">📊 總計台幣</div>
-        <div class="total-count" id="totalCount">共 0 筆</div>
+      <div class="calc-tabs">
+        <button class="tab-btn active" id="tabForeign" type="button">輸入外幣</button>
+        <button class="tab-btn" id="tabTwd" type="button">輸入台幣</button>
       </div>
-      <div class="total-amount" id="totalAmount">NT$0</div>
-    </div>
-  </div>
 
-</div>
+      <div class="calc-frame">
+        <div class="calculator" aria-label="小型計算機">
+          <button class="key top" data-key="AC" type="button">C</button>
+          <button class="key top" data-key="DEL" type="button">←</button>
+          <button class="key top" data-key="%" type="button">%</button>
+          <button class="key op" data-key="/" type="button">÷</button>
 
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <button class="nav-btn active" id="nav-calc" onclick="switchTab('calc')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="3"/>
-      <path d="M9 9h.01M12 9h.01M15 9h.01M9 12h.01M12 12h.01M15 12h.01M9 15h.01M12 15h3"/>
-    </svg>
-    <span>換算</span>
-  </button>
-  <button class="nav-btn" id="nav-records" onclick="switchTab('records')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <line x1="10" y1="9" x2="8" y2="9"/>
-    </svg>
-    <span>紀錄</span>
-  </button>
-</div>
+          <button class="key num" data-key="7" type="button">7</button>
+          <button class="key num" data-key="8" type="button">8</button>
+          <button class="key num" data-key="9" type="button">9</button>
+          <button class="key op" data-key="*" type="button">×</button>
 
-<!-- ADD/EDIT SHEET -->
-<div class="overlay" id="overlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title" id="sheetTitle">新增費用紀錄</div>
-    <div class="sheet-field">
-      <div class="sheet-lbl">費用說明 *</div>
-      <input class="sheet-inp" id="inpDesc" type="text" placeholder="例：午餐、計程車、伴手禮…">
-    </div>
-    <div class="sheet-field">
-      <div class="sheet-lbl">日期</div>
-      <input class="sheet-inp" id="inpDate" type="date">
-    </div>
-    <div class="sheet-field">
-      <div class="sheet-lbl">地點（選填）</div>
-      <input class="sheet-inp" id="inpLoc" type="text" placeholder="例：東京、首爾、曼谷…">
-    </div>
-    <div class="sheet-field">
-      <div class="sheet-lbl">金額</div>
-      <div class="amount-preview" id="previewAmt">—</div>
-    </div>
-    <div class="sheet-actions">
-      <button class="sh-cancel" onclick="closeSheet()">取消</button>
-      <button class="sh-confirm" id="confirmBtn" onclick="confirmRecord()">確認記錄</button>
-    </div>
-  </div>
-</div>
+          <button class="key num" data-key="4" type="button">4</button>
+          <button class="key num" data-key="5" type="button">5</button>
+          <button class="key num" data-key="6" type="button">6</button>
+          <button class="key op" data-key="-" type="button">−</button>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+          <button class="key num" data-key="1" type="button">1</button>
+          <button class="key num" data-key="2" type="button">2</button>
+          <button class="key num" data-key="3" type="button">3</button>
+          <button class="key op" data-key="+" type="button">＋</button>
 
-<script>
-// ═══════════════════════════════════════════
-//  DATA
-// ═══════════════════════════════════════════
-const CURRENCIES = [
-  { code:'USD', name:'美元', flag:'🇺🇸', sym:'$',    decimals:2 },
-  { code:'JPY', name:'日圓', flag:'🇯🇵', sym:'¥',    decimals:0 },
-  { code:'EUR', name:'歐元', flag:'🇪🇺', sym:'€',    decimals:2 },
-  { code:'KRW', name:'韓圓', flag:'🇰🇷', sym:'₩',    decimals:0 },
-  { code:'GBP', name:'英鎊', flag:'🇬🇧', sym:'£',    decimals:2 },
-  { code:'HKD', name:'港幣', flag:'🇭🇰', sym:'HK$',  decimals:2 },
-  { code:'CNY', name:'人民幣',flag:'🇨🇳',sym:'¥',    decimals:2 },
-  { code:'SGD', name:'新幣', flag:'🇸🇬', sym:'S$',   decimals:2 },
-  { code:'AUD', name:'澳幣', flag:'🇦🇺', sym:'A$',   decimals:2 },
-  { code:'THB', name:'泰銖', flag:'🇹🇭', sym:'฿',    decimals:2 },
-  { code:'MYR', name:'馬幣', flag:'🇲🇾', sym:'RM',   decimals:2 },
-  { code:'VND', name:'越南盾',flag:'🇻🇳',sym:'₫',    decimals:0 },
-];
+          <button class="key num zero" data-key="0" type="button">0</button>
+          <button class="key num" data-key="." type="button">.</button>
+          <button class="key equal" data-key="=" type="button">＝</button>
+        </div>
+      </div>
+    </section>
 
-// ═══════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════
-let s = {
-  currency: localStorage.getItem('last_currency') || 'USD',
-  rate: null,
-  foreignStr: '0',
-  twdStr: '0',
-  active: 'foreign',   // 'foreign' | 'twd'
-  editId: null,
-};
+    <section class="card">
+      <div class="section-title">
+        <h2>費用紀錄</h2>
+        <button class="danger-btn" id="clearAllBtn" type="button">全部清除</button>
+      </div>
 
-let records = JSON.parse(localStorage.getItem('ex_records') || '[]');
+      <div class="record-form">
+        <div class="grid-2">
+          <div class="field" style="margin-bottom:0;">
+            <div class="label-row"><label for="recordDate">日期</label></div>
+            <input id="recordDate" type="date" />
+          </div>
 
-// ═══════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════
-function init() {
-  buildChips();
-  fetchRate();
-  renderRecords();
-  document.getElementById('inpDate').value = todayStr();
-}
-
-function todayStr() {
-  return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-}
-
-function currObj() { return CURRENCIES.find(c => c.code === s.currency); }
-
-// ═══════════════════════════════════════════
-//  CURRENCY CHIPS
-// ═══════════════════════════════════════════
-function buildChips() {
-  const wrap = document.getElementById('chipScroll');
-  wrap.innerHTML = CURRENCIES.map(c => `
-    <div class="chip ${c.code === s.currency ? 'active' : ''}" onclick="pickCurrency('${c.code}')">
-      <span class="flag">${c.flag}</span>
-      <span class="code">${c.code}</span>
-      <span class="name">${c.name}</span>
-    </div>
-  `).join('');
-
-  // Scroll active chip into view
-  setTimeout(() => {
-    const activeChip = wrap.querySelector('.chip.active');
-    if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
-  }, 50);
-}
-
-function pickCurrency(code) {
-  s.currency = code;
-  s.foreignStr = '0';
-  s.twdStr = '0';
-  s.rate = null;
-  localStorage.setItem('last_currency', code);
-  buildChips();
-  updateDisplays();
-  fetchRate();
-}
-
-// ═══════════════════════════════════════════
-//  EXCHANGE RATE
-// ═══════════════════════════════════════════
-async function fetchRate() {
-  const btn = document.getElementById('refreshBtn');
-  btn.innerHTML = '<span class="spinning">↻</span>';
-  document.getElementById('updateBadge').textContent = '更新中…';
-  try {
-    const res = await fetch(`https://open.er-api.com/v6/latest/${s.currency}`);
-    const data = await res.json();
-    if (data.result === 'success' && data.rates && data.rates.TWD) {
-      s.rate = data.rates.TWD;
-      document.getElementById('rateInput').value = s.rate.toFixed(4);
-      document.getElementById('rateUnit').textContent = `TWD / ${s.currency}`;
-      const t = new Date();
-      const hh = t.getHours().toString().padStart(2,'0');
-      const mm = t.getMinutes().toString().padStart(2,'0');
-      document.getElementById('updateBadge').textContent = `${hh}:${mm} 已更新`;
-      recompute();
-    } else {
-      throw new Error('no TWD rate');
-    }
-  } catch(e) {
-    document.getElementById('updateBadge').textContent = '更新失敗';
-    document.getElementById('rateInput').placeholder = '請手動輸入';
-  } finally {
-    btn.innerHTML = '↻';
-  }
-}
-
-document.getElementById('rateInput').addEventListener('input', function() {
-  s.rate = parseFloat(this.value) || null;
-  recompute();
-});
-
-// ═══════════════════════════════════════════
-//  NUMPAD
-// ═══════════════════════════════════════════
-function setActive(field) {
-  s.active = field;
-  document.getElementById('foreignField').classList.toggle('active-field', field === 'foreign');
-  document.getElementById('twdField').classList.toggle('active-field', field === 'twd');
-}
-
-function pad(ch) {
-  let val = s.active === 'foreign' ? s.foreignStr : s.twdStr;
-
-  if (ch === '.') {
-    if (val.includes('.')) return;
-    if (val === '0') { val = '0'; }
-    val += '.';
-  } else if (ch === '0') {
-    if (val === '0') return;
-    val += '0';
-  } else {
-    if (val === '0') val = '';
-    val += ch;
-  }
-
-  // Reasonable max length
-  if (val.replace('.', '').length > 12) return;
-
-  if (s.active === 'foreign') s.foreignStr = val;
-  else s.twdStr = val;
-
-  recompute();
-}
-
-function backspace() {
-  let val = s.active === 'foreign' ? s.foreignStr : s.twdStr;
-  val = val.length <= 1 ? '0' : val.slice(0, -1);
-  if (val.endsWith('.')) val = val.slice(0, -1) || '0';
-  if (s.active === 'foreign') s.foreignStr = val;
-  else s.twdStr = val;
-  recompute();
-}
-
-function clearAll() {
-  s.foreignStr = '0';
-  s.twdStr = '0';
-  updateDisplays();
-}
-
-// ═══════════════════════════════════════════
-//  COMPUTE
-// ═══════════════════════════════════════════
-function recompute() {
-  if (!s.rate) { updateDisplays(); return; }
-  if (s.active === 'foreign') {
-    const f = parseFloat(s.foreignStr) || 0;
-    const twd = f * s.rate;
-    s.twdStr = twd === 0 ? '0' : twd.toFixed(2);
-  } else {
-    const t = parseFloat(s.twdStr) || 0;
-    const foreign = t / s.rate;
-    const c = currObj();
-    s.foreignStr = foreign === 0 ? '0' : foreign.toFixed(c.decimals === 0 ? 2 : c.decimals);
-  }
-  updateDisplays();
-}
-
-// ═══════════════════════════════════════════
-//  DISPLAY
-// ═══════════════════════════════════════════
-function updateDisplays() {
-  const c = currObj();
-  document.getElementById('foreignCurrLabel').textContent = s.currency;
-  document.getElementById('foreignCurrTag').textContent = s.currency;
-
-  const fv = parseFloat(s.foreignStr) || 0;
-  const fDisp = document.getElementById('foreignDisplay');
-  fDisp.textContent = fmtNum(s.foreignStr, c);
-  fDisp.classList.toggle('dim', fv === 0 && !s.foreignStr.endsWith('.'));
-
-  const tv = parseFloat(s.twdStr) || 0;
-  const tDisp = document.getElementById('twdDisplay');
-  tDisp.textContent = 'NT$' + fmtNum(s.twdStr, { decimals: 0 });
-  tDisp.classList.toggle('dim', tv === 0 && !s.twdStr.endsWith('.'));
-}
-
-function fmtNum(str, curr) {
-  if (str === '0' || str === '') return '0';
-  if (str.endsWith('.')) {
-    const n = parseInt(str) || 0;
-    return n.toLocaleString() + '.';
-  }
-  const dotIdx = str.indexOf('.');
-  if (dotIdx !== -1) {
-    const intPart = parseInt(str.slice(0, dotIdx)) || 0;
-    const decPart = str.slice(dotIdx + 1);
-    return intPart.toLocaleString() + '.' + decPart;
-  }
-  const n = parseFloat(str) || 0;
-  if (curr.decimals === 0) return Math.round(n).toLocaleString();
-  return n.toLocaleString('en', { maximumFractionDigits: 4, minimumFractionDigits: 0 });
-}
-
-// ═══════════════════════════════════════════
-//  TAB NAV
-// ═══════════════════════════════════════════
-function switchTab(tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + tab).classList.add('active');
-  document.getElementById('nav-' + tab).classList.add('active');
-  if (tab === 'records') renderRecords();
-}
-
-// ═══════════════════════════════════════════
-//  ADD RECORD SHEET
-// ═══════════════════════════════════════════
-function openSheet() {
-  const fv = parseFloat(s.foreignStr) || 0;
-  if (fv === 0) { showToast('請先輸入外幣金額'); return; }
-  if (!s.rate) { showToast('請先取得或輸入匯率'); return; }
-
-  s.editId = null;
-  document.getElementById('sheetTitle').textContent = '新增費用紀錄';
-  document.getElementById('inpDesc').value = '';
-  document.getElementById('inpDate').value = todayStr();
-  document.getElementById('inpLoc').value = '';
-  document.getElementById('confirmBtn').textContent = '確認記錄';
-
-  const c = currObj();
-  const twd = parseFloat(s.twdStr) || 0;
-  document.getElementById('previewAmt').innerHTML =
-    `<strong>${c.sym}${fmtNum(s.foreignStr, c)} ${s.currency}</strong>&nbsp;＝&nbsp;<strong>NT$${Math.round(twd).toLocaleString()}</strong>`;
-
-  document.getElementById('overlay').classList.add('show');
-  setTimeout(() => document.getElementById('inpDesc').focus(), 300);
-}
-
-function closeSheet() {
-  document.getElementById('overlay').classList.remove('show');
-}
-
-function confirmRecord() {
-  const desc = document.getElementById('inpDesc').value.trim();
-  if (!desc) { document.getElementById('inpDesc').focus(); showToast('請輸入費用說明'); return; }
-
-  const date = document.getElementById('inpDate').value || todayStr();
-  const loc = document.getElementById('inpLoc').value.trim();
-
-  if (s.editId !== null) {
-    const idx = records.findIndex(r => r.id === s.editId);
-    if (idx !== -1) {
-      records[idx] = { ...records[idx], description: desc, date, location: loc };
-    }
-    showToast('已更新紀錄 ✓');
-  } else {
-    const c = currObj();
-    records.unshift({
-      id: Date.now(),
-      date,
-      description: desc,
-      location: loc,
-      currency: s.currency,
-      currSym: c.sym,
-      currDec: c.decimals,
-      foreignAmount: parseFloat(s.foreignStr),
-      rate: s.rate,
-      twdAmount: parseFloat(s.twdStr) || 0,
-    });
-    showToast('已記錄 ✓');
-  }
-
-  saveRecords();
-  closeSheet();
-  switchTab('records');
-}
-
-// ═══════════════════════════════════════════
-//  RECORDS CRUD
-// ═══════════════════════════════════════════
-function saveRecords() { localStorage.setItem('ex_records', JSON.stringify(records)); }
-
-function renderRecords() {
-  const list = document.getElementById('recordsList');
-
-  if (records.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <p>尚無費用紀錄<br>換算金額後點「加入紀錄」</p>
-      </div>`;
-  } else {
-    list.innerHTML = records.map(r => `
-      <div class="rec-card" id="r${r.id}">
-        <div class="rec-top">
-          <div class="rec-desc">${esc(r.description)}</div>
-          <div class="rec-actions">
-            <button class="rec-action" onclick="editRecord(${r.id})" title="修改">✏️</button>
-            <button class="rec-action" onclick="deleteRecord(${r.id})" title="刪除">🗑️</button>
+          <div class="field" style="margin-bottom:0;">
+            <div class="label-row"><label for="recordPlace">地點</label></div>
+            <input id="recordPlace" type="text" placeholder="可空白" />
           </div>
         </div>
-        <div class="rec-meta">
-          <span>📅 ${fmtDate(r.date)}</span>
-          ${r.location ? `<span>📍 ${esc(r.location)}</span>` : ''}
-          <span class="rec-currency-tag">${r.currency}</span>
+
+        <div class="field" style="margin-bottom:0;">
+          <div class="label-row"><label for="recordName">這筆是什麼費用？</label></div>
+          <input id="recordName" type="text" placeholder="例如：餐費、交通、伴手禮" />
         </div>
-        <div class="rec-amounts">
-          <span class="rec-foreign">${r.currSym}${fmtForeign(r.foreignAmount, r.currDec)}</span>
-          <span class="rec-arrow">→</span>
-          <span class="rec-twd">NT$${Math.round(r.twdAmount).toLocaleString()}</span>
+
+        <div class="record-actions">
+          <button class="main-btn" id="saveRecordBtn" type="button">新增紀錄</button>
+          <button class="ghost-btn" id="cancelEditBtn" type="button" style="display:none;">取消修改</button>
         </div>
       </div>
-    `).join('');
-  }
 
-  const total = records.reduce((s, r) => s + (r.twdAmount || 0), 0);
-  document.getElementById('totalAmount').textContent = 'NT$' + Math.round(total).toLocaleString();
-  document.getElementById('totalCount').textContent = `共 ${records.length} 筆`;
-}
+      <div class="total-box">
+        <div>
+          <div class="small-text">目前總計</div>
+          <div class="amount" id="totalTwd">NT$ 0</div>
+        </div>
+        <div class="small-text" id="totalCount">0 筆</div>
+      </div>
 
-function fmtForeign(n, dec) {
-  if (dec === 0) return Math.round(n).toLocaleString();
-  return n.toLocaleString('en', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
-}
+      <div class="record-list" id="recordList"></div>
+    </section>
 
-function editRecord(id) {
-  const r = records.find(r => r.id === id);
-  if (!r) return;
+    <div class="footer-note">
+      匯率來源：ExchangeRate-API Open Access。資料通常每日更新，實際刷卡、銀行現鈔與手續費可能不同，如有需要可直接手動修改匯率。
+    </div>
+  </main>
 
-  s.editId = id;
-  document.getElementById('sheetTitle').textContent = '修改費用紀錄';
-  document.getElementById('inpDesc').value = r.description;
-  document.getElementById('inpDate').value = r.date;
-  document.getElementById('inpLoc').value = r.location || '';
-  document.getElementById('confirmBtn').textContent = '儲存修改';
-  document.getElementById('previewAmt').innerHTML =
-    `<strong>${r.currSym}${fmtForeign(r.foreignAmount, r.currDec)} ${r.currency}</strong>&nbsp;＝&nbsp;<strong>NT$${Math.round(r.twdAmount).toLocaleString()}</strong>`;
+  <div class="toast" id="toast"></div>
 
-  document.getElementById('overlay').classList.add('show');
-  setTimeout(() => document.getElementById('inpDesc').focus(), 300);
-}
+  <script>
+    const currencies = [
+      { code: "JPY", name: "日圓", emoji: "🇯🇵" },
+      { code: "USD", name: "美元", emoji: "🇺🇸" },
+      { code: "KRW", name: "韓元", emoji: "🇰🇷" },
+      { code: "HKD", name: "港幣", emoji: "🇭🇰" },
+      { code: "CNY", name: "人民幣", emoji: "🇨🇳" },
+      { code: "THB", name: "泰銖", emoji: "🇹🇭" },
+      { code: "EUR", name: "歐元", emoji: "🇪🇺" },
+      { code: "GBP", name: "英鎊", emoji: "🇬🇧" },
+      { code: "SGD", name: "新加坡幣", emoji: "🇸🇬" },
+      { code: "AUD", name: "澳幣", emoji: "🇦🇺" },
+      { code: "CAD", name: "加幣", emoji: "🇨🇦" },
+      { code: "MYR", name: "馬幣", emoji: "🇲🇾" },
+      { code: "VND", name: "越南盾", emoji: "🇻🇳" },
+      { code: "PHP", name: "菲律賓披索", emoji: "🇵🇭" }
+    ];
 
-function deleteRecord(id) {
-  if (!confirm('確定要刪除這筆紀錄嗎？')) return;
-  records = records.filter(r => r.id !== id);
-  saveRecords();
+    const STORAGE_KEY = "mobileExchangeRecords_v2";
+    const SETTING_KEY = "mobileExchangeSettings_v2";
+    const RATE_CACHE_KEY = "mobileExchangeRateCache_v2";
 
-  // Animate out
-  const el = document.getElementById('r' + id);
-  if (el) {
-    el.style.transition = 'opacity 0.2s, transform 0.2s';
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(30px)';
-    setTimeout(() => renderRecords(), 200);
-  } else {
-    renderRecords();
-  }
-  showToast('已刪除');
-}
+    const $ = (id) => document.getElementById(id);
 
-function clearAllRecords() {
-  if (records.length === 0) { showToast('目前沒有紀錄'); return; }
-  if (!confirm(`確定要清除全部 ${records.length} 筆紀錄嗎？`)) return;
-  records = [];
-  saveRecords();
-  renderRecords();
-  showToast('已清除所有紀錄');
-}
+    const currencySelect = $("currencySelect");
+    const rateInput = $("rateInput");
+    const refreshRateBtn = $("refreshRateBtn");
+    const rateStatus = $("rateStatus");
+    const lastUpdated = $("lastUpdated");
+    const manualHint = $("manualHint");
+    const foreignCodeLabel = $("foreignCodeLabel");
+    const foreignAmount = $("foreignAmount");
+    const twdAmount = $("twdAmount");
+    const foreignHint = $("foreignHint");
+    const twdHint = $("twdHint");
+    const tabForeign = $("tabForeign");
+    const tabTwd = $("tabTwd");
+    const swapFocusBtn = $("swapFocusBtn");
+    const recordDate = $("recordDate");
+    const recordPlace = $("recordPlace");
+    const recordName = $("recordName");
+    const saveRecordBtn = $("saveRecordBtn");
+    const cancelEditBtn = $("cancelEditBtn");
+    const clearAllBtn = $("clearAllBtn");
+    const recordList = $("recordList");
+    const totalTwd = $("totalTwd");
+    const totalCount = $("totalCount");
+    const toast = $("toast");
 
-// ═══════════════════════════════════════════
-//  UTILITIES
-// ═══════════════════════════════════════════
-function fmtDate(str) {
-  if (!str) return '';
-  const [y, m, d] = str.split('-');
-  return `${y}/${m}/${d}`;
-}
+    let activeInput = "foreign";
+    let expression = "";
+    let records = [];
+    let editingId = null;
+    let settings = {
+      currency: "JPY",
+      rate: "",
+      lastMode: "foreign"
+    };
 
-function esc(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+    function todayString() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
 
-let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
-}
+    function formatNumber(num) {
+      if (!Number.isFinite(num)) return "0";
+      return Math.round(num).toLocaleString("zh-TW");
+    }
 
-// Close sheet on backdrop tap
-document.getElementById('overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeSheet();
-});
+    function parseDisplayNumber(value) {
+      if (!value) return 0;
+      const num = Number(String(value).replace(/,/g, ""));
+      return Number.isFinite(num) ? num : 0;
+    }
 
-// ═══════════════════════════════════════════
-//  START
-// ═══════════════════════════════════════════
-init();
-updateDisplays();
-</script>
+    function normalizeNumberString(num) {
+      if (!Number.isFinite(num)) return "";
+      const rounded = Math.round(num * 100000) / 100000;
+      return String(rounded);
+    }
+
+    function moneyTwd(num) {
+      return `NT$ ${formatNumber(num)}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function saveSettings() {
+      settings.currency = currencySelect.value;
+      settings.rate = rateInput.value;
+      settings.lastMode = activeInput;
+      localStorage.setItem(SETTING_KEY, JSON.stringify(settings));
+    }
+
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTING_KEY));
+        if (saved) settings = { ...settings, ...saved };
+      } catch (e) {}
+    }
+
+    function saveRecords() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function loadRecords() {
+      try {
+        records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch (e) {
+        records = [];
+      }
+    }
+
+    function initCurrencyOptions() {
+      currencySelect.innerHTML = currencies.map(c => (
+        `<option value="${c.code}">${c.emoji} ${c.name} ${c.code}</option>`
+      )).join("");
+    }
+
+    function updateCurrencyUI() {
+      foreignCodeLabel.textContent = currencySelect.value;
+    }
+
+    function getRateCache() {
+      try {
+        return JSON.parse(localStorage.getItem(RATE_CACHE_KEY)) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function setRateCache(cache) {
+      localStorage.setItem(RATE_CACHE_KEY, JSON.stringify(cache));
+    }
+
+    async function fetchRate(code, force = false) {
+      updateCurrencyUI();
+
+      const cache = getRateCache();
+      const cached = cache[code];
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      if (!force && cached && now - cached.fetchedAt < oneHour) {
+        rateInput.value = cached.rate;
+        rateStatus.textContent = "使用快取";
+        lastUpdated.textContent = cached.date ? `匯率日期：${cached.date}` : "已載入快取";
+        refreshComputedAmounts();
+        saveSettings();
+        return;
+      }
+
+      rateStatus.textContent = "更新中...";
+      refreshRateBtn.disabled = true;
+
+      try {
+        const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(code)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("匯率服務暫時無法使用");
+        const data = await res.json();
+        const rate = data && data.rates ? data.rates.TWD : null;
+        if (!rate) throw new Error("沒有取得 TWD 匯率");
+
+        const roundedRate = Number(rate).toFixed(rate < 1 ? 5 : 4);
+
+        rateInput.value = roundedRate;
+        cache[code] = {
+          rate: roundedRate,
+          date: data.time_last_update_utc ? new Date(data.time_last_update_utc).toLocaleDateString("zh-TW") : "",
+          fetchedAt: now
+        };
+
+        setRateCache(cache);
+        rateStatus.textContent = "已更新";
+        lastUpdated.textContent = cache[code].date ? `匯率日期：${cache[code].date}` : "剛剛更新";
+        manualHint.textContent = "可自行修改";
+        refreshComputedAmounts();
+        saveSettings();
+      } catch (err) {
+        rateStatus.textContent = "更新失敗";
+        showToast("抓不到即時匯率，請手動輸入匯率");
+        if (cached && cached.rate) {
+          rateInput.value = cached.rate;
+          lastUpdated.textContent = "使用上次快取匯率";
+          refreshComputedAmounts();
+        }
+      } finally {
+        refreshRateBtn.disabled = false;
+      }
+    }
+
+    function getRate() {
+      const rate = Number(rateInput.value);
+      return Number.isFinite(rate) && rate > 0 ? rate : 0;
+    }
+
+    function safeEval(expr) {
+      if (!expr) return 0;
+      let cleaned = String(expr).replace(/,/g, "");
+      if (!/^[0-9+\-*/. ()]+$/.test(cleaned)) return 0;
+      while (/[+\-*/.]$/.test(cleaned)) cleaned = cleaned.slice(0, -1);
+      if (!cleaned) return 0;
+
+      try {
+        const result = Function(`"use strict"; return (${cleaned})`)();
+        return Number.isFinite(result) ? result : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function getActiveValue() {
+      if (expression) return safeEval(expression);
+      return activeInput === "foreign"
+        ? parseDisplayNumber(foreignAmount.value)
+        : parseDisplayNumber(twdAmount.value);
+    }
+
+    function updateHints() {
+      if (activeInput === "foreign") {
+        foreignHint.textContent = expression ? `算式：${expression}` : "";
+        twdHint.textContent = "";
+      } else {
+        twdHint.textContent = expression ? `算式：${expression}` : "";
+        foreignHint.textContent = "";
+      }
+    }
+
+    function refreshComputedAmounts() {
+      const rate = getRate();
+      const value = getActiveValue();
+
+      if (!value) {
+        if (activeInput === "foreign") {
+          if (!expression) foreignAmount.value = "";
+          twdAmount.value = "";
+        } else {
+          if (!expression) twdAmount.value = "";
+          foreignAmount.value = "";
+        }
+        updateHints();
+        return;
+      }
+
+      if (activeInput === "foreign") {
+        foreignAmount.value = expression ? expression : formatNumber(value);
+        twdAmount.value = rate ? formatNumber(value * rate) : "";
+      } else {
+        twdAmount.value = expression ? expression : formatNumber(value);
+        foreignAmount.value = rate ? formatNumber(value / rate) : "";
+      }
+
+      updateHints();
+    }
+
+    function setActiveInput(type) {
+      if (type === activeInput) return;
+      const currentValue = getActiveValue();
+      activeInput = type;
+      tabForeign.classList.toggle("active", type === "foreign");
+      tabTwd.classList.toggle("active", type === "twd");
+      expression = currentValue ? normalizeNumberString(currentValue) : "";
+      refreshComputedAmounts();
+      saveSettings();
+    }
+
+    function clearCalculator() {
+      expression = "";
+      foreignAmount.value = "";
+      twdAmount.value = "";
+      foreignHint.textContent = "";
+      twdHint.textContent = "";
+    }
+
+    function handleCalcKey(key) {
+      const operators = ["+", "-", "*", "/"];
+      const last = expression.slice(-1);
+
+      if (key === "AC") {
+        clearCalculator();
+        return;
+      }
+
+      if (key === "DEL") {
+        expression = expression.slice(0, -1);
+        refreshComputedAmounts();
+        return;
+      }
+
+      if (key === "%") {
+        if (!expression) return;
+        const value = safeEval(expression);
+        expression = value ? normalizeNumberString(value / 100) : "";
+        refreshComputedAmounts();
+        return;
+      }
+
+      if (key === "=") {
+        const result = safeEval(expression);
+        expression = result ? normalizeNumberString(result) : "";
+        refreshComputedAmounts();
+        expression = "";
+        return;
+      }
+
+      if (operators.includes(key)) {
+        if (!expression) return;
+        if (operators.includes(last)) expression = expression.slice(0, -1);
+        expression += key;
+        refreshComputedAmounts();
+        return;
+      }
+
+      if (key === ".") {
+        const parts = expression.split(/[+\-*/]/);
+        const current = parts[parts.length - 1];
+        if (current.includes(".")) return;
+        if (!expression || operators.includes(last)) expression += "0";
+      }
+
+      expression += key;
+      refreshComputedAmounts();
+    }
+
+    function currentAmounts() {
+      const rate = getRate();
+      const activeValue = getActiveValue();
+
+      let foreign = activeInput === "foreign" ? activeValue : (rate ? activeValue / rate : 0);
+      let twd = activeInput === "twd" ? activeValue : (rate ? activeValue * rate : 0);
+
+      return {
+        foreign: Math.round(foreign || 0),
+        twd: Math.round(twd || 0),
+        rate
+      };
+    }
+
+    function resetRecordForm() {
+      editingId = null;
+      recordName.value = "";
+      recordPlace.value = "";
+      recordDate.value = todayString();
+      saveRecordBtn.textContent = "新增紀錄";
+      cancelEditBtn.style.display = "none";
+    }
+
+    function saveCurrentRecord() {
+      const { foreign, twd, rate } = currentAmounts();
+      const name = recordName.value.trim();
+
+      if (!foreign && !twd) {
+        showToast("請先輸入金額");
+        return;
+      }
+      if (!name) {
+        showToast("請輸入這筆是什麼費用");
+        return;
+      }
+      if (!rate) {
+        showToast("請先輸入匯率");
+        return;
+      }
+
+      const item = {
+        id: editingId || String(Date.now()),
+        date: recordDate.value || todayString(),
+        name,
+        place: recordPlace.value.trim(),
+        currency: currencySelect.value,
+        rate,
+        foreign,
+        twd,
+        createdAt: editingId ? (records.find(r => r.id === editingId)?.createdAt || Date.now()) : Date.now()
+      };
+
+      if (editingId) {
+        records = records.map(r => r.id === editingId ? item : r);
+        showToast("已修改紀錄");
+      } else {
+        records.unshift(item);
+        showToast("已新增紀錄");
+      }
+
+      saveRecords();
+      renderRecords();
+      resetRecordForm();
+    }
+
+    function editRecord(id) {
+      const item = records.find(r => r.id === id);
+      if (!item) return;
+
+      editingId = id;
+      currencySelect.value = item.currency;
+      rateInput.value = item.rate;
+      recordDate.value = item.date;
+      recordName.value = item.name;
+      recordPlace.value = item.place || "";
+      saveRecordBtn.textContent = "儲存修改";
+      cancelEditBtn.style.display = "block";
+
+      activeInput = "foreign";
+      tabForeign.classList.add("active");
+      tabTwd.classList.remove("active");
+      expression = "";
+      foreignAmount.value = formatNumber(item.foreign);
+      twdAmount.value = formatNumber(item.twd);
+      foreignHint.textContent = "";
+      twdHint.textContent = "";
+      updateCurrencyUI();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteRecord(id) {
+      records = records.filter(r => r.id !== id);
+      saveRecords();
+      renderRecords();
+      showToast("已刪除紀錄");
+    }
+
+    function clearAllRecords() {
+      if (!records.length) {
+        showToast("目前沒有紀錄");
+        return;
+      }
+
+      if (!confirm("確定要清除全部紀錄嗎？這個動作無法復原。")) return;
+      records = [];
+      saveRecords();
+      renderRecords();
+      showToast("已清除全部紀錄");
+    }
+
+    function renderRecords() {
+      const total = records.reduce((sum, item) => sum + Number(item.twd || 0), 0);
+      totalTwd.textContent = moneyTwd(total);
+      totalCount.textContent = `${records.length} 筆`;
+
+      if (!records.length) {
+        recordList.innerHTML = `<div class="empty">還沒有紀錄，輸入金額後按「新增紀錄」就會保存在本機裡。</div>`;
+        return;
+      }
+
+      recordList.innerHTML = records.map(item => `
+        <article class="record-item">
+          <div class="record-head">
+            <div>
+              <div class="record-name">${escapeHtml(item.name)}</div>
+              <div class="record-date">${escapeHtml(item.date)}</div>
+            </div>
+            <div class="small-text">${escapeHtml(item.currency)}</div>
+          </div>
+
+          <div class="record-money">
+            <div><strong>${formatNumber(item.foreign)}</strong> ${escapeHtml(item.currency)} ≈ <strong>${moneyTwd(item.twd)}</strong></div>
+            <div>匯率：1 ${escapeHtml(item.currency)} = ${Number(item.rate).toFixed(5)} TWD</div>
+          </div>
+
+          ${item.place ? `<div class="record-location">地點：${escapeHtml(item.place)}</div>` : ""}
+
+          <div class="record-buttons">
+            <button class="mini-btn" type="button" onclick="editRecord('${item.id}')">修改</button>
+            <button class="danger-btn" type="button" onclick="deleteRecord('${item.id}')">刪除</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function bindEvents() {
+      currencySelect.addEventListener("change", () => {
+        fetchRate(currencySelect.value, false);
+      });
+
+      refreshRateBtn.addEventListener("click", () => {
+        fetchRate(currencySelect.value, true);
+      });
+
+      rateInput.addEventListener("input", () => {
+        manualHint.textContent = "已使用手動匯率";
+        refreshComputedAmounts();
+        saveSettings();
+      });
+
+      tabForeign.addEventListener("click", () => setActiveInput("foreign"));
+      tabTwd.addEventListener("click", () => setActiveInput("twd"));
+
+      swapFocusBtn.addEventListener("click", () => {
+        setActiveInput(activeInput === "foreign" ? "twd" : "foreign");
+      });
+
+      document.querySelector(".calculator").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-key]");
+        if (!btn) return;
+        handleCalcKey(btn.dataset.key);
+      });
+
+      saveRecordBtn.addEventListener("click", saveCurrentRecord);
+      cancelEditBtn.addEventListener("click", resetRecordForm);
+      clearAllBtn.addEventListener("click", clearAllRecords);
+    }
+
+    function init() {
+      loadSettings();
+      loadRecords();
+      initCurrencyOptions();
+
+      currencySelect.value = settings.currency || "JPY";
+      rateInput.value = settings.rate || "";
+      activeInput = settings.lastMode || "foreign";
+      recordDate.value = todayString();
+
+      updateCurrencyUI();
+      bindEvents();
+      renderRecords();
+
+      tabForeign.classList.toggle("active", activeInput === "foreign");
+      tabTwd.classList.toggle("active", activeInput === "twd");
+
+      fetchRate(currencySelect.value, false);
+    }
+
+    window.editRecord = editRecord;
+    window.deleteRecord = deleteRecord;
+
+    init();
+  </script>
 </body>
 </html>
